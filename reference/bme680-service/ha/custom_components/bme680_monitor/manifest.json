@@ -1,0 +1,12 @@
+{
+  "domain": "bme680_monitor",
+  "name": "BME680 Monitor",
+  "version": "0.2.0",
+  "documentation": "",
+  "requirements": ["smbus2>=0.4.3", "pyyaml>=6.0"],
+  "codeowners": ["@yourname"],
+  "iot_class": "local_polling",
+  "config_flow": false
+}
+
+

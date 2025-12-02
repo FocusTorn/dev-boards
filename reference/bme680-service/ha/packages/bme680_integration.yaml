@@ -1,0 +1,7 @@
+sensor:
+  - platform: bme680_monitor
+    bus: 1           # I2C bus
+    address: 0x77    # Change to 0x76 if your sensor uses that address
+    scan_interval: 5 # seconds
+
+

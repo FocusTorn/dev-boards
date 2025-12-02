@@ -1,0 +1,32 @@
+# BME680 Monitor Configuration
+# Location: /home/pi/.config/bme680-monitor/config.yaml
+
+# sudo systemctl restart bme680-base-mqtt.service 
+# sudo systemctl restart bme680-base-mqtt.service && sudo journalctl -u bme680-base-mqtt.service -f
+
+# I2C Settings
+i2c:
+  enabled: false
+  bus: 1
+  address: 0x77  # Hex format: 0x77
+  scan_interval: 5  # seconds
+
+# MQTT Settings
+mqtt:
+  enabled: true
+  topic_base: "sensors/bme680/raw"
+  read_interval: 1  # Seconds between sensor reads (for smoothing calculations)
+  publish_interval: 5  # Seconds between MQTT publishes
+  # temp_offset: -4.0  # Temperature offset in Celsius to apply (negative values subtract heat from Pi)
+  temp_smooth: 4.0  # Temperature smoothing window in seconds (default: 4.0)
+  retain: false  # Retain MQTT messages (default: false). Set to true if you want HA to get last value on startup
+  
+  # Heatsoak MQTT Settings
+  heatsoak:
+    # Offset is a temperature added to the initial temp read once soak_started = true
+    # Absolute is a temperature used as it is shown
+    rate_start_type: "offset"  # [offset, absolute]
+    rate_start_temp: 5.0  # Temperature to start checking rate - prevents false positives during ramp-up (°C)
+    rate_change_plateau: 0.1  # Maximum rate of change threshold (°C/min) - indicates diminishing returns
+    target_temp: 45.0  # Target temperature - if reached, automatically ready (°C)
+    rate_smooth_time: 30.0  # Rate smoothing window in seconds (default: 30.0)

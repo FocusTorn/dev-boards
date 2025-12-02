@@ -1,0 +1,19 @@
+# BME680 Service Package Requirements
+# Minimal dependencies for BME680 monitoring
+
+# BME680 sensor library (official Bosch implementation)
+# Note: monitor/ directory contains the BME680 library code
+# No external BME680 package needed
+
+# I2C communication
+smbus2==0.5.0
+
+# MQTT support (optional, but commonly used)
+paho-mqtt>=2.0.0
+
+# YAML config file support
+pyyaml>=6.0
+
+# Terminal output formatting
+colored>=2.0.0
+

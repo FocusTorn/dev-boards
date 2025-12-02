@@ -1,0 +1,27 @@
+[Unit]
+Description=BME680 Heat Soak Detection Service (MQTT)
+After=network-online.target mosquitto.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/.local/share/bme680-service
+Environment="PATH=/home/pi/.local/share/bme680-service/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/bin/bash -c 'MAX_RATE=$$(python3 -c "import json; f=open(\"/home/pi/.local/share/bme680-service/heatsoak-config.json\", \"r\"); d=json.load(f); print(d.get(\"rate_change_plateau\", 0.1)); f.close()" 2>/dev/null || echo "0.1"); exec /home/pi/.local/share/bme680-service/.venv/bin/python -u /home/pi/.local/share/bme680-service/mqtt/monitor-heatsoak.py --monitor --mqtt --interval 1 --mqtt-interval 5 --max-rate $$MAX_RATE'
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=bme680-heatsoak-mqtt
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/pi/.local/share/bme680-service
+
+[Install]
+WantedBy=multi-user.target

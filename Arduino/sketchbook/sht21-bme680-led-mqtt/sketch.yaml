@@ -1,0 +1,18 @@
+# Arduino Sketch Configuration for ESP32-S3 Multi-Sensor & LED Controller
+
+# Default port (adjust as needed)
+default_port: COM3
+default_port_config:
+    baudrate: 115200
+
+# Default FQBN for ESP32-S3
+default_fqbn: esp32:esp32:esp32s3
+
+# Profiles
+profiles:
+    esp32s3-dev:
+        port: COM3
+        port_config:
+            baudrate: 115200
+        fqbn: esp32:esp32:esp32s3
+

@@ -1,0 +1,61 @@
+[
+    {
+        "type": "confirm",
+        "title": "Continue?",
+        "key": "final",
+        "description": "Do you want to proceed with the wizard?",
+        "exitOnNo": true
+    },
+    // This is a single-line comment - you can add comments in JSON files
+    {
+        "type": "confirm",
+        "title": "Do you want to enable advanced features?",
+        "key": "proceed",
+        "description": "Choose yes to enable advanced features, or no to use basic mode"
+    },
+    {
+        "type": "input",
+        "title": "Enter your name:",
+        "key": "name",
+        "description": "Your full name",
+        "placeholder": "John Doe",
+        "default": "User"
+    },
+    {
+        "type": "textarea",
+        "title": "Project description:",
+        "key": "description",
+        "description": "Provide a detailed description (multi-line supported)",
+        "placeholder": "Enter project details here...\nYou can use multiple lines."
+    },
+    {
+        "type": "select",
+        "title": "Choose a service type:",
+        "key": "service",
+        "description": "Select one option",
+        "options": [
+            "Web Server",
+            "Database",
+            "Cache",
+            "API Gateway"
+        ]
+    },
+    {
+        "type": "multiselect",
+        "title": "Select features:",
+        "key": "features",
+        "description": "You can select multiple options (A to select all/none)",
+        "options": [
+            "SSL/TLS",
+            "Monitoring",
+            "Backup",
+            "Load Balancing",
+            "Auto-scaling"
+        ]
+    }
+    
+    /* This is a
+       multi-line comment
+       Comments are stripped before parsing */
+]
+

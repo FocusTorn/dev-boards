@@ -1,0 +1,99 @@
+# BME680 Heat Soak Sensors for Home Assistant (MQTT)
+# Extracts heat soak data from monitor-heatsoak.py MQTT topic
+# Topic: homeassistant/sensor/bme680_chamber/state
+
+mqtt:
+  sensor:
+    # Current Temperature
+    - name: "BME680 Chamber Temperature (MQTT)"
+      unique_id: "bme680_chamber_temperature_mqtt"
+      state_topic: "homeassistant/sensor/bme680_chamber/state"
+      value_template: "{{ value_json.temperature | float }}"
+      unit_of_measurement: "°C"
+      state_class: measurement
+      icon: "mdi:thermometer"
+      json_attributes_topic: "homeassistant/sensor/bme680_chamber/state"
+      device:
+        identifiers:
+          - "bme680_heatsoak_mqtt"
+        name: "BME680 Heat Soak Monitor (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+      
+    # Smoothed Temperature
+    - name: "BME680 Chamber Smoothed Temperature (MQTT)"
+      unique_id: "bme680_chamber_smoothed_temp_mqtt"
+      state_topic: "homeassistant/sensor/bme680_chamber/state"
+      value_template: "{{ value_json.smoothed_temp | float if value_json.smoothed_temp is not none else 'unknown' }}"
+      unit_of_measurement: "°C"
+      state_class: measurement
+      icon: "mdi:thermometer"
+      device:
+        identifiers:
+          - "bme680_heatsoak_mqtt"
+        name: "BME680 Heat Soak Monitor (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+      
+    # Rate of Change (per minute)
+    - name: "BME680 Chamber Rate of Change (MQTT)"
+      unique_id: "bme680_chamber_rate_mqtt"
+      state_topic: "homeassistant/sensor/bme680_chamber/state"
+      value_template: "{{ value_json.rate_per_minute | float if value_json.rate_per_minute is not none else 'unknown' }}"
+      unit_of_measurement: "°C/min"
+      icon: "mdi:trending-up"
+      state_class: measurement
+      device:
+        identifiers:
+          - "bme680_heatsoak_mqtt"
+        name: "BME680 Heat Soak Monitor (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+      
+    # Max Rate Since Soak Started
+    - name: "BME680 Max Rate Since Soak Start (MQTT)"
+      unique_id: "bme680_max_rate_since_soak_start_mqtt"
+      state_topic: "homeassistant/sensor/bme680_chamber/state"
+      value_template: "{{ value_json.max_rate_since_soak_start | float if value_json.max_rate_since_soak_start is not none else 'unknown' }}"
+      unit_of_measurement: "°C/min"
+      icon: "mdi:trending-up"
+      state_class: measurement
+      device:
+        identifiers:
+          - "bme680_heatsoak_mqtt"
+        name: "BME680 Heat Soak Monitor (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+      
+  binary_sensor:
+    # Heat Soak Ready (Binary Sensor)
+    - name: "BME680 Heat Soak Ready (MQTT)"
+      unique_id: "bme680_heat_soak_ready_mqtt"
+      state_topic: "homeassistant/sensor/bme680_chamber/state"
+      value_template: "{{ 'on' if value_json.ready == true else 'off' }}"
+      icon: "mdi:thermometer-check"
+      json_attributes_topic: "homeassistant/sensor/bme680_chamber/state"
+      json_attributes_template: >
+        {{
+          {
+            'temperature': value_json.temperature,
+            'smoothed_temp': value_json.smoothed_temp,
+            'rate_per_minute': value_json.rate_per_minute,
+            'heat_stable': value_json.heat_stable,
+            'readings': value_json.readings,
+            'smoothed_readings': value_json.smoothed_readings,
+            'temp_ok': value_json.temp_ok,
+            'rate_ok': value_json.rate_ok,
+            'soak_temp': value_json.soak_temp,
+            'rate_change_plateau': value_json.max_rate,
+            'soak_started': value_json.soak_started,
+            'max_rate_since_soak_start': value_json.max_rate_since_soak_start
+          } | tojson
+        }}
+      device:
+        identifiers:
+          - "bme680_heatsoak_mqtt"
+        name: "BME680 Heat Soak Monitor (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+

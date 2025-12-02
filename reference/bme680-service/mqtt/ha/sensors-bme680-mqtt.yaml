@@ -1,0 +1,296 @@
+# BME680 Unified MQTT Sensors
+# All sensors read from single topic: sensors/bme680/raw
+# This includes base readings and calculated heatsoak values
+
+mqtt:
+  sensor:
+    # Base Sensor Readings
+    - name: "BME680 Temperature (MQTT)"
+      unique_id: "bme680_mqtt_temperature"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ value_json.temperature | float }}"
+      unit_of_measurement: "°C"
+      state_class: measurement
+      icon: "mdi:thermometer"
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+    - name: "BME680 Humidity (MQTT)"
+      unique_id: "bme680_mqtt_humidity"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ value_json.humidity | float }}"
+      unit_of_measurement: "%"
+      device_class: humidity
+      state_class: measurement
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+    - name: "BME680 Pressure (MQTT)"
+      unique_id: "bme680_mqtt_pressure"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ value_json.pressure | float }}"
+      unit_of_measurement: "hPa"
+      device_class: pressure
+      state_class: measurement
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+    - name: "Gas Resistance"
+      unique_id: "bme680_chamber_gas_resistance"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ value_json.gas_resistance | float }}"
+      unit_of_measurement: "Ω"
+      state_class: measurement
+      device:
+        identifiers:
+          - "bme680_chamber"
+        name: "BME680 (Chamber)"
+        model: "BME680"
+        manufacturer: "Bosch"
+        
+    # scope.{{device.name}}{{name}}    
+
+    # Heatsoak Calculated Values
+    - name: "BME680 Smoothed Temperature (MQTT)"
+      unique_id: "bme680_mqtt_smoothed_temperature"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ value_json.smoothed_temp | float if value_json.smoothed_temp is not none }}"
+      unit_of_measurement: "°C"
+      state_class: measurement
+      icon: "mdi:thermometer"
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+    - name: "BME680 Smoothed Change Rate (MQTT)"
+      unique_id: "bme680_mqtt_smoothed_change_rate"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ value_json.smoothed_change_rate | float if value_json.smoothed_change_rate is not none }}"
+      unit_of_measurement: "°C/min"
+      icon: "mdi:trending-up"
+      state_class: measurement
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+    - name: "BME680 Max Rate Since Soak Start (MQTT)"
+      unique_id: "bme680_mqtt_max_rate_since_soak_start"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ value_json.max_rate_since_soak_start | float if value_json.max_rate_since_soak_start is not none }}"
+      unit_of_measurement: "°C/min"
+      icon: "mdi:trending-up"
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+    # Heatsoak Configuration and Status
+    - name: "BME680 Temp Smoothing Buffer (MQTT)"
+      unique_id: "bme680_mqtt_temp_smoothing_buffer"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ value_json.temp_smoothing_buffer | int }}"
+      unit_of_measurement: "readings"
+      icon: "mdi:counter"
+      state_class: measurement
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+    - name: "BME680 Rate Smoothing Buffer (MQTT)"
+      unique_id: "bme680_mqtt_rate_smoothing_buffer"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ value_json.rate_smoothing_buffer | int }}"
+      unit_of_measurement: "readings"
+      icon: "mdi:counter"
+      state_class: measurement
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+    - name: "BME680 Rate Start Type (MQTT)"
+      unique_id: "bme680_mqtt_rate_start_type"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ value_json.rate_start_type }}"
+      icon: "mdi:format-list-bulleted-type"
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+    - name: "BME680 Rate Start Temp (MQTT)"
+      unique_id: "bme680_mqtt_rate_start_temp"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ value_json.rate_start_temp | float }}"
+      unit_of_measurement: "°C"
+      icon: "mdi:thermometer"
+      state_class: measurement
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+    - name: "BME680 Rate Change Plateau (MQTT)"
+      unique_id: "bme680_mqtt_rate_change_plateau"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ value_json.rate_change_plateau | float }}"
+      unit_of_measurement: "°C/min"
+      icon: "mdi:trending-flat"
+      state_class: measurement
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+    - name: "BME680 Target Temp (MQTT)"
+      unique_id: "bme680_mqtt_target_temp"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ value_json.target_temp | float if value_json.target_temp is not none }}"
+      unit_of_measurement: "°C"
+      icon: "mdi:target"
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+    - name: "BME680 Initial Soak Temp (MQTT)"
+      unique_id: "bme680_mqtt_initial_soak_temp"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ value_json.initial_soak_temp | float if value_json.initial_soak_temp is not none }}"
+      unit_of_measurement: "°C"
+      icon: "mdi:thermometer-low"
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+    - name: "BME680 Last Update Timestamp (MQTT)"
+      unique_id: "bme680_mqtt_timestamp"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ value_json.timestamp | int }}"
+      icon: "mdi:clock-outline"
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+  binary_sensor:
+    - name: "BME680 Heat Stable (MQTT)"
+      unique_id: "bme680_mqtt_heat_stable"
+      default_entity_id: "binary_sensor.bme680_heat_stable"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ 'on' if value_json.heat_stable == true else 'off' }}"
+      device_class: connectivity
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+    - name: "BME680 Heat Soak Ready (MQTT)"
+      unique_id: "bme680_mqtt_heat_soak_ready"
+      default_entity_id: "binary_sensor.bme680_heat_soak_ready"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ 'on' if value_json.ready == true else 'off' }}"
+      icon: "mdi:thermometer-check"
+      json_attributes_topic: "sensors/bme680/raw"
+      json_attributes_template: >
+        {% set temp_dict = {'temperature': value_json.temperature} if 'temperature' in value_json else {} %}
+        {% set smoothed_temp_dict = {'smoothed_temp': value_json.smoothed_temp} if 'smoothed_temp' in value_json else {} %}
+        {% set smoothed_change_rate_dict = {'smoothed_change_rate': value_json.smoothed_change_rate} if 'smoothed_change_rate' in value_json else {} %}
+        {% set heat_stable_dict = {'heat_stable': value_json.heat_stable} if 'heat_stable' in value_json else {} %}
+        {% set temp_smoothing_buffer_dict = {'temp_smoothing_buffer': value_json.temp_smoothing_buffer} if 'temp_smoothing_buffer' in value_json else {} %}
+        {% set rate_smoothing_buffer_dict = {'rate_smoothing_buffer': value_json.rate_smoothing_buffer} if 'rate_smoothing_buffer' in value_json else {} %}
+        {% set temp_ok_dict = {'temp_ok': value_json.temp_ok} if 'temp_ok' in value_json else {} %}
+        {% set rate_ok_dict = {'rate_ok': value_json.rate_ok} if 'rate_ok' in value_json else {} %}
+        {% set rate_start_type_dict = {'rate_start_type': value_json.rate_start_type} if 'rate_start_type' in value_json else {} %}
+        {% set rate_start_temp_dict = {'rate_start_temp': value_json.rate_start_temp} if 'rate_start_temp' in value_json else {} %}
+        {% set rate_change_plateau_dict = {'rate_change_plateau': value_json.rate_change_plateau} if 'rate_change_plateau' in value_json else {} %}
+        {% set target_temp_dict = {'target_temp': value_json.target_temp} if 'target_temp' in value_json else {} %}
+        {% set soak_started_dict = {'soak_started': value_json.soak_started} if 'soak_started' in value_json else {} %}
+        {% set max_rate_dict = {'max_rate_since_soak_start': value_json.max_rate_since_soak_start} if 'max_rate_since_soak_start' in value_json else {} %}
+        {% set initial_soak_temp_dict = {'initial_soak_temp': value_json.initial_soak_temp} if 'initial_soak_temp' in value_json else {} %}
+        {{ temp_dict | combine(smoothed_temp_dict) | combine(smoothed_change_rate_dict) | combine(heat_stable_dict) | combine(temp_smoothing_buffer_dict) | combine(rate_smoothing_buffer_dict) | combine(temp_ok_dict) | combine(rate_ok_dict) | combine(rate_start_type_dict) | combine(rate_start_temp_dict) | combine(rate_change_plateau_dict) | combine(target_temp_dict) | combine(soak_started_dict) | combine(max_rate_dict) | combine(initial_soak_temp_dict) | tojson }}
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+    - name: "BME680 Temp OK (MQTT)"
+      unique_id: "bme680_mqtt_temp_ok"
+      default_entity_id: "binary_sensor.bme680_temp_ok"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ 'on' if value_json.temp_ok == true else 'off' }}"
+      icon: "mdi:check-circle"
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+    - name: "BME680 Rate OK (MQTT)"
+      unique_id: "bme680_mqtt_rate_ok"
+      default_entity_id: "binary_sensor.bme680_rate_ok"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ 'on' if value_json.rate_ok == true else 'off' }}"
+      icon: "mdi:check-circle"
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"
+
+    - name: "BME680 Soak Started (MQTT)"
+      unique_id: "bme680_mqtt_soak_started"
+      default_entity_id: "binary_sensor.bme680_soak_started"
+      state_topic: "sensors/bme680/raw"
+      value_template: "{{ 'on' if value_json.soak_started == true else 'off' }}"
+      icon: "mdi:play-circle"
+      device:
+        identifiers:
+          - "bme680_mqtt"
+        name: "BME680 (MQTT)"
+        model: "BME680"
+        manufacturer: "Bosch"

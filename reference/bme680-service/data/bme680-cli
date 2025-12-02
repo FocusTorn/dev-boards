@@ -1,0 +1,352 @@
+#!/usr/bin/env python3
+"""
+BME680 CLI - Unified command-line interface for BME680 monitoring
+Provides easy access to readings, service management, and configuration
+"""
+
+import sys
+import json
+import subprocess
+import argparse
+from pathlib import Path
+
+# Paths
+INSTALL_ROOT = Path.home() / ".local" / "share" / "bme680-service"
+VENV_PYTHON = INSTALL_ROOT / ".venv" / "bin" / "python"
+MONITOR_IAQ = INSTALL_ROOT / "mqtt" / "monitor-iaq.py"
+MONITOR_HEATSOAK = INSTALL_ROOT / "mqtt" / "monitor-heatsoak.py"
+
+# Service names
+SERVICE_READINGS = "bme680-readings"
+SERVICE_HEAT_SOAK = "bme680-heat-soak"
+
+
+def check_installed():
+    """Check if BME680 service is installed."""
+    if not INSTALL_ROOT.exists():
+        print("❌ BME680 service not installed")
+        print(f"   Expected: {INSTALL_ROOT}")
+        print("   Run: ./install.sh to install")
+        return False
+    
+    if not VENV_PYTHON.exists():
+        print("❌ Virtual environment not found")
+        print("   Run: ./install.sh to reinstall")
+        return False
+    
+    return True
+
+
+def read_sensor(show_all=False, json_output=False, value_type=None):
+    """Read current sensor values.
+    
+    Args:
+        show_all: Show all sensor readings (temperature, humidity, pressure, gas, IAQ)
+        json_output: Output as JSON
+        value_type: Specific value to show ('temp', 'humidity', 'pressure', 'gas', 'iaq')
+    """
+    if not check_installed():
+        return 1
+    
+    if not MONITOR_IAQ.exists():
+        print(f"❌ IAQ monitor not found: {MONITOR_IAQ}")
+        return 1
+    
+    cmd = [str(VENV_PYTHON), str(MONITOR_IAQ)]
+    
+    # If json_output, get JSON and parse it
+    if json_output:
+        cmd.append("--json")
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                if json_output:
+                    data = json.loads(result.stdout)
+                    if value_type:
+                        # Extract specific value
+                        if value_type == "temp":
+                            val = data.get("current", {}).get("temperature")
+                            print(json.dumps({"temperature": val}))
+                        elif value_type == "humidity":
+                            val = data.get("current", {}).get("humidity")
+                            print(json.dumps({"humidity": val}))
+                        elif value_type == "pressure":
+                            val = data.get("current", {}).get("pressure")
+                            print(json.dumps({"pressure": val}))
+                        elif value_type == "gas":
+                            val = data.get("current", {}).get("gas")
+                            print(json.dumps({"gas_resistance": val}))
+                        elif value_type == "iaq":
+                            val = data.get("air_quality_score")
+                            print(json.dumps({"iaq_score": val}))
+                        else:
+                            print(result.stdout)
+                    else:
+                        print(result.stdout)
+                    return 0
+                else:
+                    print(result.stdout)
+                    return 0
+            else:
+                print(f"❌ Error reading sensor: {result.stderr}")
+                return 1
+        except json.JSONDecodeError:
+            print("❌ Error parsing JSON output")
+            return 1
+        except subprocess.TimeoutExpired:
+            print("❌ Sensor read timeout")
+            return 1
+        except Exception as e:
+            print(f"❌ Error: {e}")
+            return 1
+    else:
+        # Non-JSON output - use monitor script directly
+        try:
+            result = subprocess.run(cmd, capture_output=False, text=True, timeout=10)
+            return 0
+        except subprocess.TimeoutExpired:
+            print("❌ Sensor read timeout")
+            return 1
+        except Exception as e:
+            print(f"❌ Error: {e}")
+            return 1
+
+
+def service_status(service_name=None):
+    """Check service status."""
+    services = []
+    if service_name:
+        services = [service_name]
+    else:
+        services = [SERVICE_READINGS, SERVICE_HEAT_SOAK]
+    
+    for service in services:
+        try:
+            result = subprocess.run(
+                ["systemctl", "is-active", f"{service}.service"],
+                capture_output=True,
+                text=True
+            )
+            is_active = result.returncode == 0
+            
+            result = subprocess.run(
+                ["systemctl", "is-enabled", f"{service}.service"],
+                capture_output=True,
+                text=True
+            )
+            is_enabled = result.returncode == 0
+            
+            status_icon = "🟢" if is_active else "🔴"
+            enabled_text = "enabled" if is_enabled else "disabled"
+            
+            print(f"{status_icon} {service}: {'running' if is_active else 'stopped'} ({enabled_text})")
+            
+        except Exception as e:
+            print(f"⚠️  {service}: Error checking status - {e}")
+    
+    return 0
+
+
+def service_logs(service_name, follow=False, lines=50):
+    """View service logs."""
+    if service_name not in [SERVICE_READINGS, SERVICE_HEAT_SOAK]:
+        print(f"❌ Unknown service: {service_name}")
+        print(f"   Use: {SERVICE_READINGS} or {SERVICE_HEAT_SOAK}")
+        return 1
+    
+    cmd = ["journalctl", "-u", f"{service_name}.service", "-n", str(lines)]
+    if follow:
+        cmd.append("-f")
+    
+    try:
+        subprocess.run(cmd)
+        return 0
+    except KeyboardInterrupt:
+        return 0
+    except Exception as e:
+        print(f"❌ Error viewing logs: {e}")
+        return 1
+
+
+def calibrate(burn_in_time=90):
+    """Calibrate baseline (IAQ only)."""
+    if not check_installed():
+        return 1
+    
+    if not MONITOR_IAQ.exists():
+        print(f"❌ IAQ monitor not found: {MONITOR_IAQ}")
+        return 1
+    
+    print(f"🔧 Calibrating BME680 baseline (burn-in: {burn_in_time}s)...")
+    print("   This should be done when enclosure is at normal conditions")
+    print()
+    
+    cmd = [str(VENV_PYTHON), str(MONITOR_IAQ), "--calibrate", str(burn_in_time)]
+    
+    try:
+        subprocess.run(cmd)
+        return 0
+    except KeyboardInterrupt:
+        print("\n⚠️  Calibration cancelled")
+        return 1
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return 1
+
+
+def monitor(mode="iaq", interval=10, mqtt=False, json_output=False):
+    """Monitor sensor continuously."""
+    if not check_installed():
+        return 1
+    
+    if mode == "iaq":
+        script = MONITOR_IAQ
+    elif mode == "heatsoak":
+        script = MONITOR_HEATSOAK
+    else:
+        print(f"❌ Unknown mode: {mode}")
+        return 1
+    
+    if not script.exists():
+        print(f"❌ Monitor script not found: {script}")
+        return 1
+    
+    cmd = [str(VENV_PYTHON), str(script), "--monitor", "--interval", str(interval)]
+    
+    if mqtt:
+        cmd.append("--mqtt")
+    if json_output:
+        cmd.append("--json")
+    
+    try:
+        subprocess.run(cmd)
+        return 0
+    except KeyboardInterrupt:
+        print("\n⚠️  Monitoring stopped")
+        return 0
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return 1
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="BME680 CLI - Unified interface for BME680 monitoring",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # View all current readings
+  bme680-cli read
+  
+  # View specific readings
+  bme680-cli read --temperature
+  bme680-cli read --humidity
+  bme680-cli read --pressure
+  bme680-cli read --gas
+  bme680-cli read --iaq
+  
+  # View as JSON
+  bme680-cli read --json
+  bme680-cli read --humidity --json
+  
+  # Check service status
+  bme680-cli status
+  
+  # View service logs
+  bme680-cli logs bme680-readings
+  
+  # Follow logs (live)
+  bme680-cli logs bme680-readings --follow
+  
+  # Calibrate baseline
+  bme680-cli calibrate
+  
+  # Monitor continuously
+  bme680-cli monitor --iaq --interval 10
+  bme680-cli monitor --heatsoak --interval 5
+        """
+    )
+    
+    subparsers = parser.add_subparsers(dest="command", help="Command to run")
+    
+    # Read command
+    read_parser = subparsers.add_parser("read", help="Read current sensor values")
+    read_parser.add_argument("--all", action="store_true", help="Show all sensor readings (default)")
+    read_parser.add_argument("--temp", "--temperature", action="store_true", dest="temp", help="Show temperature only")
+    read_parser.add_argument("--humidity", action="store_true", help="Show humidity only")
+    read_parser.add_argument("--pressure", action="store_true", help="Show pressure only")
+    read_parser.add_argument("--gas", action="store_true", help="Show gas resistance only")
+    read_parser.add_argument("--iaq", action="store_true", help="Show IAQ score only")
+    read_parser.add_argument("--json", action="store_true", help="Output as JSON")
+    
+    # Status command
+    status_parser = subparsers.add_parser("status", help="Check service status")
+    status_parser.add_argument("service", nargs="?", help="Specific service name (optional)")
+    
+    # Logs command
+    logs_parser = subparsers.add_parser("logs", help="View service logs")
+    logs_parser.add_argument("service", help="Service name (bme680-readings or bme680-heat-soak)")
+    logs_parser.add_argument("-f", "--follow", action="store_true", help="Follow logs (live)")
+    logs_parser.add_argument("-n", "--lines", type=int, default=50, help="Number of lines (default: 50)")
+    
+    # Calibrate command
+    calibrate_parser = subparsers.add_parser("calibrate", help="Calibrate baseline (IAQ)")
+    calibrate_parser.add_argument("--time", type=int, default=90, help="Burn-in time in seconds (default: 90)")
+    
+    # Monitor command
+    monitor_parser = subparsers.add_parser("monitor", help="Monitor sensor continuously")
+    monitor_parser.add_argument("--iaq", action="store_true", help="Monitor IAQ")
+    monitor_parser.add_argument("--heatsoak", action="store_true", help="Monitor heat soak (temperature with rate calculation)")
+    monitor_parser.add_argument("--interval", type=int, default=10, help="Interval in seconds (default: 10)")
+    monitor_parser.add_argument("--mqtt", action="store_true", help="Enable MQTT publishing")
+    monitor_parser.add_argument("--json", action="store_true", help="Output as JSON")
+    
+    args = parser.parse_args()
+    
+    if not args.command:
+        parser.print_help()
+        return 1
+    
+    # Route to appropriate function
+    if args.command == "read":
+        # Determine which value to show
+        value_type = None
+        if args.temp:
+            value_type = "temp"
+        elif args.humidity:
+            value_type = "humidity"
+        elif args.pressure:
+            value_type = "pressure"
+        elif args.gas:
+            value_type = "gas"
+        elif args.iaq:
+            value_type = "iaq"
+        
+        show_all = not any([args.temp, args.humidity, args.pressure, args.gas, args.iaq])
+        return read_sensor(show_all=show_all, json_output=args.json, value_type=value_type)
+    
+    elif args.command == "status":
+        return service_status(args.service)
+    
+    elif args.command == "logs":
+        return service_logs(args.service, args.follow, args.lines)
+    
+    elif args.command == "calibrate":
+        return calibrate(args.time)
+    
+    elif args.command == "monitor":
+        mode = "iaq"
+        if args.heatsoak:
+            mode = "heatsoak"
+        elif args.iaq:
+            mode = "iaq"
+        return monitor(mode, args.interval, args.mqtt, args.json)
+    
+    else:
+        parser.print_help()
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+

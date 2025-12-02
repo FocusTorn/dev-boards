@@ -1,0 +1,118 @@
+#!/bin/bash
+# Interactive Menu Functions
+# Multi-select menu similar to npm-check-updates (ncu)
+# Space to toggle, 'a' to select all, Enter to confirm
+
+# Colors
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+# Hide cursor
+hide_cursor() {
+    tput civis 2>/dev/null || true
+}
+
+# Show cursor
+show_cursor() {
+    tput cnorm 2>/dev/null || true
+}
+
+# Clear menu area
+clear_menu() {
+    local lines=$1
+    for ((i=0; i<lines; i++)); do
+        tput cuu1 2>/dev/null || true
+        tput el 2>/dev/null || true
+    done
+}
+
+# Interactive multi-select menu
+# Usage: source this file, then call interactive_menu "Option 1" "Option 2" "Option 3"
+# Returns: space-separated list of selected indices (0-based) via stdout
+interactive_menu() {
+    local options=("$@")
+    local selected=()
+    local current=0
+    local num_options=${#options[@]}
+    
+    # Initialize - nothing selected
+    for ((i=0; i<num_options; i++)); do
+        selected[i]=false
+    done
+    
+    hide_cursor
+    
+    while true; do
+        # Display menu
+        echo
+        for ((i=0; i<num_options; i++)); do
+            local marker=" "
+            if [ "${selected[i]}" = true ]; then
+                marker="${GREEN}✓${NC}"
+            fi
+            
+            local prefix=" "
+            if [ $i -eq $current ]; then
+                prefix="${CYAN}❯${NC} "
+            else
+                prefix="  "
+            fi
+            
+            echo -e "${prefix}${marker} ${options[i]}"
+        done
+        echo
+        echo -e "${YELLOW}Space: Toggle  |  a: Select All  |  Enter: Confirm${NC}"
+        
+        # Read single character (non-blocking mode off, wait for input)
+        local key
+        IFS= read -rsn1 key
+        
+        case "$key" in
+            " ")  # Space bar
+                selected[$current]=$([ "${selected[$current]}" = true ] && echo false || echo true)
+                ;;
+            "a"|"A")  # Select all
+                for ((i=0; i<num_options; i++)); do
+                    selected[i]=true
+                done
+                ;;
+            $'\x1b')  # Escape sequence (arrow keys)
+                read -rsn1 -t 0.1 tmp 2>/dev/null || true
+                if [[ "$tmp" == "[" ]]; then
+                    read -rsn1 -t 0.1 tmp 2>/dev/null || true
+                    case "$tmp" in
+                        "A")  # Up arrow
+                            current=$(( (current - 1 + num_options) % num_options ))
+                            ;;
+                        "B")  # Down arrow
+                            current=$(( (current + 1) % num_options ))
+                            ;;
+                    esac
+                fi
+                ;;
+            $'\x0a'|$'\x0d')  # Enter
+                break
+                ;;
+            "q"|"Q")  # Quit/Cancel
+                show_cursor
+                return 1
+                ;;
+        esac
+        
+        # Clear menu for redraw
+        clear_menu $((num_options + 3))
+    done
+    
+    show_cursor
+    
+    # Output selected indices
+    for ((i=0; i<num_options; i++)); do
+        if [ "${selected[i]}" = true ]; then
+            echo -n "$i "
+        fi
+    done
+    echo
+}

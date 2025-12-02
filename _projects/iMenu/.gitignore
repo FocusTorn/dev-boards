@@ -1,0 +1,24 @@
+# Built executables (keep structure, ignore binaries)
+dist/bin/*
+!dist/bin/.gitkeep
+dist/lib/*
+!dist/lib/.gitkeep
+dist/docs/*
+!dist/docs/.gitkeep
+*.exe
+
+# Go build artifacts
+*.test
+*.out
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+

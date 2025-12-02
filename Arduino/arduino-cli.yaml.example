@@ -1,0 +1,27 @@
+# Arduino CLI Configuration File
+# Copy this to arduino-cli.yaml and customize as needed
+# Or let the setup script create it automatically
+
+board_manager:
+  additional_urls:
+    - https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+
+directories:
+  user: D:\_dev\_Projects\dev-boards\Arduino\home
+  data: D:\_dev\_Projects\dev-boards\Arduino
+
+# Default settings for ESP32-S3
+# Uncomment and adjust as needed:
+# default_fqbn: esp32:esp32:esp32s3
+# default_port: COM3
+# default_port_config:
+#     baudrate: 115200
+
+# Profiles (similar to Raspberry Pi setup)
+# profiles:
+#     esp32s3:
+#         port: COM3
+#         port_config:
+#             baudrate: 115200
+#         fqbn: esp32:esp32:esp32s3
+

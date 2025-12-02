@@ -1,0 +1,19 @@
+[project]
+name = "dev-boards-workspace"
+version = "0.1.0"
+description = "Dev-boards workspace with shared dependencies"
+requires-python = ">=3.8"
+dependencies = [
+    "prompt-toolkit>=3.0.0",
+]
+
+[tool.uv]
+# Use copy mode since cache (C:) and venv (D:) are on different drives
+# Hardlinks only work within the same filesystem
+link-mode = "copy"
+
+[tool.uv.workspace]
+members = [
+    "bootstraps/git_py",
+]
+

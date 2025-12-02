@@ -1,0 +1,24 @@
+[Unit]
+Description=BME680 Base Readings Publisher (MQTT)
+After=network-online.target mosquitto.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/.local/share/bme680-service
+Environment="PATH=/home/pi/.local/share/bme680-service/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/home/pi/.local/share/bme680-service/.venv/bin/python -u /home/pi/.local/share/bme680-service/mqtt/base-readings.py
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/pi/.local/share/bme680-service
+
+[Install]
+WantedBy=multi-user.target
+
+
