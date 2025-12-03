@@ -7,10 +7,11 @@ import platform
 import json as json_lib
 import urllib.request
 import ssl
+import sys
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
-from .terminal import write_boxed_header, write_header, COLOR_GREEN, COLOR_YELLOW, COLOR_RED, BOLD_CHECK
+from .terminal import write_boxed_header, write_header, COLOR_GREEN, COLOR_YELLOW, COLOR_RED, COLOR_RESET, BOLD_CHECK
 
 
 def is_windows() -> bool:
@@ -44,8 +45,8 @@ def check_command_exists(cmd: str) -> bool:
 
 
 def check_github_cli() -> Dict[str, bool]:
-    """Check GitHub CLI installation and authentication status."""
-    status = {"installed": False, "authenticated": False}
+    """Check GitHub CLI installation, authentication status, and delete_repo scope."""
+    status = {"installed": False, "authenticated": False, "has_delete_repo_scope": False}
     
     if not check_command_exists("gh"):
         return status
@@ -61,6 +62,24 @@ def check_github_cli() -> Dict[str, bool]:
             text=True
         )
         status["authenticated"] = result.returncode == 0
+        
+        # Check if delete_repo scope is available
+        if status["authenticated"]:
+            # Parse the text output to find Token scopes line
+            # Format: "Token scopes: 'admin:public_key', 'delete_repo', 'gist', ..."
+            output = result.stdout.lower()
+            if "token scopes:" in output:
+                # Extract the scopes line
+                lines = result.stdout.split('\n')
+                for line in lines:
+                    if "token scopes:" in line.lower():
+                        # Check if delete_repo is in the scopes
+                        if "delete_repo" in line.lower():
+                            status["has_delete_repo_scope"] = True
+                        break
+            # Fallback: simple check in entire output
+            elif "delete_repo" in output:
+                status["has_delete_repo_scope"] = True
     except (subprocess.TimeoutExpired, FileNotFoundError):
         pass
     
@@ -308,4 +327,63 @@ def check_git_config() -> Dict[str, Optional[str]]:
         pass
     
     return config
+
+
+def refresh_github_cli_auth_with_delete_repo_scope(silent: bool = False) -> bool:
+    """
+    Refresh GitHub CLI authentication to include delete_repo scope.
+    
+    This opens a browser for user interaction, so output is not captured.
+    
+    Args:
+        silent: If True, suppress output messages (default: False)
+    
+    Returns:
+        bool: True if refresh was successful, False otherwise
+    """
+    if not check_command_exists("gh"):
+        return False
+    
+    if not silent:
+        print("Refreshing GitHub CLI authentication to add delete_repo scope...")
+        print("(A browser window will open for authentication)")
+    
+    try:
+        # gh auth refresh opens a browser, so we can't capture output
+        # User needs to interact with the browser to complete the refresh
+        result = subprocess.run(
+            ["gh", "auth", "refresh", "-h", "github.com", "-s", "delete_repo"],
+            timeout=300  # 5 minutes for user to complete
+        )
+        
+        if result.returncode != 0:
+            if not silent:
+                print(f"{COLOR_RED}✗{COLOR_RESET} Failed to refresh delete_repo scope", file=sys.stderr)
+            return False
+        
+        # Wait a moment for the token to update (GitHub might need a moment to propagate)
+        import time
+        time.sleep(2)
+        
+        # Verify the scope was added by checking auth status
+        # Try checking multiple times in case there's a delay
+        for attempt in range(3):
+            gh_cli_after = check_github_cli()
+            if gh_cli_after.get("has_delete_repo_scope", False):
+                if not silent:
+                    print(f"{COLOR_GREEN}{BOLD_CHECK}{COLOR_RESET} Authentication refreshed with delete_repo scope")
+                return True
+            if attempt < 2:
+                time.sleep(1)  # Wait 1 second between attempts
+        
+        # If we get here, scope wasn't detected
+        if not silent:
+            print(f"{COLOR_YELLOW}⚠{COLOR_RESET} Refresh completed but delete_repo scope not detected", file=sys.stderr)
+            print("  The scope may have been added. You can verify with: gh auth status", file=sys.stderr)
+        # Still return True if refresh succeeded (scope might be there but not detected yet)
+        return True
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        if not silent:
+            print(f"{COLOR_RED}✗{COLOR_RESET} Authentication refresh timed out or failed", file=sys.stderr)
+        return False
 

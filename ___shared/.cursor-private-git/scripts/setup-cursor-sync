@@ -1,0 +1,412 @@
+#!/usr/bin/env python3
+"""
+Cursor Rules Shared Repository Setup Script
+Initial setup for syncing Cursor rules between projects and shared repository.
+
+Cross-platform (Windows/Linux/Debian/macOS).
+Usage:
+    python setup-cursor-sync [--project-name=NAME] [--init-git]
+    ./setup-cursor-sync [--project-name=NAME] [--init-git]
+"""
+
+import sys
+import os
+import subprocess
+import argparse
+import yaml
+import shutil
+from pathlib import Path
+from typing import Dict, List, Optional
+
+# Fix Windows console encoding
+if sys.platform == "win32":
+    import io
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    else:
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
+
+class Colors:
+    """ANSI color codes for terminal output."""
+    RESET = '\033[0m'
+    BOLD = '\033[1m'
+    RED = '\033[31m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    BLUE = '\033[34m'
+    CYAN = '\033[36m'
+
+
+def print_colored(message: str, color: str = Colors.RESET):
+    """Print colored message."""
+    print(f"{color}{message}{Colors.RESET}")
+
+
+def print_error(message: str):
+    """Print error message."""
+    print_colored(f"✗ {message}", Colors.RED)
+
+
+def print_success(message: str):
+    """Print success message."""
+    print_colored(f"✓ {message}", Colors.GREEN)
+
+
+def print_warning(message: str):
+    """Print warning message."""
+    print_colored(f"⚠ {message}", Colors.YELLOW)
+
+
+def print_info(message: str):
+    """Print info message."""
+    print_colored(f"ℹ {message}", Colors.CYAN)
+
+
+def run_git_command(cmd: List[str], cwd: Path, check: bool = False) -> tuple[int, str, str]:
+    """Run a Git command and return exit code, stdout, stderr."""
+    try:
+        result = subprocess.run(
+            ['git'] + cmd,
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            check=check
+        )
+        return result.returncode, result.stdout.strip(), result.stderr.strip()
+    except subprocess.CalledProcessError as e:
+        return e.returncode, e.stdout.strip(), e.stderr.strip()
+    except FileNotFoundError:
+        print_error("Git is not installed or not in PATH")
+        return 1, "", "Git not found"
+
+
+def is_git_repo(path: Path) -> bool:
+    """Check if a path is a Git repository."""
+    return (path / '.git').exists() or (path / '.git').is_file()
+
+
+def detect_project_name() -> str:
+    """Detect project name from current directory."""
+    current = Path.cwd()
+    markers = ['.git', 'pyproject.toml', 'package.json', 'Cargo.toml']
+    
+    project_root = None
+    for marker in markers:
+        test_path = current
+        while test_path != test_path.parent:
+            if (test_path / marker).exists():
+                project_root = test_path
+                break
+            test_path = test_path.parent
+    
+    if project_root:
+        return project_root.name
+    
+    return Path.cwd().name
+
+
+def find_cursor_directories(project_root: Path) -> List[Dict[str, str]]:
+    """Find .cursor directories and subdirectories to map."""
+    cursor_dir = project_root / '.cursor'
+    
+    if not cursor_dir.exists():
+        return []
+    
+    mappings = []
+    
+    # Check for common directories
+    common_dirs = ['commands', 'rules']
+    
+    for dir_name in common_dirs:
+        dir_path = cursor_dir / dir_name
+        if dir_path.exists() and dir_path.is_dir():
+            mappings.append({
+                'source': f'.cursor/{dir_name}',
+                'target': dir_name,
+                'sync_direction': 'bidirectional'
+            })
+    
+    # Check for rules subdirectories
+    rules_dir = cursor_dir / 'rules'
+    if rules_dir.exists():
+        for item in rules_dir.iterdir():
+            if item.is_dir():
+                rel_path = item.relative_to(cursor_dir)
+                mappings.append({
+                    'source': f'.cursor/{rel_path}',
+                    'target': f'rules/{item.name}',
+                    'sync_direction': 'bidirectional'
+                })
+            elif item.is_file() and item.suffix in ['.mdc', '.md']:
+                rel_path = item.relative_to(cursor_dir)
+                mappings.append({
+                    'source': f'.cursor/{rel_path}',
+                    'target': f'rules/{item.name}',
+                    'sync_direction': 'bidirectional'
+                })
+    
+    return mappings
+
+
+def create_shared_repo_structure(shared_repo_path: Path):
+    """Create shared repository directory structure."""
+    shared_repo_path.mkdir(parents=True, exist_ok=True)
+    (shared_repo_path / 'commands').mkdir(parents=True, exist_ok=True)
+    (shared_repo_path / 'rules').mkdir(parents=True, exist_ok=True)
+    (shared_repo_path / 'scripts').mkdir(parents=True, exist_ok=True)
+
+
+def init_git_repo(shared_repo_path: Path) -> bool:
+    """Initialize Git repository in shared repo path."""
+    if is_git_repo(shared_repo_path):
+        print_info("Git repository already exists")
+        return True
+    
+    exit_code, stdout, stderr = run_git_command(['init'], shared_repo_path, check=False)
+    if exit_code != 0:
+        print_error(f"Failed to initialize Git repository: {stderr}")
+        return False
+    
+    print_success("Git repository initialized")
+    return True
+
+
+def load_config(shared_repo_path: Path) -> Dict:
+    """Load or create YAML configuration file."""
+    config_path = shared_repo_path / '.cursor-sync-config.yaml'
+    
+    if config_path.exists():
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+            if config is None:
+                config = {}
+            if 'projects' not in config:
+                config['projects'] = {}
+            return config
+        except Exception as e:
+            print_warning(f"Error reading config: {e}, creating new config")
+    
+    return {'projects': {}}
+
+
+def save_config(config: Dict, shared_repo_path: Path):
+    """Save YAML configuration file."""
+    config_path = shared_repo_path / '.cursor-sync-config.yaml'
+    
+    try:
+        with open(config_path, 'w', encoding='utf-8') as f:
+            yaml.dump(config, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+        print_success(f"Configuration saved to {config_path}")
+    except Exception as e:
+        print_error(f"Failed to save configuration: {e}")
+        sys.exit(1)
+
+
+def sync_existing_cursor_to_shared(project_config: Dict, shared_repo_path: Path, project_root: Path):
+    """Sync existing .cursor/ directory to shared repo (first time setup)."""
+    mappings = project_config.get('mappings', [])
+    
+    for mapping in mappings:
+        source_rel = mapping.get('source', '')
+        target_rel = mapping.get('target', '')
+        
+        source_path = project_root / source_rel
+        target_path = shared_repo_path / target_rel
+        
+        if not source_path.exists():
+            continue
+        
+        # Copy files from project to shared repo
+        if source_path.is_file():
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source_path, target_path)
+            print_info(f"Copied {source_rel} to shared repo")
+        elif source_path.is_dir():
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            if target_path.exists():
+                shutil.rmtree(target_path)
+            shutil.copytree(source_path, target_path)
+            print_info(f"Copied {source_rel}/ to shared repo")
+
+
+def sync_shared_to_cursor(project_config: Dict, shared_repo_path: Path, project_root: Path):
+    """Sync shared repo to .cursor/ directory (if shared repo has content)."""
+    mappings = project_config.get('mappings', [])
+    
+    for mapping in mappings:
+        source_rel = mapping.get('source', '')
+        target_rel = mapping.get('target', '')
+        
+        source_path = project_root / source_rel
+        target_path = shared_repo_path / target_rel
+        
+        if not target_path.exists():
+            continue
+        
+        # Copy files from shared repo to project
+        if target_path.is_file():
+            source_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(target_path, source_path)
+            print_info(f"Copied {target_rel} from shared repo to {source_rel}")
+        elif target_path.is_dir():
+            source_path.parent.mkdir(parents=True, exist_ok=True)
+            if source_path.exists():
+                if source_path.is_file():
+                    source_path.unlink()
+                else:
+                    shutil.rmtree(source_path)
+            shutil.copytree(target_path, source_path)
+            print_info(f"Copied {target_rel}/ from shared repo to {source_rel}/")
+
+
+def main():
+    """Main entry point."""
+    parser = argparse.ArgumentParser(
+        description='Set up Cursor rules sync for a project'
+    )
+    parser.add_argument(
+        '--project-name',
+        help='Override detected project name'
+    )
+    parser.add_argument(
+        '--init-git',
+        action='store_true',
+        help='Initialize Git repository in shared repo'
+    )
+    parser.add_argument(
+        '--shared-repo-path',
+        help='Override shared repo path (default: ___shared/.cursor-private-git)'
+    )
+    
+    args = parser.parse_args()
+    
+    # Detect project name
+    project_name = args.project_name or detect_project_name()
+    
+    print_colored(f"\n{'='*60}", Colors.CYAN)
+    print_colored(f"Cursor Rules Sync Setup - {project_name}", Colors.BOLD)
+    print_colored(f"{'='*60}\n", Colors.CYAN)
+    
+    # Find or create shared repo path
+    if args.shared_repo_path:
+        shared_repo_path = Path(args.shared_repo_path).resolve()
+    else:
+        project_root = Path.cwd()
+        shared_repo_path = project_root / '___shared' / '.cursor-private-git'
+    
+    print_info(f"Shared repository path: {shared_repo_path}")
+    
+    # Create shared repo structure
+    create_shared_repo_structure(shared_repo_path)
+    print_success("Shared repository structure created")
+    
+    # Initialize Git if requested
+    if args.init_git:
+        if not init_git_repo(shared_repo_path):
+            sys.exit(1)
+    
+    # Load existing config
+    config = load_config(shared_repo_path)
+    
+    # Check if project already exists in config
+    project_root = Path.cwd()
+    if project_name in config.get('projects', {}):
+        print_warning(f"Project '{project_name}' already exists in configuration")
+        response = input("Update existing configuration? (y/N): ").strip().lower()
+        if response != 'y':
+            print_info("Setup cancelled")
+            sys.exit(0)
+    
+    # Find .cursor directories
+    print_info("Scanning for .cursor directories...")
+    mappings = find_cursor_directories(project_root)
+    
+    if not mappings:
+        print_warning("No .cursor directories found")
+        print_info("Creating default mappings...")
+        mappings = [
+            {
+                'source': '.cursor/commands',
+                'target': 'commands',
+                'sync_direction': 'bidirectional'
+            },
+            {
+                'source': '.cursor/rules',
+                'target': 'rules',
+                'sync_direction': 'bidirectional'
+            }
+        ]
+    else:
+        print_success(f"Found {len(mappings)} mapping(s)")
+    
+    # Create project configuration
+    project_config = {
+        'mappings': mappings,
+        'sync_mode': 'manual',
+        'conflict_resolution': 'prompt',
+        'git_remote': 'origin',
+        'project_root': '.'
+    }
+    
+    # Update config
+    if 'projects' not in config:
+        config['projects'] = {}
+    config['projects'][project_name] = project_config
+    
+    # Save config
+    save_config(config, shared_repo_path)
+    
+    # Determine sync direction
+    cursor_exists = (project_root / '.cursor').exists()
+    shared_has_content = any(
+        (shared_repo_path / 'commands').exists() and list((shared_repo_path / 'commands').iterdir()) or
+        (shared_repo_path / 'rules').exists() and list((shared_repo_path / 'rules').iterdir())
+    )
+    
+    if cursor_exists and not shared_has_content:
+        # First time: sync .cursor/ to shared repo
+        print_info("Syncing existing .cursor/ to shared repository...")
+        sync_existing_cursor_to_shared(project_config, shared_repo_path, project_root)
+        
+        # Commit initial files if Git repo exists
+        if is_git_repo(shared_repo_path):
+            exit_code, stdout, stderr = run_git_command(['add', '.'], shared_repo_path, check=False)
+            if exit_code == 0:
+                run_git_command(
+                    ['commit', '-m', f'Initial sync from {project_name}'],
+                    shared_repo_path,
+                    check=False
+                )
+                print_success("Initial files committed to shared repository")
+    elif shared_has_content and not cursor_exists:
+        # Shared repo has content: sync to .cursor/
+        print_info("Syncing shared repository to .cursor/...")
+        sync_shared_to_cursor(project_config, shared_repo_path, project_root)
+    elif cursor_exists and shared_has_content:
+        # Both exist: ask user
+        print_warning("Both .cursor/ and shared repo have content")
+        response = input("Sync .cursor/ to shared repo (s) or shared repo to .cursor/ (c)? [s/c]: ").strip().lower()
+        if response == 'c':
+            sync_shared_to_cursor(project_config, shared_repo_path, project_root)
+        else:
+            sync_existing_cursor_to_shared(project_config, shared_repo_path, project_root)
+    
+    print_colored(f"\n{'='*60}", Colors.CYAN)
+    print_success("Setup completed successfully!")
+    print_colored(f"{'='*60}\n", Colors.CYAN)
+    print_info("Next steps:")
+    print_info("1. Review the configuration in ___shared/.cursor-private-git/.cursor-sync-config.yaml")
+    print_info("2. Run 'sync-cursor-rules' to sync changes")
+    print_info("3. Run 'check-cursor-rules-updates' to check for updates")
+
+
+if __name__ == '__main__':
+    main()
+
+
+
+

@@ -12,6 +12,9 @@ dependencies = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+# Hatchling will auto-discover packages in the directory containing pyproject.toml
+# Since pyproject.toml is in bootstraps/git_py/ and that's where __init__.py is,
+# hatchling will correctly package it as 'git_py'
 [tool.hatch.build.targets.wheel]
 packages = ["git_py"]
 

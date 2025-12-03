@@ -21,19 +21,24 @@ if sys.platform == "win32":
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
         sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
-# Handle both package import and direct execution
-if __name__ == "__main__":
-    # When run directly, add parent directory to path
-    import os
-    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if parent_dir not in sys.path:
-        sys.path.insert(0, parent_dir)
-    from git_py.core.checks import is_windows
-    from git_py.commands import cmd_status, cmd_auth, cmd_init
-else:
-    # When imported as package, use relative imports
-    from .core.checks import is_windows
-    from .commands import cmd_status, cmd_auth, cmd_init
+# Portable CLI tool - works when copied into any project
+# The directory should be named 'git_py' for this to work
+import os
+
+# Get the directory containing this script (git_py/)
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+# Get the parent directory (so git_py becomes importable as a package)
+_parent_dir = os.path.dirname(_script_dir)
+
+# Add parent directory to sys.path so 'git_py' package can be imported
+# This allows relative imports (from ..core) to work in submodules
+if _parent_dir not in sys.path:
+    sys.path.insert(0, _parent_dir)
+
+# Import using the git_py package name
+# Note: Directory must be named 'git_py' for imports to work
+from git_py.core.checks import is_windows
+from git_py.commands import cmd_status, cmd_auth, cmd_init
 
 
 def print_template():

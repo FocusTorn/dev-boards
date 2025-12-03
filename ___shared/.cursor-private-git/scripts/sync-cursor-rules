@@ -1,0 +1,542 @@
+#!/usr/bin/env python3
+"""
+Cursor Rules Shared Repository Sync Script
+Syncs Cursor rules between project .cursor/ directories and shared repository.
+
+Cross-platform (Windows/Linux/Debian/macOS).
+Usage:
+    python sync-cursor-rules [--dry-run] [--direction=from|to|both]
+    ./sync-cursor-rules [--dry-run] [--direction=from|to|both]
+"""
+
+import sys
+import os
+import subprocess
+import argparse
+import yaml
+import shutil
+from pathlib import Path
+from typing import Dict, List, Tuple, Optional
+from datetime import datetime
+
+# Fix Windows console encoding for Unicode characters
+if sys.platform == "win32":
+    import io
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    else:
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
+
+class Colors:
+    """ANSI color codes for terminal output."""
+    RESET = '\033[0m'
+    BOLD = '\033[1m'
+    RED = '\033[31m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    BLUE = '\033[34m'
+    CYAN = '\033[36m'
+    DIM = '\033[2m'
+
+
+def print_colored(message: str, color: str = Colors.RESET):
+    """Print colored message."""
+    print(f"{color}{message}{Colors.RESET}")
+
+
+def print_error(message: str):
+    """Print error message."""
+    print_colored(f"✗ {message}", Colors.RED)
+
+
+def print_success(message: str):
+    """Print success message."""
+    print_colored(f"✓ {message}", Colors.GREEN)
+
+
+def print_warning(message: str):
+    """Print warning message."""
+    print_colored(f"⚠ {message}", Colors.YELLOW)
+
+
+def print_info(message: str):
+    """Print info message."""
+    print_colored(f"ℹ {message}", Colors.CYAN)
+
+
+def run_git_command(cmd: List[str], cwd: Path, check: bool = True) -> Tuple[int, str, str]:
+    """Run a Git command and return exit code, stdout, stderr."""
+    try:
+        result = subprocess.run(
+            ['git'] + cmd,
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            check=check
+        )
+        return result.returncode, result.stdout.strip(), result.stderr.strip()
+    except subprocess.CalledProcessError as e:
+        return e.returncode, e.stdout.strip(), e.stderr.strip()
+    except FileNotFoundError:
+        print_error("Git is not installed or not in PATH")
+        sys.exit(1)
+
+
+def is_git_repo(path: Path) -> bool:
+    """Check if a path is a Git repository."""
+    return (path / '.git').exists() or (path / '.git').is_file()
+
+
+def detect_project_name(shared_repo_path: Path) -> Optional[str]:
+    """Detect project name from current directory."""
+    # Try to find project root (look for common markers)
+    current = Path.cwd()
+    markers = ['.git', 'pyproject.toml', 'package.json', 'Cargo.toml']
+    
+    project_root = None
+    for marker in markers:
+        test_path = current
+        while test_path != test_path.parent:
+            if (test_path / marker).exists():
+                project_root = test_path
+                break
+            test_path = test_path.parent
+    
+    if project_root:
+        return project_root.name
+    
+    # Fallback to current directory name
+    return Path.cwd().name
+
+
+def load_config(shared_repo_path: Path) -> Dict:
+    """Load YAML configuration file."""
+    config_path = shared_repo_path / '.cursor-sync-config.yaml'
+    
+    if not config_path.exists():
+        print_error(f"Configuration file not found: {config_path}")
+        print_info("Run setup-cursor-sync to create configuration")
+        sys.exit(1)
+    
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+        return config
+    except yaml.YAMLError as e:
+        print_error(f"Error parsing YAML configuration: {e}")
+        sys.exit(1)
+    except Exception as e:
+        print_error(f"Error reading configuration: {e}")
+        sys.exit(1)
+
+
+def get_project_config(config: Dict, project_name: str) -> Optional[Dict]:
+    """Get configuration for a specific project."""
+    projects = config.get('projects', {})
+    return projects.get(project_name)
+
+
+def check_shared_repo_status(shared_repo_path: Path, remote: str = 'origin') -> Tuple[bool, int, List[str]]:
+    """Check if shared repo has updates from remote."""
+    if not is_git_repo(shared_repo_path):
+        return False, 0, []
+    
+    # Fetch latest changes
+    exit_code, stdout, stderr = run_git_command(['fetch', remote], shared_repo_path, check=False)
+    if exit_code != 0:
+        print_warning(f"Failed to fetch from remote: {stderr}")
+        return False, 0, []
+    
+    # Check if local is behind remote
+    exit_code, stdout, stderr = run_git_command(
+        ['rev-list', '--count', f'HEAD..{remote}/HEAD'],
+        shared_repo_path,
+        check=False
+    )
+    
+    if exit_code != 0:
+        # Remote might not exist or branch might not be set up
+        return False, 0, []
+    
+    commits_behind = int(stdout) if stdout else 0
+    
+    # Get list of changed files
+    changed_files = []
+    if commits_behind > 0:
+        exit_code, stdout, stderr = run_git_command(
+            ['diff', '--name-only', f'HEAD..{remote}/HEAD'],
+            shared_repo_path,
+            check=False
+        )
+        if exit_code == 0 and stdout:
+            changed_files = stdout.split('\n')
+    
+    return commits_behind > 0, commits_behind, changed_files
+
+
+def pull_shared_repo(shared_repo_path: Path, remote: str = 'origin') -> Tuple[bool, List[str]]:
+    """Pull changes from shared repo."""
+    if not is_git_repo(shared_repo_path):
+        print_error(f"Not a Git repository: {shared_repo_path}")
+        return False, []
+    
+    # Pull changes
+    exit_code, stdout, stderr = run_git_command(['pull', remote, 'HEAD'], shared_repo_path, check=False)
+    
+    if exit_code != 0:
+        if 'CONFLICT' in stderr or 'conflict' in stderr.lower():
+            print_warning("Merge conflicts detected in shared repo")
+            return False, []
+        print_error(f"Failed to pull changes: {stderr}")
+        return False, []
+    
+    # Get list of changed files
+    exit_code, stdout, stderr = run_git_command(
+        ['diff', '--name-only', 'HEAD@{1}', 'HEAD'],
+        shared_repo_path,
+        check=False
+    )
+    
+    changed_files = []
+    if exit_code == 0 and stdout:
+        changed_files = stdout.split('\n')
+    
+    return True, changed_files
+
+
+def sync_from_shared(project_config: Dict, shared_repo_path: Path, project_root: Path, dry_run: bool = False) -> List[str]:
+    """Sync changes from shared repo to project .cursor/ directories."""
+    synced_files = []
+    mappings = project_config.get('mappings', [])
+    
+    for mapping in mappings:
+        source_rel = mapping.get('source', '')
+        target_rel = mapping.get('target', '')
+        sync_dir = mapping.get('sync_direction', 'bidirectional')
+        
+        if sync_dir not in ['bidirectional', 'from_shared']:
+            continue
+        
+        source_path = project_root / source_rel
+        target_path = shared_repo_path / target_rel
+        
+        if not target_path.exists():
+            continue
+        
+        # Create source directory if it doesn't exist
+        if source_path.is_dir() or not source_path.exists():
+            if not dry_run:
+                source_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Copy files from shared repo to project
+        if target_path.is_file():
+            if not dry_run:
+                shutil.copy2(target_path, source_path)
+            synced_files.append(str(source_rel))
+        elif target_path.is_dir():
+            if not dry_run:
+                if source_path.exists() and source_path.is_file():
+                    source_path.unlink()
+                source_path.mkdir(parents=True, exist_ok=True)
+                
+                # Copy all files from target to source
+                for item in target_path.rglob('*'):
+                    if item.is_file():
+                        rel_path = item.relative_to(target_path)
+                        dest_path = source_path / rel_path
+                        dest_path.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(item, dest_path)
+                        synced_files.append(str(source_rel / rel_path))
+            else:
+                # Dry run: just list files
+                for item in target_path.rglob('*'):
+                    if item.is_file():
+                        rel_path = item.relative_to(target_path)
+                        synced_files.append(str(source_rel / rel_path))
+    
+    return synced_files
+
+
+def sync_to_shared(project_config: Dict, shared_repo_path: Path, project_root: Path, dry_run: bool = False) -> List[str]:
+    """Sync changes from project .cursor/ directories to shared repo."""
+    synced_files = []
+    mappings = project_config.get('mappings', [])
+    
+    for mapping in mappings:
+        source_rel = mapping.get('source', '')
+        target_rel = mapping.get('target', '')
+        sync_dir = mapping.get('sync_direction', 'bidirectional')
+        
+        if sync_dir not in ['bidirectional', 'to_shared']:
+            continue
+        
+        source_path = project_root / source_rel
+        target_path = shared_repo_path / target_rel
+        
+        if not source_path.exists():
+            continue
+        
+        # Create target directory if it doesn't exist
+        if target_path.is_dir() or not target_path.exists():
+            if not dry_run:
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Copy files from project to shared repo
+        if source_path.is_file():
+            if not dry_run:
+                shutil.copy2(source_path, target_path)
+            synced_files.append(str(target_rel))
+        elif source_path.is_dir():
+            if not dry_run:
+                if target_path.exists() and target_path.is_file():
+                    target_path.unlink()
+                target_path.mkdir(parents=True, exist_ok=True)
+                
+                # Copy all files from source to target
+                for item in source_path.rglob('*'):
+                    if item.is_file():
+                        rel_path = item.relative_to(source_path)
+                        dest_path = target_path / rel_path
+                        dest_path.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(item, dest_path)
+                        synced_files.append(str(target_rel / rel_path))
+            else:
+                # Dry run: just list files
+                for item in source_path.rglob('*'):
+                    if item.is_file():
+                        rel_path = item.relative_to(source_path)
+                        synced_files.append(str(target_rel / rel_path))
+    
+    return synced_files
+
+
+def commit_to_shared_repo(shared_repo_path: Path, files: List[str], message: str, dry_run: bool = False) -> bool:
+    """Commit changes to shared repo."""
+    if not is_git_repo(shared_repo_path):
+        print_error(f"Not a Git repository: {shared_repo_path}")
+        return False
+    
+    if not files:
+        return True
+    
+    # Stage files
+    for file in files:
+        file_path = shared_repo_path / file
+        if file_path.exists():
+            exit_code, stdout, stderr = run_git_command(['add', file], shared_repo_path, check=False)
+            if exit_code != 0:
+                print_warning(f"Failed to stage {file}: {stderr}")
+    
+    # Commit
+    if not dry_run:
+        exit_code, stdout, stderr = run_git_command(
+            ['commit', '-m', message],
+            shared_repo_path,
+            check=False
+        )
+        if exit_code != 0:
+            if 'nothing to commit' in stderr.lower():
+                return True
+            print_error(f"Failed to commit: {stderr}")
+            return False
+    
+    return True
+
+
+def push_to_remote(shared_repo_path: Path, remote: str = 'origin', dry_run: bool = False) -> bool:
+    """Push changes to remote."""
+    if not is_git_repo(shared_repo_path):
+        return False
+    
+    if dry_run:
+        print_info("Would push to remote")
+        return True
+    
+    exit_code, stdout, stderr = run_git_command(['push', remote], shared_repo_path, check=False)
+    if exit_code != 0:
+        print_warning(f"Failed to push to remote: {stderr}")
+        return False
+    
+    return True
+
+
+def detect_conflicts(source_path: Path, target_path: Path) -> bool:
+    """Detect if there are conflicts between source and target."""
+    if not source_path.exists() or not target_path.exists():
+        return False
+    
+    if source_path.is_file() and target_path.is_file():
+        # Simple check: compare file modification times and sizes
+        # More sophisticated diff could be added
+        return source_path.stat().st_mtime != target_path.stat().st_mtime
+    
+    return False
+
+
+def resolve_conflict(source_path: Path, target_path: Path, strategy: str, dry_run: bool = False) -> bool:
+    """Resolve conflict between source and target based on strategy."""
+    if strategy == 'source_wins':
+        if not dry_run:
+            shutil.copy2(source_path, target_path)
+        return True
+    elif strategy == 'target_wins':
+        if not dry_run:
+            shutil.copy2(target_path, source_path)
+        return True
+    elif strategy == 'prompt':
+        print_warning(f"Conflict detected: {source_path} vs {target_path}")
+        print_info("Manual resolution required")
+        return False
+    elif strategy == 'merge':
+        # Simple merge: prefer newer file
+        if source_path.stat().st_mtime > target_path.stat().st_mtime:
+            if not dry_run:
+                shutil.copy2(source_path, target_path)
+        else:
+            if not dry_run:
+                shutil.copy2(target_path, source_path)
+        return True
+    
+    return False
+
+
+def display_changelog(files: List[str], direction: str):
+    """Display changelog of synced files."""
+    if not files:
+        print_info("No files changed")
+        return
+    
+    print_colored(f"\n{'='*60}", Colors.CYAN)
+    print_colored(f"Synced {len(files)} file(s) ({direction})", Colors.BOLD)
+    print_colored(f"{'='*60}", Colors.CYAN)
+    
+    for file in files:
+        print_colored(f"  • {file}", Colors.GREEN)
+    
+    print()
+
+
+def main():
+    """Main entry point."""
+    parser = argparse.ArgumentParser(
+        description='Sync Cursor rules between project and shared repository'
+    )
+    parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='Show what would be synced without making changes'
+    )
+    parser.add_argument(
+        '--direction',
+        choices=['from', 'to', 'both'],
+        default='both',
+        help='Sync direction: from (shared to project), to (project to shared), or both'
+    )
+    parser.add_argument(
+        '--project-name',
+        help='Override detected project name'
+    )
+    
+    args = parser.parse_args()
+    
+    # Find shared repo path
+    current = Path.cwd()
+    shared_repo_path = None
+    
+    # Look for ___shared/.cursor-private-git
+    test_path = current
+    while test_path != test_path.parent:
+        candidate = test_path / '___shared' / '.cursor-private-git'
+        if candidate.exists():
+            shared_repo_path = candidate
+            break
+        test_path = test_path.parent
+    
+    if not shared_repo_path:
+        print_error("Could not find shared repository (___shared/.cursor-private-git)")
+        print_info("Run setup-cursor-sync to set up the shared repository")
+        sys.exit(1)
+    
+    # Load configuration
+    config = load_config(shared_repo_path)
+    
+    # Detect project name
+    project_name = args.project_name or detect_project_name(shared_repo_path)
+    if not project_name:
+        print_error("Could not detect project name")
+        sys.exit(1)
+    
+    # Get project configuration
+    project_config = get_project_config(config, project_name)
+    if not project_config:
+        print_error(f"Project '{project_name}' not found in configuration")
+        print_info(f"Available projects: {', '.join(config.get('projects', {}).keys())}")
+        sys.exit(1)
+    
+    project_root = Path.cwd()
+    if 'project_root' in project_config:
+        project_root = shared_repo_path.parent.parent / project_config['project_root']
+    
+    remote = project_config.get('git_remote', 'origin')
+    
+    print_colored(f"\n{'='*60}", Colors.CYAN)
+    print_colored(f"Cursor Rules Sync - {project_name}", Colors.BOLD)
+    if args.dry_run:
+        print_colored("DRY RUN MODE - No changes will be made", Colors.YELLOW)
+    print_colored(f"{'='*60}\n", Colors.CYAN)
+    
+    # Sync from shared repo to project
+    if args.direction in ['from', 'both']:
+        print_info("Checking for updates in shared repository...")
+        has_updates, commits_behind, changed_files = check_shared_repo_status(shared_repo_path, remote)
+        
+        if has_updates:
+            print_info(f"Found {commits_behind} commit(s) behind remote")
+            if changed_files:
+                print_info(f"Changed files: {', '.join(changed_files[:5])}")
+                if len(changed_files) > 5:
+                    print_info(f"... and {len(changed_files) - 5} more")
+            
+            if not args.dry_run:
+                success, pulled_files = pull_shared_repo(shared_repo_path, remote)
+                if not success:
+                    print_error("Failed to pull changes from shared repository")
+                    sys.exit(1)
+            
+            print_info("Syncing from shared repository to project...")
+            synced_files = sync_from_shared(project_config, shared_repo_path, project_root, args.dry_run)
+            display_changelog(synced_files, "from shared repo")
+        else:
+            print_info("Shared repository is up to date")
+    
+    # Sync from project to shared repo
+    if args.direction in ['to', 'both']:
+        print_info("Syncing from project to shared repository...")
+        synced_files = sync_to_shared(project_config, shared_repo_path, project_root, args.dry_run)
+        
+        if synced_files:
+            display_changelog(synced_files, "to shared repo")
+            
+            if not args.dry_run:
+                commit_message = f"Sync cursor rules from {project_name} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                if commit_to_shared_repo(shared_repo_path, synced_files, commit_message, args.dry_run):
+                    print_success("Changes committed to shared repository")
+                    
+                    # Optionally push to remote
+                    if push_to_remote(shared_repo_path, remote, args.dry_run):
+                        print_success("Changes pushed to remote")
+        else:
+            print_info("No changes to sync to shared repository")
+    
+    print_success("Sync completed")
+
+
+if __name__ == '__main__':
+    main()
+
+
+
+

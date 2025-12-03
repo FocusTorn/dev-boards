@@ -21,7 +21,10 @@ try:
     from prompt_toolkit.key_binding import KeyBindings
     from prompt_toolkit.keys import Keys
     from prompt_toolkit.application import Application
-    from prompt_toolkit.layout import Layout, HSplit, VSplit
+    from prompt_toolkit.layout import Layout, HSplit, VSplit, Window, ConditionalContainer
+    from prompt_toolkit.layout.margins import Margin
+    from prompt_toolkit.layout.controls import FormattedTextControl
+    from prompt_toolkit.filters import IsDone
     from prompt_toolkit.widgets import RadioList
     from prompt_toolkit.formatted_text import FormattedText
     HAS_PROMPT_TOOLKIT = True
@@ -33,28 +36,62 @@ except ImportError:
     KeyBindings = None
     Application = None
     Layout = None
+    ConditionalContainer = None
+    IsDone = None
     RadioList = None
 
-# ANSI color codes
-QMARK_COLOR = "\x1B[38;5;205m\x1B[1m"  # Pink bold
-QUESTION_COLOR = "\x1B[37m\x1B[1m"  # Bold white
-ANSWER_COLOR = "\x1B[38;5;61m\x1B[1m"  # Blue bold
-TEXT_COLOR = "\x1B[38;5;102m"  # Grey
-DIM_GREY = "\x1B[2m\x1B[38;5;102m"  # Dim grey
-POINTER_COLOR = "\x1B[38;5;205m\x1B[1m"  # Pink bold
-HIGHLIGHT_COLOR = "\x1B[38;5;205m\x1B[1m"  # Pink bold
-RESET_COLOR = "\x1B[0m"
+# Helper function to convert hex color to ANSI 256-color code
+def _hex_to_ansi256(hex_color: str) -> str:
+    """Convert hex color (#RRGGBB) to ANSI 256-color escape code."""
+    # Remove # if present
+    hex_color = hex_color.lstrip('#')
+    
+    # Parse RGB
+    r = int(hex_color[0:2], 16)
+    g = int(hex_color[2:4], 16)
+    b = int(hex_color[4:6], 16)
+    
+    # Convert RGB to ANSI 256-color (6x6x6 cube + 16 base colors)
+    # Formula: 16 + 36 * r + 6 * g + b, where r, g, b are in [0,5]
+    # Map [0,255] to [0,5]
+    r_idx = int((r / 255.0) * 5)
+    g_idx = int((g / 255.0) * 5)
+    b_idx = int((b / 255.0) * 5)
+    
+    ansi_code = 16 + 36 * r_idx + 6 * g_idx + b_idx
+    return f"\x1B[38;5;{ansi_code}m"
 
+# prompt_toolkit style dictionary - shared by all prompts
+def _get_prompt_style() -> dict:
+    """Get the shared prompt_toolkit style dictionary for all prompts."""
+    if PTStyle is None:
+        return {}
+    return {
+        'qmark': 'fg:#ff5faf bold',      # Pink bold (matches QMARK_COLOR)
+        'question': 'fg:#ffffff bold',   # Bold white (matches QUESTION_COLOR)
+        
+        # 'answer': 'fg:#33658A bold',     # Blue (matches ANSWER_COLOR)
+        'answer': 'fg:#FF0000 bold',     # Blue (matches ANSWER_COLOR)
+        
+        'pointer': 'fg:#ff5faf bold',    # Pink bold pointer
+        'highlighted': 'fg:#ff5faf bold', # Pink bold selected text
+        'text': 'fg:#666666',            # Grey unselected text
+    }
+
+PROMPT_STYLE = _get_prompt_style()
 
 
 def _format_prompt_text(indent: str, question: str) -> str:
-    """Format the prompt text with colors."""
-    return f"{indent}{QMARK_COLOR}? {RESET_COLOR}{QUESTION_COLOR}{question}{RESET_COLOR}"
+    """Format the prompt text with colors (fallback when prompt_toolkit not available)."""
+    # Fallback ANSI codes (only used if prompt_toolkit unavailable)
+    qmark_color = "\x1B[38;5;205m\x1B[1m"  # Pink bold
+    question_color = "\x1B[37m\x1B[1m"  # Bold white
+    return f"{indent}{qmark_color}? {RESET_COLOR}{question_color}{question}{RESET_COLOR}"
 
 
 def text(question: str, default: str = "", indent: str = "", style=None) -> Optional[str]:
     """
-    Text input prompt.
+    Text input prompt using prompt_toolkit.
     
     Args:
         question: Question text
@@ -66,36 +103,30 @@ def text(question: str, default: str = "", indent: str = "", style=None) -> Opti
         str or None if cancelled
     """
     if not HAS_PROMPT_TOOLKIT:
-        # Fallback - use ANSI codes directly
-        prompt_text = _format_prompt_text(indent, question)
-        if default:
-            prompt_text += f" [{default}]"
-        try:
-            response = input(f"{prompt_text}: ").strip()
-            return response if response else default
-        except (EOFError, KeyboardInterrupt):
-            return None
+        raise ImportError("prompt_toolkit is required for text prompt")
     
-    # Use prompt_toolkit's FormattedText for proper styling
+    # Calculate region indent for the prompt
+    region_base_indent = get_region_indent()
+    
+    # Build the prompt message with FormattedText
+    formatted_prompt = FormattedText([
+        ('class:qmark', f"{region_base_indent}? "),
+        ('class:question', f"{question}: "),
+    ])
+    
+    # Use shared prompt style, add input-specific styles
+    # Input text should use the same color as answer (from PROMPT_STYLE)
+    answer_color = PROMPT_STYLE.get('answer', 'fg:#33658A bold')
+    style_dict = PROMPT_STYLE.copy()
+    style_dict.update({
+        'input': answer_color,          # Use answer color for input text
+        '': answer_color,              # Use answer color for default text
+    })
+    custom_style = PTStyle.from_dict(style_dict)
+    
+    # Use prompt_toolkit's prompt with formatted text
+    # The default parameter will pre-fill the input field
     try:
-        # Build the prompt message with FormattedText (no default in brackets)
-        formatted_prompt = FormattedText([
-            ('class:qmark', f"{indent}? "),
-            ('class:question', question),
-            ('', ": "),
-        ])
-        
-        # Create custom style matching questionary's look
-        # Blue for input/answer text (fg:#33658A is the blue from questionary)
-        custom_style = PTStyle.from_dict({
-            'qmark': 'fg:#ff5faf bold',      # Pink bold
-            'question': 'fg:#ffffff bold',  # White bold
-            'input': 'fg:#33658A bold',     # Blue bold for input text
-            '': 'fg:#33658A bold',          # Blue bold for default text
-        })
-        
-        # Use prompt_toolkit's prompt with formatted text
-        # The default parameter will pre-fill the input field
         result = pt_prompt_func(
             formatted_prompt,
             default=default,
@@ -104,19 +135,9 @@ def text(question: str, default: str = "", indent: str = "", style=None) -> Opti
         return result.strip() if result else default
     except (EOFError, KeyboardInterrupt):
         return None
-    except Exception as e:
-        # Fallback to simple input if prompt_toolkit fails
-        prompt_text = _format_prompt_text(indent, question)
-        if default:
-            prompt_text += f" [{default}]"
-        try:
-            response = input(f"{prompt_text}: ").strip()
-            return response if response else default
-        except (EOFError, KeyboardInterrupt):
-            return None
 
 
-def select(question: str, choices: List[str], indent: str = "", pointer: str = " »", style=None) -> Optional[str]:
+def select(question: str, choices: List[str], indent: str = "", pointer: str = " »", style=None, warning_mode: bool = False) -> Optional[str]:
     """
     Select prompt with dropdown menu using arrow keys.
     
@@ -130,210 +151,145 @@ def select(question: str, choices: List[str], indent: str = "", pointer: str = "
     Returns:
         Selected choice string or None if cancelled
     """
-    prompt_text = _format_prompt_text(indent, question)
-    
     if not HAS_PROMPT_TOOLKIT or RadioList is None or Application is None or Layout is None:
-        # Fallback: simple numbered menu
-        print(prompt_text)
-        for i, choice in enumerate(choices, 1):
-            print(f"  {i}. {choice}")
-        
-        while True:
-            try:
-                response = input(f"Enter choice (1-{len(choices)}): ").strip()
-                choice_num = int(response)
-                if 1 <= choice_num <= len(choices):
-                    return choices[choice_num - 1]
-                print(f"Invalid choice. Please enter a number between 1 and {len(choices)}")
-            except ValueError:
-                print("Invalid input. Please enter a number.")
-            except (EOFError, KeyboardInterrupt):
-                return None
+        raise ImportError("prompt_toolkit is required for select prompt")
     
-    # Use prompt_toolkit with custom display (matching questionary style)
-    try:
-        from prompt_toolkit.layout import Window
-        from prompt_toolkit.formatted_text import FormattedText
+    if ConditionalContainer is None or IsDone is None:
+        raise ImportError("Required prompt_toolkit components not available")
+    
+    # Calculate region indent for the prompt
+    region_base_indent = get_region_indent()
+    
+    # Track selected choice and answered state
+    selected_choice = [None]  # Use list to allow modification in nested functions
+    is_answered = [False]
+    current_index = [0]
+    
+    # Extract pointer character (remove leading space if present)
+    pointer_char = pointer.lstrip() if pointer.startswith(' ') else pointer
+    
+    # Function to get prompt tokens (question + answer when answered)
+    def get_prompt_tokens():
+        tokens = []
+        if warning_mode:
+            # Warning mode: no question line - choices appear directly below warning
+            # Return empty FormattedText so no prompt line is shown
+            return FormattedText([])
+        else:
+            # Normal mode: pink qmark and white question
+            tokens.append(('class:qmark', f"{region_base_indent}? "))
+            if question:
+                tokens.append(('class:question', f"{question}"))
         
-        # Calculate dynamic indentation based on prompt message
-        # Region system handles base indentation (2 spaces), so we calculate relative to that
-        # 
-        # Layout:
-        #   ? Repository visibility:  (region adds 2 spaces, qmark "? " at columns 3-4)
-        #   » Public                    (region adds 2 spaces, pointer " »" at columns 3-4, space at 5, text at 6)
-        #     Private                   (region adds 2 spaces, then 2 more = 4 total, text at column 5)
-        #
-        # Wait, user wants unselected to align with selected text's first character
-        # Selected: "  » Public" - text starts at column 6 (after "  » ")
-        # Unselected: "    Private" - text starts at column 5 (after "    ")
-        # They don't align!
-        #
-        # User said: "then it would look for the actual option text and its first char is at col4"
-        # So selected text's first char should be at column 4
-        # And "all the unselected text would use that indent=4" (4 spaces total)
-        #
-        # If selected text is at column 4, and pointer " »" is 2 chars:
-        # - Region adds 2 spaces (columns 1-2)
-        # - Pointer " »" at columns 3-4
-        # - Space at column 5
-        # - Text at column 6
-        #
-        # That doesn't match column 4. Maybe no space after pointer?
-        # - Region adds 2 spaces (columns 1-2)
-        # - Pointer " »" at columns 3-4
-        # - Text at column 5
-        #
-        # Still not column 4. Maybe pointer is just "»" (1 char)?
-        # - Region adds 2 spaces (columns 1-2)
-        # - Pointer "»" at column 3
-        # - Space at column 4
-        # - Text at column 5
-        #
-        # Still not column 4. Let me re-read user's message...
-        # User shows: "  » Public" and "    Private"
-        # If "Public" starts at column 6 and "Private" starts at column 5, they don't align
-        #
-        # Actually, looking at the user's desired output again:
-        #   ? Repository visibility:
-        #   » Public
-        #     Private
-        #
-        # Both "Public" and "Private" seem to start at the same column visually
-        # Let me count: "  » Public" - if pointer is " »" (2 chars), then "Public" is at column 6
-        # "    Private" - 4 spaces, so "Private" is at column 5
-        #
-        # They're off by 1. Maybe user wants both at column 5?
-        # Then selected needs: region(2) + pointer(2) + space(1) = 5, but that's 5 chars, text at column 6
-        #
-        # Let me just implement: pointer aligns to qmark, add space, align unselected to selected text
-        # We'll adjust based on user feedback
+        if is_answered[0] and selected_choice[0] is not None:
+            # Show answer inline when answered
+            tokens.append(('class:answer', f" {selected_choice[0]}"))
         
-        # Pointer aligns to qmark position
-        # prompt_toolkit Application bypasses region system's stdout wrapper,
-        # so we need to manually add the region indent to match the prompt message
-        region_base_indent = get_region_indent()
-        pointer_indent = region_base_indent
+        return FormattedText(tokens)
+    
+    # Function to get choice tokens (menu display)
+    def get_choice_tokens():
+        """Generate formatted text for all choices with dynamic alignment."""
+        fragments = []
         
-        # Selected text's first character position:
-        # Region indent (e.g., 2 spaces) + pointer "»" (1 char) + space (1 char)
-        # Since prompt_toolkit bypasses region system, we need full indent: region + pointer + space
-        pointer_char = pointer.lstrip() if pointer.startswith(' ') else pointer
-        selected_text_start_pos = len(region_base_indent) + len(pointer_char) + 1  # pointer + space
+        # Calculate indentation for unselected choices
+        # Selected: region_indent + pointer + space
+        selected_text_start_pos = len(region_base_indent) + len(pointer_char) + 1
         unselected_indent = " " * selected_text_start_pos
         
-        current_index = [0]  # Use list to allow modification in nested function
-        
-        # Create key bindings for arrow keys
-        kb = KeyBindings()
-        
-        @kb.add(Keys.Up)
-        def move_up(event):
-            if current_index[0] > 0:
-                current_index[0] -= 1
-                event.app.invalidate()
-        
-        @kb.add(Keys.Down)
-        def move_down(event):
-            if current_index[0] < len(choices) - 1:
-                current_index[0] += 1
-                event.app.invalidate()
-        
-        @kb.add(Keys.Enter)
-        def select_choice(event):
-            event.app.exit(result=choices[current_index[0]])
-        
-        @kb.add('c-c')
-        def cancel(event):
-            event.app.exit(result=None)
-        
-        # Create a FormattedTextControl that displays the choices
-        from prompt_toolkit.layout.controls import FormattedTextControl
-        
-        def get_choice_text():
-            """Generate formatted text for all choices with dynamic alignment."""
-            fragments = []
-            # Extract just the » character from pointer (remove leading space if present)
-            # We want » to align with ? character
-            pointer_char = pointer.lstrip() if pointer.startswith(' ') else pointer
-            # pointer_char is now "»" (just the symbol)
-            
-            for i, choice in enumerate(choices):
-                if i == current_index[0]:
-                    # Selected: pink pointer + pink bold text
-                    # Pointer "»" aligns to qmark "?" position (both have same indent from region)
-                    # Add space after pointer before choice text
-                    fragments.append(('class:pointer', f"{pointer_indent}{pointer_char} "))
-                    fragments.append(('class:highlighted', choice))
-                else:
-                    # Not selected: grey text aligned to selected text's first character
-                    # Unselected indent already calculated to align with selected text
-                    fragments.append(('class:text', f"{unselected_indent}{choice}"))
-                if i < len(choices) - 1:
-                    fragments.append(('', '\n'))
-            return FormattedText(fragments)
-        
-        # Create control and window
-        choice_control = FormattedTextControl(get_choice_text)
-        choice_window = Window(
-            content=choice_control,
-            height=len(choices),
-        )
-        
-        layout = Layout(choice_window)
-        
-        # Create custom style
-        custom_style = PTStyle.from_dict({
-            'pointer': 'fg:#ff5faf bold',      # Pink bold pointer
-            'highlighted': 'fg:#ff5faf bold',  # Pink bold selected text
-            'text': 'fg:#666666',              # Grey unselected text
-        })
-        
-        # Create application
-        app = Application(
-            layout=layout,
-            style=custom_style,
-            key_bindings=kb,
-            full_screen=False,
-        )
-        
-        # Display prompt first - region system handles base indentation automatically
-        # Don't add indent to prompt text, region system adds it
-        # Qmark is always present in our prompts, so always show it
-        print(f"{QMARK_COLOR}? {RESET_COLOR}{QUESTION_COLOR}{question}{RESET_COLOR}")
-        
-        # Run the application
-        result = app.run()
-        
-        if result is not None:
-            return result
-        return None
-    except Exception as e:
-        # Fallback to simple menu if RadioList fails
-        prompt_text = _format_prompt_text(indent, question)
-        print(prompt_text)
-        for i, choice in enumerate(choices, 1):
-            print(f"  {i}. {choice}")
-        
-        while True:
-            try:
-                response = input(f"Enter choice (1-{len(choices)}): ").strip()
-                choice_num = int(response)
-                if 1 <= choice_num <= len(choices):
-                    return choices[choice_num - 1]
-                print(f"Invalid choice. Please enter a number between 1 and {len(choices)}")
-            except ValueError:
-                print("Invalid input. Please enter a number.")
-            except (EOFError, KeyboardInterrupt):
-                return None
+        for i, choice in enumerate(choices):
+            if i == current_index[0]:
+                # Selected: pink pointer + pink bold text
+                fragments.append(('class:pointer', f"{region_base_indent}{pointer_char} "))
+                fragments.append(('class:highlighted', choice))
+            else:
+                # Not selected: grey text aligned to selected text's first character
+                fragments.append(('class:text', f"{unselected_indent}{choice}"))
+            if i < len(choices) - 1:
+                fragments.append(('', '\n'))
+        return FormattedText(fragments)
+    
+    # Create FormattedTextControl for question line (read-only, no cursor)
+    prompt_control = FormattedTextControl(get_prompt_tokens, show_cursor=False)
+    
+    # Create FormattedTextControl for choices (like questionary's InquirerControl)
+    choice_control = FormattedTextControl(get_choice_tokens, show_cursor=False)
+    
+    # Create layout: question line + conditional menu (hidden when IsDone)
+    # If warning_mode, skip the question line entirely
+    if warning_mode:
+        # No question line - just show choices directly
+        layout = Layout(HSplit([
+            ConditionalContainer(
+                Window(choice_control, height=len(choices)),
+                filter=~IsDone()  # Hide menu when answered
+            )
+        ]))
+    else:
+        # Normal mode: question line + choices
+        # Use FormattedTextControl for question line (read-only, no cursor)
+        layout = Layout(HSplit([
+            Window(prompt_control, height=1),  # Question line (read-only)
+            ConditionalContainer(
+                Window(choice_control, height=len(choices)),
+                filter=~IsDone()  # Hide menu when answered
+            )
+        ]))
+    
+    # Use shared prompt style (standard styling for all prompts)
+    custom_style = PTStyle.from_dict(PROMPT_STYLE)
+    
+    # Create key bindings
+    kb = KeyBindings()
+    
+    @kb.add(Keys.Up)
+    def move_up(event):
+        if current_index[0] > 0:
+            current_index[0] -= 1
+            event.app.invalidate()
+    
+    @kb.add(Keys.Down)
+    def move_down(event):
+        if current_index[0] < len(choices) - 1:
+            current_index[0] += 1
+            event.app.invalidate()
+    
+    @kb.add(Keys.Enter)
+    def select_choice(event):
+        selected_choice[0] = choices[current_index[0]]
+        is_answered[0] = True
+        event.app.exit(result=selected_choice[0])
+    
+    @kb.add('c-c')
+    def cancel(event):
+        event.app.exit(result=None)
+    
+    # Create application
+    app = Application(
+        layout=layout,
+        style=custom_style,
+        key_bindings=kb,
+        full_screen=False,
+    )
+    
+    # Run the application - prompt_toolkit handles clearing automatically via IsDone filter!
+    # prompt_toolkit automatically adds a newline when the application exits
+    result = app.run()
+    
+    if result is not None:
+        # If warning_mode with no question, choices are cleared automatically by IsDone filter
+        # The answer will be shown inline if there's a question, otherwise it's just returned
+        return result
+    return None
 
 
 def confirm(question: str, default: bool = True, indent: str = "", style=None) -> Optional[bool]:
     """
-    Confirmation prompt (y/n).
+    Confirmation prompt (y/n) using prompt_toolkit.
     
     Format: {{qmark}} {{message}} [Y/n]? y
     - [Y/n] is in dim grey, default letter capitalized
-    - Default answer (y or n) is shown in blue after ?
+    - Default answer (y or n) is shown in answer color after ?
     - y submits True, n submits False, Enter submits default
     
     Args:
@@ -345,24 +301,95 @@ def confirm(question: str, default: bool = True, indent: str = "", style=None) -
     Returns:
         bool or None if cancelled
     """
+    if not HAS_PROMPT_TOOLKIT or PromptSession is None or Application is None:
+        raise ImportError("prompt_toolkit is required for confirm prompt")
+    
     default_choice = "y" if default else "n"
     default_text = "[Y/n]" if default else "[y/N]"
     
-    # Get region indent for final display (when using \r to overwrite)
-    # Initial print uses indent only - IndentedOutput wrapper adds region indent automatically
-    # But for \r overwrite, we need to manually include region indent since we're at column 0
+    # Calculate region indent for the prompt
     region_base_indent = get_region_indent()
     
-    # Format: {{qmark}} {{message}} [Y/n]? {{default_answer}}
-    # [Y/n] is dim grey, default answer is blue
-    # Use only indent parameter - IndentedOutput wrapper adds region indent automatically
-    prompt_text = (
-        f"{indent}{QMARK_COLOR}? {RESET_COLOR}"
-        f"{QUESTION_COLOR}{question} {RESET_COLOR}"
-        f"{DIM_GREY}{default_text}{RESET_COLOR}"
-        f"? {ANSWER_COLOR}{default_choice}{RESET_COLOR}"
+    # Track selected answer and answered state
+    selected_answer = [None]
+    is_answered = [False]
+    
+    # Function to get prompt tokens (question + answer when answered)
+    def get_prompt_tokens():
+        tokens = []
+        # Qmark and question
+        tokens.append(('class:qmark', f"{region_base_indent}? "))
+        tokens.append(('class:question', f"{question} "))
+        
+        if not is_answered[0]:
+            # Show [Y/n] indicator and default answer
+            tokens.append(('class:dim', default_text))
+            tokens.append(('class:question', "? "))
+            tokens.append(('class:answer', default_choice))
+        else:
+            # Show only selected answer (no [Y/n] indicator)
+            tokens.append(('class:question', "? "))
+            tokens.append(('class:answer', selected_answer[0] if selected_answer[0] else default_choice))
+        
+        return tokens
+    
+    # Create PromptSession for the question line
+    prompt_session = PromptSession(
+        get_prompt_tokens,
+        reserve_space_for_menu=0
     )
-    print(prompt_text, end='', flush=True)
+    
+    # Create layout with just the prompt
+    layout = Layout(prompt_session.layout.container)
+    
+    # Use shared prompt style, add dim style for [Y/n] indicator
+    style_dict = PROMPT_STYLE.copy()
+    style_dict.update({
+        'dim': 'fg:#666666',  # Dim grey for [Y/n] indicator
+    })
+    custom_style = PTStyle.from_dict(style_dict)
+    
+    # Create key bindings
+    kb = KeyBindings()
+    
+    @kb.add('y')
+    @kb.add('Y')
+    def select_yes(event):
+        selected_answer[0] = 'y'
+        is_answered[0] = True
+        event.app.exit(result=True)
+    
+    @kb.add('n')
+    @kb.add('N')
+    def select_no(event):
+        selected_answer[0] = 'n'
+        is_answered[0] = True
+        event.app.exit(result=False)
+    
+    @kb.add(Keys.Enter)
+    def submit_default(event):
+        is_answered[0] = True
+        event.app.exit(result=default)
+    
+    @kb.add('c-c')
+    def cancel(event):
+        event.app.exit(result=None)
+    
+    # Create application
+    app = Application(
+        layout=layout,
+        style=custom_style,
+        key_bindings=kb,
+        full_screen=False,
+    )
+    
+    # Run the application
+    # prompt_toolkit automatically adds a newline when the application exits
+    result = app.run()
+    
+    if result is not None:
+        return result
+    return None
     
     # Try Unix-style single character input first (works on Linux/Mac)
     try:

@@ -1,0 +1,51 @@
+{
+  "name": "cursor-rules-sync",
+  "displayName": "Cursor Rules Sync",
+  "description": "Sync Cursor rules between projects and shared repository",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cursorRulesSync.sync",
+        "title": "Sync Cursor Rules"
+      },
+      {
+        "command": "cursorRulesSync.check",
+        "title": "Check for Cursor Rules Updates"
+      }
+    ],
+    "menus": {
+      "scm/title": [
+        {
+          "command": "cursorRulesSync.sync",
+          "when": "scmProvider == git",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.60.0",
+    "@types/node": "^16.x",
+    "typescript": "^4.5.0"
+  }
+}
+
+
+
+

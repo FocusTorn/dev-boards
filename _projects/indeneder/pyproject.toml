@@ -1,0 +1,15 @@
+[project]
+name = "indeneder"
+version = "1.0.0"
+description = "Terminal output formatting with automatic indentation"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["indeneder"]
+

@@ -1,0 +1,44 @@
+# Cursor Rules Shared Repository Sync Configuration
+# This file defines how Cursor rules are synced between projects and the shared repository
+# Source controlled in the shared repository
+
+projects:
+  dev-boards:
+    mappings:
+      - source: ".cursor/commands"
+        target: "commands"
+        sync_direction: "bidirectional"
+      - source: ".cursor/rules/formatting"
+        target: "rules/formatting"
+        sync_direction: "bidirectional"
+      - source: ".cursor/rules/by-language/python"
+        target: "rules/by-language/python"
+        sync_direction: "bidirectional"
+      - source: ".cursor/rules/code-maintenance.mdc"
+        target: "rules/code-maintenance.mdc"
+        sync_direction: "bidirectional"
+      - source: ".cursor/rules/code-structure.mdc"
+        target: "rules/code-structure.mdc"
+        sync_direction: "bidirectional"
+      - source: ".cursor/rules/workspace.mdc"
+        target: "rules/workspace.mdc"
+        sync_direction: "bidirectional"
+    sync_mode: "manual"  # manual or auto
+    conflict_resolution: "prompt"  # prompt, source_wins, target_wins, merge
+    git_remote: "origin"  # Git remote name for shared repo
+    project_root: "."  # Relative path to project root from shared repo location
+
+# Add more projects below:
+# another-project:
+#   mappings:
+#     - source: ".cursor/rules/dev-boards"
+#       target: "rules/dev-boards"
+#       sync_direction: "bidirectional"
+#   sync_mode: "manual"
+#   conflict_resolution: "prompt"
+#   git_remote: "origin"
+#   project_root: ".."
+
+
+
+

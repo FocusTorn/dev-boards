@@ -8,7 +8,7 @@ import time
 from ..core.terminal import write_header, COLOR_GREEN, COLOR_YELLOW, COLOR_RED, COLOR_RESET, BOLD_CHECK
 from ..core.checks import (
     check_github_cli, check_ssh_connection, check_connection_methods,
-    is_windows
+    is_windows, refresh_github_cli_auth_with_delete_repo_scope
 )
 from ..operations.ssh import auto_github_cli_login, setup_ssh_config
 from .auth_ssh_key_ops import handle_ssh_key_setup
@@ -47,6 +47,12 @@ def step_github_cli_auth(
             if not auto_github_cli_login(use_ssh=True, silent=False):
                 return (False, False, None)
             
+            # After authentication, check and refresh delete_repo scope if needed
+            gh_cli_after = check_github_cli()
+            if gh_cli_after["authenticated"] and not gh_cli_after.get("has_delete_repo_scope", False):
+                if not refresh_github_cli_auth_with_delete_repo_scope():
+                    print(f"{COLOR_YELLOW}⚠{COLOR_RESET} Failed to refresh delete_repo scope (you may need to run: gh auth refresh -h github.com -s delete_repo)")
+            
             # After authentication, add the pre-selected SSH key if one was chosen
             success, key_path, uploaded = handle_ssh_key_setup(
                 selected_ssh_key_path, new_key_name, new_key_overwrite
@@ -56,6 +62,13 @@ def step_github_cli_auth(
             return (True, uploaded, key_path)
         else:
             print(f"{COLOR_GREEN}{BOLD_CHECK}{COLOR_RESET} GitHub CLI already authenticated")
+            
+            # Check if delete_repo scope is available, refresh if needed
+            if not gh_cli.get("has_delete_repo_scope", False):
+                gh_cli_current = check_github_cli()
+                if not gh_cli_current.get("has_delete_repo_scope", False):
+                    if not refresh_github_cli_auth_with_delete_repo_scope():
+                        print(f"{COLOR_YELLOW}⚠{COLOR_RESET} Failed to refresh delete_repo scope (you may need to run: gh auth refresh -h github.com -s delete_repo)")
             
             # Even if already authenticated, we might need to add an SSH key
             if selected_ssh_key_path:

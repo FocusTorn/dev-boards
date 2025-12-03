@@ -9,10 +9,15 @@ from contextlib import contextmanager
 # ANSI color codes for status symbols
 COLOR_GREEN = "\x1B[32m"      # Green for checkmarks
 COLOR_YELLOW = "\x1B[33m"     # Yellow for warnings
+COLOR_BRIGHT_YELLOW_BOLD = "\x1B[33m\x1B[1m"  # Darker yellow bold for warning symbol (⚠)
 COLOR_RED = "\x1B[31m"        # Red for errors
 COLOR_RESET = "\x1B[0m"       # Reset color
 COLOR_DIM = "\x1B[2m"         # Dim text
 BOLD_CHECK = "✔"              # Unicode heavy/bold checkmark (U+2714)
+
+# Standard prompt text colors (matching PROMPT_STYLE dictionary)
+# These match the colors from prompts.PROMPT_STYLE for consistency
+COLOR_QUESTION_TEXT = "\x1B[37m\x1B[1m"  # Bold white (matches 'question' style: fg:#ffffff bold)
 
 # Region system for automatic indentation
 _active_regions = []
