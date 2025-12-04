@@ -1,0 +1,361 @@
+---
+alwaysApply: true
+---
+
+# UV Workspace Rules
+
+## **CRITICAL EXECUTION DIRECTIVE**
+
+**AI Agent Directive**: Follow UV workspace rules exactly for all workspace configuration and dependency management tasks.
+
+**MANDATORY EXECUTION PROTOCOL**:
+
+1. **NO DEVIATION**: All UV workspace rules must be followed exactly as written
+2. **NO SKIPPING**: No steps may be skipped, abbreviated, or modified
+3. **NO SELECTIVE COMPLIANCE**: All rules apply to all UV workspace configuration activities
+4. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
+
+## **UV WORKSPACE CONFIGURATION**
+
+### **1. :: Workspace Structure**
+
+**✅ CORRECT - Workspace-level pyproject.toml**:
+
+```toml
+[project]
+name = "workspace-name"
+version = "0.1.0"
+description = "Workspace-level project configuration"
+
+[tool.uv]
+link-mode = "copy"  # Suppress hardlink warnings when files are on different drives
+
+[tool.uv.workspace]
+members = [
+    "workspace-member",
+    # Add other workspace members here
+]
+
+# Workspace-level dependencies can be defined in [project.dependencies]
+# or in [tool.uv.dependency-groups] for dev dependencies
+[project.dependencies]
+some-package = ">=1.0.0"
+
+[tool.uv.dependency-groups]
+dev = [
+    # Workspace-level dev dependencies (optional)
+    # "some-dev-package",
+]
+```
+
+**✅ CORRECT - Project-level pyproject.toml**:
+
+```toml
+[project]
+name = "project-name"
+version = "0.1.0"
+description = "Project description"
+
+[tool.uv.workspace]
+# Inherits workspace dependencies automatically
+
+# Project-specific dependencies can be added here
+[project.dependencies]
+# Project-specific runtime dependencies
+```
+
+**✅ CORRECT - .python-version file**:
+
+```text
+3.11
+```
+
+**❌ INCORRECT - Missing workspace configuration**:
+
+```toml
+# Wrong: No workspace section
+[project]
+name = "workspace-name"
+
+# Missing: [tool.uv.workspace] section
+```
+
+**❌ INCORRECT - Hardlink mode without copy fallback**:
+
+```toml
+# Wrong: Missing link-mode configuration
+[tool.uv.workspace]
+members = ["workspace-member"]
+
+# Missing: [tool.uv] section with link-mode = "copy"
+# This causes warnings when files are on different drives
+```
+
+### **2. :: Virtual Environment Management**
+
+**✅ CORRECT - Workspace-level virtual environment**:
+
+```bash
+# Initialize workspace virtual environment
+uv sync
+
+# Run commands in workspace context
+uv run python workspace-member/main.py init
+
+# Install workspace dependencies
+uv sync --group dev
+```
+
+**✅ CORRECT - Project-level virtual environment**:
+
+```bash
+# Navigate to project directory
+cd workspace-member
+
+# Sync project dependencies (inherits workspace dependencies)
+uv sync
+
+# Run project-specific commands
+uv run python main.py init
+```
+
+**✅ CORRECT - Dependency installation**:
+
+```bash
+# Add dependency to workspace
+uv add --group dev some-package
+
+# Add dependency to specific project
+cd workspace-member
+uv add some-package
+
+# Sync all dependencies
+uv sync
+```
+
+**❌ INCORRECT - Manual virtual environment creation**:
+
+```bash
+# Wrong: Creating venv manually instead of using UV
+python -m venv .venv
+source .venv/bin/activate  # Unix
+# or
+.venv\Scripts\activate  # Windows
+
+# Correct: Use UV to manage virtual environments
+uv sync
+```
+
+### **3. :: Configuration File Structure**
+
+**✅ CORRECT - Workspace pyproject.toml structure**:
+
+```toml
+[project]
+name = "workspace-name"
+version = "0.1.0"
+description = "Workspace description"
+
+[tool.uv]
+link-mode = "copy"  # Required for cross-drive compatibility
+
+[tool.uv.workspace]
+members = [
+    "workspace-member",
+    # List all workspace members
+]
+
+[tool.uv.dependency-groups]
+dev = [
+    # Workspace-level dev dependencies
+    "some-dev-package",
+]
+
+[tool.uv.sources]
+# Optional: Custom package sources
+```
+
+**✅ CORRECT - Project pyproject.toml structure**:
+
+```toml
+[project]
+name = "project-name"
+version = "0.1.0"
+description = "Project description"
+
+[tool.uv.workspace]
+# Empty section indicates workspace membership
+# Inherits workspace dependencies automatically
+
+[project.dependencies]
+# Project-specific runtime dependencies (if any)
+
+[tool.uv.dependency-groups]
+dev = [
+    # Project-specific dev dependencies (if any)
+]
+```
+
+**✅ CORRECT - .python-version file location**:
+
+```text
+# File: .python-version (workspace root)
+3.11
+```
+
+**❌ INCORRECT - Incorrect dependency group format**:
+
+```toml
+# Wrong: Using deprecated tool.uv.dev-dependencies
+[tool.uv.dev-dependencies]
+some-package = "*"
+
+# Correct: Use tool.uv.dependency-groups.dev
+[tool.uv.dependency-groups]
+dev = [
+    "some-package",
+]
+```
+
+**❌ INCORRECT - Missing .python-version file**:
+
+```bash
+# Wrong: No .python-version file
+# UV may use system Python version instead of specified version
+
+# Correct: Create .python-version with Python version
+echo "3.11" > .python-version
+```
+
+### **4. :: Environment Variable Configuration**
+
+**✅ CORRECT - PowerShell profile PATH reload**:
+
+```powershell
+# Add to PowerShell profile ($PROFILE)
+function Reload-EnvironmentPath {
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+}
+
+# Usage: Run after installing UV to ensure it's in PATH
+Reload-EnvironmentPath
+```
+
+**✅ CORRECT - UV installation verification**:
+
+```bash
+# Verify UV is installed and in PATH
+uv --version
+
+# If not found, reload environment PATH
+# PowerShell: Reload-EnvironmentPath
+# Or restart shell
+```
+
+**❌ INCORRECT - Hardcoded PATH modifications**:
+
+```powershell
+# Wrong: Hardcoding PATH in profile
+$env:Path = "C:\Users\username\.local\bin;$env:Path"
+
+# Correct: Use Reload-EnvironmentPath function
+# This ensures both user and machine PATH are loaded
+```
+
+### **5. :: Git Integration**
+
+**✅ CORRECT - .gitignore entries**:
+
+```gitignore
+# UV virtual environments and lock files
+.uv/
+uv.lock
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments (if not using UV exclusively)
+venv/
+env/
+ENV/
+```
+
+**❌ INCORRECT - Committing UV artifacts**:
+
+```gitignore
+# Wrong: Not ignoring UV files
+# .uv/ directory contains virtual environment
+# uv.lock contains dependency lock file
+
+# Correct: Add to .gitignore
+.uv/
+uv.lock
+```
+
+## **ANTI-PATTERNS**
+
+### **❌ Workspace Configuration Violations**
+
+- ❌ **Missing Workspace Section** - Don't create workspace without `[tool.uv.workspace]` section
+- ❌ **Missing link-mode** - Don't skip `link-mode = "copy"` in workspace pyproject.toml (causes warnings)
+- ❌ **Deprecated Dependency Format** - Don't use `tool.uv.dev-dependencies` (use `tool.uv.dependency-groups.dev`)
+- ❌ **Missing .python-version** - Don't skip `.python-version` file (UV needs Python version specification)
+- ❌ **Manual Virtual Environments** - Don't create venv manually when using UV workspace
+- ❌ **Committing UV Artifacts** - Don't commit `.uv/` or `uv.lock` files to Git
+- ❌ **Hardcoded PATH** - Don't hardcode PATH modifications in shell profiles
+
+## **QUALITY GATES**
+
+- [ ] **Workspace Configuration**: Workspace `pyproject.toml` includes `[tool.uv.workspace]` section with members
+- [ ] **Link Mode**: Workspace `pyproject.toml` includes `[tool.uv]` section with `link-mode = "copy"`
+- [ ] **Python Version**: `.python-version` file exists in workspace root with Python version
+- [ ] **Dependency Groups**: Uses `tool.uv.dependency-groups.dev` format (not deprecated `tool.uv.dev-dependencies`)
+- [ ] **Project Configuration**: All workspace members have `pyproject.toml` with `[tool.uv.workspace]` section
+- [ ] **Git Integration**: `.gitignore` includes `.uv/` and `uv.lock`
+- [ ] **Environment PATH**: Shell profile includes PATH reload function (if needed)
+- [ ] **UV Verification**: `uv --version` command works in shell
+
+## **SUCCESS METRICS**
+
+After implementing proper workspace configuration:
+
+- ✅ **Consistent Dependencies** - All workspace members share common dependencies
+- ✅ **No Hardlink Warnings** - `uv sync` runs without hardlink warnings
+- ✅ **Correct Python Version** - UV uses specified Python version from `.python-version`
+- ✅ **Clean Git Status** - UV artifacts are properly ignored
+- ✅ **Easy Dependency Management** - Dependencies can be added/removed easily
+- ✅ **Workspace Isolation** - Workspace dependencies don't conflict with system Python
+
+## **WORKSPACE SETUP CHECKLIST**
+
+### **Initial Setup**
+
+- [ ] Install UV: `powershell -c "irm https://astral.sh/uv/install.ps1 | iex"` (Windows) or `curl -LsSf https://astral.sh/uv/install.sh | sh` (Unix)
+- [ ] Verify installation: `uv --version`
+- [ ] Create workspace `pyproject.toml` with `[tool.uv.workspace]` section
+- [ ] Add `[tool.uv]` section with `link-mode = "copy"`
+- [ ] Create `.python-version` file with Python version
+- [ ] Create project-level `pyproject.toml` files for each workspace member
+- [ ] Update `.gitignore` to exclude `.uv/` and `uv.lock`
+- [ ] Run `uv sync` to initialize workspace virtual environment
+- [ ] Verify workspace setup: `uv run python workspace-member/main.py --help`
+
+### **Adding New Project to Workspace**
+
+- [ ] Create project directory structure
+- [ ] Create project `pyproject.toml` with `[tool.uv.workspace]` section
+- [ ] Add project path to workspace `pyproject.toml` members list
+- [ ] Run `uv sync` to sync workspace dependencies
+- [ ] Verify project can access workspace dependencies
+
+### **Adding Dependencies**
+
+- [ ] Determine if dependency is workspace-level or project-level
+- [ ] Add to workspace: `uv add --group dev package-name` (workspace root)
+- [ ] Add to project: `cd project-name && uv add package-name`
+- [ ] Run `uv sync` to update lock file
+- [ ] Verify dependency is available: `uv run python -c "import package_name"`

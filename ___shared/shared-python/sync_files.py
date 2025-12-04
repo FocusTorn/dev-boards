@@ -56,6 +56,30 @@ def check_remote_path_exists(host: str, remote_path: str) -> bool:
         return False
 
 
+def create_remote_directory(host: str, remote_path: str) -> bool:
+    """
+    Create a directory on the remote host (and parent directories if needed).
+    
+    Args:
+        host: OpenSSH host name from SSH config
+        remote_path: Path on remote host to create
+        
+    Returns:
+        True if directory was created or already exists, False otherwise
+    """
+    try:
+        # Use mkdir -p to create directory and parent directories
+        result = subprocess.run(
+            ["ssh", host, f"mkdir -p {remote_path}"],
+            capture_output=True,
+            timeout=10,
+            check=False
+        )
+        return result.returncode == 0
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return False
+
+
 def transfer_file_or_dir(
     host: str,
     source: str,
@@ -92,6 +116,20 @@ def transfer_file_or_dir(
         if direction == "push":
             source_path = Path(source)
             is_dir = source_path.is_dir()
+            
+            # For push: create remote destination directory if it doesn't exist
+            if is_dir:
+                # For directories, create the destination directory
+                if not create_remote_directory(host, destination):
+                    print(f"Error: Failed to create remote directory: {destination}", file=sys.stderr)
+                    return False
+            else:
+                # For files, create the parent directory
+                remote_parent = str(Path(destination).parent)
+                if remote_parent and remote_parent != ".":
+                    if not create_remote_directory(host, remote_parent):
+                        print(f"Error: Failed to create remote parent directory: {remote_parent}", file=sys.stderr)
+                        return False
         else:
             # For pull, check remotely
             try:
@@ -104,6 +142,14 @@ def transfer_file_or_dir(
                 is_dir = result.returncode == 0
             except Exception:
                 pass
+            
+            # For pull: create local destination directory if needed
+            if is_dir:
+                dest_path = Path(destination)
+                dest_path.mkdir(parents=True, exist_ok=True)
+            else:
+                dest_path = Path(destination)
+                dest_path.parent.mkdir(parents=True, exist_ok=True)
         
         scp_args = ["scp", "-p"]  # -p preserves timestamps
         if is_dir:

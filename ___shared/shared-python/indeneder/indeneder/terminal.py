@@ -55,8 +55,10 @@ class IndentedOutput:
 
 class start_region_context:
     """Context manager returned by write_header for automatic indentation."""
-    def __init__(self, name: str):
+    def __init__(self, name: str, footer: bool = False, footer_width: int = 65):
         self.name = name
+        self.footer = footer
+        self.footer_width = footer_width
         self.old_stdout = None
         self.old_stderr = None
     
@@ -70,11 +72,20 @@ class start_region_context:
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        # Restore original streams
+        # Restore original streams first (so footer is not indented)
         if self.old_stdout:
             sys.stdout = self.old_stdout
         if self.old_stderr:
             sys.stderr = self.old_stderr
+        
+        # Print footer after restoring streams (so it's not indented)
+        if self.footer:
+            footer_line = "─" * self.footer_width
+            color_blue = "\x1B[38;5;33m"
+            color_reset = "\x1B[0m"
+            print(f"{color_blue}└{footer_line}{color_reset}")
+        
+        # Remove region from active regions
         if _active_regions and _active_regions[-1] == self.name:
             _active_regions.pop()
         return False
@@ -148,7 +159,7 @@ def write_boxed_header(title: str, width: int = 80) -> None:
     print(f"{color_cyan}┗{top_bottom}┛{color_reset}")
 
 
-def write_header(title: str, width: int = 65, start_region: bool = True):
+def write_header(title: str, width: int = 65, start_region: bool = True, footer: bool = False):
     """
     Write a simple header with underline.
     
@@ -156,6 +167,7 @@ def write_header(title: str, width: int = 65, start_region: bool = True):
         title: The header title
         width: The total width of the header (default: 65)
         start_region: If True, returns a context manager that automatically indents output
+        footer: If True, adds a matching footer line when the context exits (default: False)
     
     Returns:
         If start_region is True, returns a context manager. Otherwise returns None.
@@ -164,6 +176,10 @@ def write_header(title: str, width: int = 65, start_region: bool = True):
         with write_header("Step 1"):
             print("This will be indented")
             print("So will this")
+        
+        with write_header("Demo Section", footer=True):
+            print("Content here")
+            # Footer will be printed automatically on exit
     """
     tail_lines = max(0, width - (len(title) + 4))
     tail = "─" * tail_lines
@@ -174,7 +190,7 @@ def write_header(title: str, width: int = 65, start_region: bool = True):
     print(f"{color_blue}┌─ {title} {tail}{color_reset}")
     
     if start_region:
-        return start_region_context(title)
+        return start_region_context(title, footer=footer, footer_width=width)
     return None
 
 

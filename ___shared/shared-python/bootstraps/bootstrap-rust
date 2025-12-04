@@ -1,0 +1,330 @@
+#!/usr/bin/env python3
+"""
+Cross-platform Rust bootstrap script.
+Checks prerequisites and installation status before proceeding with Rust installation.
+"""
+
+import sys
+import os
+import platform
+import subprocess
+import shutil
+from pathlib import Path
+
+# Check for indeneder package (installed or local)
+# Get the script's directory to resolve relative paths correctly
+SCRIPT_DIR = Path(__file__).parent.resolve()
+SHARED_PYTHON_DIR = SCRIPT_DIR.parent  # Go up from bootstraps/ to shared-python/
+
+HAS_INDENEDER = False
+INDENEDER_STATUS = "Not found"
+INDENEDER_PATH = SHARED_PYTHON_DIR / "indeneder"
+
+# Try importing as installed package first
+try:
+    from indeneder import (  # type: ignore[reportMissingImports]
+        write_header,
+        COLOR_GREEN,
+        COLOR_YELLOW,
+        COLOR_RED,
+        COLOR_RESET,
+        BOLD_CHECK,
+    )
+    HAS_INDENEDER = True
+    INDENEDER_STATUS = "Installed as package"
+except ImportError:
+    # Try importing from local directory
+    if INDENEDER_PATH.exists():
+        try:
+            # Add the parent directory to sys.path so we can import indeneder as a package
+            indeneder_parent = str(INDENEDER_PATH.parent)
+            if indeneder_parent not in sys.path:
+                sys.path.insert(0, indeneder_parent)
+            from indeneder import (  # type: ignore[reportMissingImports]
+                write_header,
+                COLOR_GREEN,
+                COLOR_YELLOW,
+                COLOR_RED,
+                COLOR_RESET,
+                BOLD_CHECK,
+            )
+            HAS_INDENEDER = True
+            INDENEDER_STATUS = f"Found at {INDENEDER_PATH}"
+        except ImportError as e:
+            # Debug: uncomment to see import errors
+            # print(f"Import error: {e}", file=sys.stderr)
+            pass
+
+# Fallback symbols if indeneder not available
+if not HAS_INDENEDER:
+    COLOR_GREEN = "\x1B[32m"
+    COLOR_YELLOW = "\x1B[33m"
+    COLOR_RED = "\x1B[31m"
+    COLOR_RESET = "\x1B[0m"
+    BOLD_CHECK = "✔"
+    WARNING = "⚠"
+    CROSS = "✗"
+
+# Check for demo_prompts.py
+DEMO_PROMPTS_PATH = SHARED_PYTHON_DIR / "demo_prompts.py"
+HAS_DEMO_PROMPTS = DEMO_PROMPTS_PATH.exists()
+
+# Status symbols
+WARNING = "⚠"
+CROSS = "✗"
+
+
+def check_command(cmd, version_flag="--version"):
+    """Check if a command exists and return its version output."""
+    try:
+        result = subprocess.run(
+            [cmd, version_flag],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            return True, result.stdout.strip()
+        return False, None
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False, None
+
+
+def check_file_exists(path):
+    """Check if a file or directory exists."""
+    return Path(path).exists()
+
+
+def get_home_dir():
+    """Get the home directory path, cross-platform."""
+    if platform.system() == "Windows":
+        return Path(os.environ.get("USERPROFILE", os.path.expanduser("~")))
+    return Path.home()
+
+
+def check_rust_installation():
+    """Check if Rust is already installed."""
+    rustc_exists, rustc_version = check_command("rustc")
+    cargo_exists, cargo_version = check_command("cargo")
+    rustup_exists, rustup_version = check_command("rustup", "--version")
+    
+    home = get_home_dir()
+    cargo_bin = home / ".cargo" / "bin"
+    cargo_bin_exists = cargo_bin.exists()
+    
+    return {
+        "rustc": (rustc_exists, rustc_version),
+        "cargo": (cargo_exists, cargo_version),
+        "rustup": (rustup_exists, rustup_version),
+        "cargo_bin": (cargo_bin_exists, str(cargo_bin)),
+    }
+
+
+def check_prerequisites():
+    """Check prerequisites for Rust installation."""
+    is_windows = platform.system() == "Windows"
+    
+    if is_windows:
+        # Check PowerShell version (try pwsh first, then powershell)
+        has_powershell = False
+        ps_status = "Not found"
+        ps_version = 0
+        
+        # Try PowerShell 7+ (pwsh) first
+        try:
+            result = subprocess.run(
+                ["pwsh", "-NoProfile", "-Command", "Write-Output $PSVersionTable.PSVersion.Major"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if result.returncode == 0:
+                ps_version = int(result.stdout.strip())
+                has_powershell = True
+                ps_status = f"PowerShell {ps_version} (pwsh)"
+        except (FileNotFoundError, ValueError, subprocess.TimeoutExpired):
+            pass
+        
+        # If pwsh not found, try Windows PowerShell 5.1
+        if not has_powershell:
+            try:
+                result = subprocess.run(
+                    ["powershell", "-NoProfile", "-Command", "Write-Output $PSVersionTable.PSVersion.Major"],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
+                if result.returncode == 0:
+                    ps_version = int(result.stdout.strip())
+                    has_powershell = ps_version >= 5
+                    ps_status = f"PowerShell {ps_version} (Windows PowerShell)" if has_powershell else "Not found or < 5.1"
+            except (FileNotFoundError, ValueError, subprocess.TimeoutExpired):
+                pass
+        
+        return {
+            "curl": (False, "Not needed on Windows"),
+            "wget": (False, "Not needed on Windows"),
+            "powershell": (has_powershell, ps_status),
+        }
+    else:
+        # Check for curl or wget
+        curl_exists, curl_version = check_command("curl", "--version")
+        wget_exists, wget_version = check_command("wget", "--version")
+        
+        has_downloader = curl_exists or wget_exists
+        downloader_status = (
+            f"curl: {curl_version.split()[1] if curl_exists else 'N/A'}, "
+            f"wget: {wget_version.split()[1] if wget_exists else 'N/A'}"
+        )
+        
+        return {
+            "curl": (curl_exists, curl_version.split()[0] if curl_exists else "Not found"),
+            "wget": (wget_exists, wget_version.split()[0] if wget_exists else "Not found"),
+            "downloader": (has_downloader, downloader_status),
+        }
+
+
+def format_status(symbol, name, status_text, is_success=True, is_partial=False):
+    """Format a status line with appropriate color."""
+    if is_success:
+        color = COLOR_GREEN
+        symbol_char = BOLD_CHECK
+    elif is_partial:
+        color = COLOR_YELLOW
+        symbol_char = WARNING
+    else:
+        color = COLOR_RED
+        symbol_char = CROSS
+    
+    # Add leading spaces only if indeneder is not available (for fallback formatting)
+    # When indeneder is available, write_header context manager handles indentation
+    indent = "  " if not HAS_INDENEDER else ""
+    return f"{indent}{color}{symbol_char}{COLOR_RESET} {name}: {status_text}"
+
+
+def print_status_header():
+    """Print the status header using indeneder if available."""
+    if HAS_INDENEDER:
+        with write_header("Status", width=65):
+            print_status_checks()
+    else:
+        # Fallback header without indeneder
+        print("┌─ Status " + "─" * 55)
+        print_status_checks()
+        print("└" + "─" * 64)
+
+
+def print_status_checks():
+    """Print all status checks."""
+    # Check indeneder
+    print(format_status(
+        BOLD_CHECK if HAS_INDENEDER else CROSS,
+        "indeneder",
+        INDENEDER_STATUS,
+        is_success=HAS_INDENEDER,
+    ))
+    
+    # Check platform
+    system = platform.system()
+    platform_status = f"{system} ({platform.machine()})"
+    print(format_status(
+        BOLD_CHECK,
+        "Platform",
+        platform_status,
+        is_success=True,
+    ))
+    
+    # Check prerequisites
+    prereqs = check_prerequisites()
+    if platform.system() == "Windows":
+        ps_exists, ps_status = prereqs["powershell"]
+        print(format_status(
+            BOLD_CHECK if ps_exists else CROSS,
+            "PowerShell",
+            ps_status,
+            is_success=ps_exists,
+        ))
+    else:
+        curl_exists, curl_status = prereqs["curl"]
+        wget_exists, wget_status = prereqs["wget"]
+        downloader_exists, _ = prereqs["downloader"]
+        
+        print(format_status(
+            BOLD_CHECK if curl_exists else CROSS,
+            "curl",
+            curl_status,
+            is_success=curl_exists,
+        ))
+        print(format_status(
+            BOLD_CHECK if wget_exists else CROSS,
+            "wget",
+            wget_status,
+            is_success=wget_exists,
+        ))
+        if not downloader_exists:
+            print(format_status(
+                WARNING,
+                "Downloader",
+                "Neither curl nor wget found",
+                is_success=False,
+                is_partial=True,
+            ))
+    
+    # Check Rust installation
+    rust_info = check_rust_installation()
+    
+    rustc_exists, rustc_version = rust_info["rustc"]
+    print(format_status(
+        BOLD_CHECK if rustc_exists else CROSS,
+        "rustc",
+        rustc_version if rustc_exists else "Not installed",
+        is_success=rustc_exists,
+    ))
+    
+    cargo_exists, cargo_version = rust_info["cargo"]
+    print(format_status(
+        BOLD_CHECK if cargo_exists else CROSS,
+        "cargo",
+        cargo_version if cargo_exists else "Not installed",
+        is_success=cargo_exists,
+    ))
+    
+    rustup_exists, rustup_version = rust_info["rustup"]
+    print(format_status(
+        BOLD_CHECK if rustup_exists else CROSS,
+        "rustup",
+        rustup_version if rustup_exists else "Not installed",
+        is_success=rustup_exists,
+    ))
+    
+    cargo_bin_exists, cargo_bin_path = rust_info["cargo_bin"]
+    print(format_status(
+        BOLD_CHECK if cargo_bin_exists else CROSS,
+        "Cargo bin directory",
+        cargo_bin_path if cargo_bin_exists else "Not found",
+        is_success=cargo_bin_exists,
+    ))
+    
+    # Check PATH
+    home = get_home_dir()
+    cargo_bin = str(home / ".cargo" / "bin")
+    path_env = os.environ.get("PATH", "")
+    in_path = cargo_bin in path_env
+    print(format_status(
+        BOLD_CHECK if in_path else WARNING,
+        "Cargo in PATH",
+        "Yes" if in_path else "No (may need shell restart)",
+        is_success=in_path,
+        is_partial=not in_path,
+    ))
+
+
+def main():
+    """Main entry point."""
+    print_status_header()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
