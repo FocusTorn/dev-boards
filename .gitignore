@@ -43,3 +43,6 @@ uv.lock
 Thumbs.db
 
 esp-idf
+
+# Shared resources (managed by sync-manager, each has its own Git repo)
+___shared/
