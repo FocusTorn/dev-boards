@@ -1,6 +1,17 @@
 # Phase 7: Optimization Analysis
 
+## **REFERENCE FILES**
 
+### **Documentation References**
+
+- **PACKAGE_ARCHETYPES**: `docs/_Package-Archetypes.md`
+- **ARCHITECTURE_DOCS**: `docs/_Architecture.md`
+- **TESTING_STRATEGY**: `docs/testing/_Testing-Strategy.md`
+
+### **Input File References**
+
+- **STAGING_FILE**: `.cursor/ADHOC/fluency-output-staging.md`
+- **FINAL_OUTPUT**: `.cursor/ADHOC/fluency-output-{package-name}.md`
 
 ---
 
@@ -11,6 +22,19 @@
 **Output**: Structured optimization recommendations with impact prioritization
 
 ## **EXECUTION PROTOCOL**
+
+### **STEP 1: FLUENCY ANALYSIS INTEGRATION**
+
+**AI TASK**: Review and integrate all previous phase outputs for optimization analysis
+
+**REQUIRED INPUTS**:
+
+- [ ] Phase 1: Package Identity Analysis complete
+- [ ] Phase 2: Architecture Pattern Analysis complete
+- [ ] Phase 3: Functionality Mapping complete
+- [ ] Phase 4: Implementation Analysis complete
+- [ ] Phase 5: Integration Understanding complete
+- [ ] Phase 6: Final Synthesis complete
 
 **CONTEXT INTEGRATION**:
 

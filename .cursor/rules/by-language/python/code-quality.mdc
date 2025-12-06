@@ -1,0 +1,247 @@
+---
+globs: **/*.py
+alwaysApply: false
+---
+
+# Python Code Quality Rules
+
+## **CRITICAL EXECUTION DIRECTIVE**
+
+**AI Agent Directive**: Follow code quality rules exactly for all Python code quality and linter configuration tasks.
+
+**MANDATORY EXECUTION PROTOCOL**:
+
+1. **NO DEVIATION**: All code quality rules must be followed exactly as written
+2. **NO SKIPPING**: No steps may be skipped, abbreviated, or modified
+3. **NO SELECTIVE COMPLIANCE**: All rules apply to all code quality activities
+4. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
+
+## **RUNTIME IMPORTS AND LINTER CONFIGURATION**
+
+### **1. :: Scripts with sys.path Modifications**
+
+**✅ CORRECT - Scripts that modify sys.path before importing local packages**:
+
+```python
+import sys
+from pathlib import Path
+
+# Add parent directory to path so lib package can be imported
+_SCRIPT_DIR = Path(__file__).parent
+_PROJECT_DIR = _SCRIPT_DIR.parent  # scripts -> project-root
+sys.path.insert(0, str(_PROJECT_DIR))
+
+# Now imports work at runtime
+from lib.config import load_config  # type: ignore
+from lib.output import print_info  # type: ignore
+```
+
+**✅ CORRECT - Optional local packages with fallback**:
+
+```python
+# Try to import local package with fallback
+try:
+    # Add shared-python to path
+    _current_file = Path(__file__)
+    _project_dir = _current_file.parent.parent
+    _shared_dir = _project_dir.parent
+    _shared_python = _shared_dir / 'shared-python'
+    
+    if _shared_python.exists():
+        sys.path.insert(0, str(_shared_python))
+        _pyprompt_dir = _shared_python / 'pyprompt'
+        if _pyprompt_dir.exists():
+            sys.path.insert(0, str(_pyprompt_dir))
+    
+    from pyprompt import select as pyprompt_select  # type: ignore
+    HAS_PYPROMPT = True
+except ImportError:
+    HAS_PYPROMPT = False
+    pyprompt_select = None
+```
+
+**❌ INCORRECT - Missing type: ignore comments**:
+
+```python
+# Wrong: Linter will show warnings for imports resolved at runtime
+from lib.config import load_config  # Missing # type: ignore
+from pyprompt import select  # Missing # type: ignore
+```
+
+**❌ INCORRECT - Imports before sys.path modification**:
+
+```python
+# Wrong: Import before sys.path is modified
+from lib.config import load_config  # Will fail at runtime
+
+import sys
+from pathlib import Path
+_SCRIPT_DIR = Path(__file__).parent
+sys.path.insert(0, str(_SCRIPT_DIR.parent))
+```
+
+### **2. :: Linter Configuration**
+
+**✅ CORRECT - pyrightconfig.json for scripts directory**:
+
+```json
+{
+  "include": ["scripts", "lib", "tests"],
+  "exclude": ["**/__pycache__", "**/_removed", ".uv"],
+  "executionEnvironments": [
+    {
+      "root": "scripts",
+      "pythonVersion": "3.11",
+      "pythonPlatform": "All",
+      "extraPaths": [
+        "..",
+        "../../shared-python",
+        "../../shared-python/pyprompt",
+        "../../shared-python/indeneder"
+      ]
+    }
+  ],
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": "none",
+  "reportMissingTypeStubs": false
+}
+```
+
+**✅ CORRECT - pyproject.toml configuration for basedpyright**:
+
+```toml
+[tool.basedpyright]
+include = ["scripts", "lib", "tests"]
+exclude = ["**/__pycache__", "**/_removed", ".uv"]
+executionEnvironments = [
+    { 
+      root = "scripts", 
+      extraPaths = [
+        "..",
+        "../../shared-python",
+        "../../shared-python/pyprompt",
+        "../../shared-python/indeneder"
+      ] 
+    }
+]
+pythonVersion = "3.11"
+typeCheckingMode = "basic"
+reportMissingImports = "none"
+reportMissingTypeStubs = false
+```
+
+**❌ INCORRECT - Missing linter configuration**:
+
+```python
+# Wrong: No pyrightconfig.json or pyproject.toml configuration
+# Linter will show warnings for all runtime imports
+from lib.config import load_config  # Shows warning
+```
+
+**❌ INCORRECT - Wrong execution environment root**:
+
+```json
+{
+  "executionEnvironments": [
+    {
+      "root": ".",  // Wrong: Should be "scripts" for files in scripts/
+      "extraPaths": [".."]
+    }
+  ]
+}
+```
+
+### **3. :: Type Ignore Comments**
+
+**✅ CORRECT - Add type: ignore to runtime imports**:
+
+```python
+# Imports that are resolved at runtime via sys.path modifications
+from lib.config import load_config  # type: ignore
+from lib.output import (  # type: ignore
+    print_error, print_success, print_warning
+)
+from lib.sync_ops import sync_package_mapping  # type: ignore
+from pyprompt import select as pyprompt_select  # type: ignore
+```
+
+**✅ CORRECT - Type ignore on multi-line imports**:
+
+```python
+from lib.output import (  # type: ignore
+    print_error,
+    print_success,
+    print_warning,
+    print_info,
+    print_colored,
+    Colors
+)
+```
+
+**❌ INCORRECT - Type ignore on wrong line**:
+
+```python
+# Wrong: type: ignore must be on the import line
+from lib.config import load_config
+# type: ignore  # Wrong: Must be on same line as import
+```
+
+**❌ INCORRECT - Missing type: ignore for runtime imports**:
+
+```python
+# Wrong: Missing type: ignore - linter will show warnings
+from lib.config import load_config
+from pyprompt import select
+```
+
+## **ANTI-PATTERNS**
+
+### **❌ Runtime Import Violations**
+
+- ❌ **Missing Type Ignore** - Don't skip `# type: ignore` on imports resolved via sys.path
+- ❌ **Imports Before Path Setup** - Don't import local packages before modifying sys.path
+- ❌ **Missing Linter Config** - Don't skip pyrightconfig.json or pyproject.toml configuration
+- ❌ **Wrong Execution Environment** - Don't use wrong root in executionEnvironments
+- ❌ **Hardcoded Absolute Paths** - Prefer relative paths in config when possible (use absolute only if relative doesn't work)
+
+## **QUALITY GATES**
+
+- [ ] **Type Ignore Comments**: All runtime imports have `# type: ignore` comments
+- [ ] **Path Setup Before Imports**: sys.path modifications occur before importing local packages
+- [ ] **Linter Configuration**: pyrightconfig.json or pyproject.toml has executionEnvironments configured
+- [ ] **Correct Root**: executionEnvironments root matches the directory containing the script
+- [ ] **Extra Paths**: All runtime paths are included in extraPaths
+- [ ] **Report Missing Imports**: Set to "none" to suppress warnings for runtime imports
+
+## **SUCCESS METRICS**
+
+After implementing proper runtime import handling:
+
+- ✅ **No Linter Warnings** - All runtime imports properly configured
+- ✅ **Clean Code** - Type ignore comments clearly mark runtime imports
+- ✅ **Proper Configuration** - Linter understands runtime path modifications
+- ✅ **Maintainable** - Future developers understand why type: ignore is needed
+
+## **EXECUTION PRIORITY MATRIX**
+
+### **CRITICAL PRIORITY (Execute immediately)**
+
+- Add `# type: ignore` to all imports resolved via sys.path modifications
+- Configure pyrightconfig.json or pyproject.toml with executionEnvironments
+- Ensure sys.path modifications occur before imports
+
+### **HIGH PRIORITY (Execute before proceeding)**
+
+- Verify linter configuration is correct for script location
+- Test that imports work at runtime
+- Verify linter warnings are suppressed
+
+### **MEDIUM PRIORITY (Execute during normal operation)**
+
+- Document why type: ignore is needed in code comments
+- Keep linter configuration up to date as paths change
+
+## **DYNAMIC MANAGEMENT NOTE**
+
+This document is optimized for AI agent internal processing and may be updated dynamically based on operational needs and pattern recognition. The structure prioritizes AI agent compliance and effectiveness over traditional documentation practices. Additional code quality rules may be added to this document as needed.
