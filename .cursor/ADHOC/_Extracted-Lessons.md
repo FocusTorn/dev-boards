@@ -1,55 +1,60 @@
-# Extract - Lessons Learned: Prompt System Refactoring
+# Extracted Lessons - Sync Manager Conflict Resolution Improvements
 
-## 1. :: Shorthand reference Mapping and Explanations <!-- Start Fold -->
+## 1. :: Shorthand Reference Mapping and Explanations <!-- Start Fold -->
 
 ### 1.1. :: Alias Mapping
 
-- **\_strat**: `docs/testing/_Testing-Strategy.md`
-- **\_ts**: `docs/testing/_Troubleshooting - Tests.md`
+- **_strat**: `docs/testing/_Testing-Strategy.md`
+- **_ts**: `docs/testing/_Troubleshooting - Tests.md`
 - **lib guide**: `docs/testing/Library-Testing-AI-Guide.md`
+- **terminal-output**: `.cursor/rules/formatting/terminal-output.mdc`
 
-### 1.2. :: Details for shorthand execution details:
+### 1.2. :: Details for Shorthand Execution Details
 
 #### Add to strat
 
 You will understand that _add to strat_ means to do the following:
 
-1. Add the needed documentation to **\_strat**
-2. Ensure there is a `### **Documentation References**` to **\_strat** within **guide**
+1. Add the needed documentation to **_strat**
+2. Ensure there is a `### **Documentation References**` to **_strat** within **guide**
 3. Add or modify a concise section with a pointer to the main file for more detail to **guide**
 
 #### Add to trouble
 
 You will understand that _add to trouble_ means to do the following:
 
-1. Add the needed documentation to **\_ts**
-2. Ensure there is a `### **Documentation References**` to **\_strat** within **guide**
+1. Add the needed documentation to **_ts**
+2. Ensure there is a `### **Documentation References**` to **_strat** within **guide**
 3. Add or modify a concise section with a pointer to the main file for more detail to **guide**
 
 ---
 
 <!-- Close Fold -->
 
-## 2.0 :: Prompt Toolkit Migration and Region System Integration <!-- Start Fold -->
+## 2.0 :: IDE Detection for Diff Viewing <!-- Start Fold -->
 
-- Learning: prompt_toolkit's Application class bypasses Python's stdout wrapper system, requiring manual indentation calculation when using custom output indentation systems like the region system
-- Pattern: When using prompt_toolkit for interactive prompts within region contexts, manually calculate and apply region indentation using `get_region_indent()` rather than relying on automatic indentation
-- Implementation: Import `get_region_indent()` from terminal module, calculate region indent before creating prompt_toolkit Application, and apply indent to pointer and choice positioning calculations
-- Benefit: Ensures prompts align correctly with other output that uses the region system, maintaining visual consistency
+- **Learning**: When opening diffs in external editors, the system should detect which IDE (Cursor or VS Code) is currently running and prioritize using the active IDE for better user experience.
 
-- **Not documented**: The interaction between prompt_toolkit and custom stdout wrappers is not documented. The fact that prompt_toolkit writes directly to TTY bypassing IndentedOutput wrappers needs to be documented in terminal output formatting rules
+- **Pattern**: Detect active IDE by checking running processes (Windows: `tasklist` for `Cursor.exe`/`Code.exe`, Unix: `pgrep` for process names), then try active IDE first, followed by Cursor, then VS Code as fallbacks.
 
-- **Mistake/Assumption**: Initially assumed prompt_toolkit would automatically respect the region system's IndentedOutput wrapper, causing misaligned prompts
-- **Correction**: Manually calculate region indent using `get_region_indent()` and apply it to prompt positioning calculations, ensuring pointer aligns with qmark position
+- **Implementation**: Created `_detect_active_ide()` function that checks running processes and returns 'cursor', 'code', or None. Updated `_open_diff_in_editor()` to use detected active IDE first, with fallback order: active IDE → Cursor → VS Code.
+
+- **Benefit**: Users get diffs opened in their current working IDE automatically, providing better context and workflow continuity. Reduces need to manually specify which IDE to use.
+
+- **Not documented**: IDE detection patterns for command-line tools are not documented. The approach of checking running processes to determine active applications is not captured in any documentation.
+
+- **Mistake/Assumption**: Initially assumed VS Code should always be tried first, without considering that the user might be actively working in Cursor.
+
+- **Correction**: Implemented active IDE detection that checks running processes and prioritizes the active IDE, ensuring diffs open in the user's current working environment.
 
 - **Recommendation**:
     - **AI Agent Rule**: 
-        - **Action**: MODIFY existing rule file
+        - **Action**: ADD to existing rule file
         - **Rule File Path**: `.cursor/rules/formatting/terminal-output.mdc`
-        - **Rule Text**: "**CRITICAL**: When using prompt_toolkit Application class for interactive prompts (select, confirm), the Application bypasses Python's stdout wrapper system. ALWAYS manually calculate region indentation using `get_region_indent()` and apply it to pointer/choice positioning. NEVER assume prompt_toolkit will automatically respect IndentedOutput wrappers."
-        - **Section**: "HEADER CODE BLOCKS AND REGION INDENTING > Interactive Prompt Indentation"
-    - Update terminal output formatting rules to document prompt_toolkit's TTY bypass behavior
-    - Add example showing manual indentation calculation for prompt_toolkit prompts
+        - **Rule Text**: "When opening external tools (IDEs, diff viewers, editors) from command-line scripts, ALWAYS detect and prioritize the active/currently running application. Check running processes to determine which application is active, then try active application first before falling back to alternatives. This ensures tools open in the user's current working environment for better workflow continuity."
+        - **Section**: "FORMATTING PATTERNS" or create new subsection "External Tool Integration"
+    - Document IDE detection patterns in sync-manager package documentation
+    - Add examples of process detection for both Windows and Unix systems
 
 - **Response**: ✏️❓❌⚠️✅ No action required
 
@@ -57,26 +62,30 @@ You will understand that _add to trouble_ means to do the following:
 
 <!-- Close Fold -->
 
-## 2.0 :: Dynamic Indentation Calculation for Select Prompts <!-- Start Fold -->
+## 2.1 :: Windows Command-Line Tools vs GUI Tools Distinction <!-- Start Fold -->
 
-- Learning: Select prompt choices should align dynamically based on qmark position (if present) or message start position, with unselected choices aligning to the selected choice's first character position
-- Pattern: Calculate indentation relative to region base: if qmark exists, pointer aligns to qmark; selected text starts after pointer+space; unselected text aligns to selected text's first character position
-- Implementation: Extract pointer symbol (remove leading space), calculate `pointer_indent` from region base, calculate `selected_text_start_pos` as `len(region_indent) + len(pointer) + 1`, use this for unselected indent calculation
-- Benefit: Ensures consistent visual alignment regardless of whether qmark is present, maintaining professional appearance
+- **Learning**: Windows `fc` (file compare) command is a command-line tool that outputs to stdout, not a GUI application. It cannot be used for interactive diff viewing in the same way as GUI tools like WinMerge or VS Code.
 
-- **Not documented**: Dynamic indentation calculation pattern for select prompts is not documented. The rule that unselected choices should align to selected choice's first character position needs to be documented
+- **Pattern**: When selecting diff tools, distinguish between command-line tools (that output text) and GUI tools (that open windows). Only GUI tools should be used for interactive diff viewing. Command-line tools like `fc` should be excluded from GUI tool lists.
 
-- **Mistake/Assumption**: Initially used fixed indentation values (2 spaces, 4 spaces) without calculating based on actual prompt message positioning
-- **Correction**: Implemented dynamic calculation that measures actual positions: pointer aligns to qmark (or message start), selected text position calculated from pointer+space, unselected aligns to selected text's first character
+- **Implementation**: Removed `fc` from the list of GUI diff tools in `_open_diff_in_editor()` function. Added proper GUI tool detection with full path checking for Windows tools like WinMerge and Beyond Compare.
+
+- **Benefit**: Prevents confusion when a tool is reported as "opened" but nothing visible happens. Users get actual GUI applications that provide visual diff interfaces.
+
+- **Not documented**: The distinction between command-line diff tools and GUI diff tools is not documented. The fact that some tools output to stdout while others open windows is not captured in any documentation.
+
+- **Mistake/Assumption**: Initially assumed `fc` could be used as a GUI tool for diff viewing, leading to user confusion when it appeared to "open" but produced no visible output.
+
+- **Correction**: Removed `fc` from GUI tool list and added proper detection for actual GUI tools (WinMerge, Beyond Compare, etc.) with full path checking and proper process launching.
 
 - **Recommendation**:
     - **AI Agent Rule**: 
-        - **Action**: MODIFY existing rule file
+        - **Action**: ADD to existing rule file
         - **Rule File Path**: `.cursor/rules/formatting/terminal-output.mdc`
-        - **Rule Text**: "**CRITICAL**: For select prompts, ALWAYS calculate indentation dynamically: (1) If qmark exists, pointer aligns to qmark position; if no qmark, pointer aligns to message start. (2) Selected text's first character position = region_indent + pointer_length + space. (3) Unselected choices MUST align to selected text's first character position. NEVER use fixed indentation values."
-        - **Section**: "HEADER CODE BLOCKS AND REGION INDENTING > Interactive Prompt Indentation"
-    - Document dynamic indentation calculation pattern in terminal output formatting rules
-    - Add visual examples showing alignment calculations
+        - **Rule Text**: "When selecting external tools for GUI operations (diff viewing, file editing, etc.), ALWAYS distinguish between command-line tools (that output to stdout/stderr) and GUI tools (that open windows). NEVER include command-line-only tools in GUI tool lists. Verify that tools actually open windows before including them in GUI tool selection. Use process detection or command verification to confirm tool capabilities."
+        - **Section**: "FORMATTING PATTERNS" > "External Tool Integration" (or create if doesn't exist)
+    - Document the distinction between CLI and GUI tools in sync-manager package documentation
+    - Add examples of proper GUI tool detection patterns
 
 - **Response**: ✏️❓❌⚠️✅ No action required
 
@@ -84,26 +93,30 @@ You will understand that _add to trouble_ means to do the following:
 
 <!-- Close Fold -->
 
-## 2.0 :: Confirm Prompt Format Standardization <!-- Start Fold -->
+## 2.2 :: Batch Conflict Resolution with Git-Like View <!-- Start Fold -->
 
-- Learning: Confirm prompts should display as `{{qmark}} {{message}} [Y/n]? {{default_answer}}` where [Y/n] is dim grey, default answer is blue, and the prompt submits immediately on y/n/Enter keypress
-- Pattern: Format prompt with qmark (pink), question text (white), [Y/n] indicator in dim grey, then default answer in blue. Use single-character input (tty.setraw on Unix, msvcrt.getch on Windows) for immediate submission without Enter key
-- Implementation: Build prompt string with color codes, print with end='' flush=True, read single character in raw mode, handle y/n/Enter/Ctrl+C, restore terminal settings immediately after reading, display chosen answer in blue
-- Benefit: Provides clear visual indication of default, immediate feedback, and consistent formatting across all confirm prompts
+- **Learning**: When multiple file conflicts exist, presenting them in a git-like summary view (showing resolved vs pending) with interactive navigation provides much better UX than resolving conflicts one-by-one sequentially.
 
-- **Not documented**: The confirm prompt format specification ([Y/n] in dim grey, default in blue, immediate submission) is not documented in terminal output formatting rules
+- **Pattern**: Collect all conflicts during first pass (file scanning), then present them in a structured view showing: resolved conflicts with checkmarks, pending conflicts numbered for selection, progress indicator (X/Y resolved), and batch action options (resolve all, skip all, open all in IDE).
 
-- **Mistake/Assumption**: Initially used questionary's confirm which had different formatting and required Enter key. Also assumed Windows would handle single-character input the same as Unix
-- **Correction**: Implemented custom confirm function using prompt_toolkit patterns with manual formatting, added Windows support using msvcrt.getch(), ensured immediate submission on y/n keypress
+- **Implementation**: Created `resolve_conflicts_batch()` function that maintains lists of resolved and pending conflicts, displays summary using `_show_conflict_summary()`, and allows users to select conflicts to resolve in any order. Integrated with two-pass sync approach where conflicts are detected during progress bar phase, then resolved interactively after.
+
+- **Benefit**: Users can see all conflicts at once, understand overall progress, resolve conflicts in any order, and use batch operations when appropriate. Much more efficient than sequential one-by-one resolution.
+
+- **Not documented**: Batch conflict resolution patterns and git-like summary views for interactive conflict resolution are not documented. The pattern of separating detection from resolution (two-pass approach) is not captured in documentation.
+
+- **Mistake/Assumption**: None - this was a new feature request that was implemented correctly.
+
+- **Correction**: N/A
 
 - **Recommendation**:
     - **AI Agent Rule**: 
-        - **Action**: MODIFY existing rule file
+        - **Action**: ADD to existing rule file
         - **Rule File Path**: `.cursor/rules/formatting/terminal-output.mdc`
-        - **Rule Text**: "**CRITICAL**: Confirm prompts MUST display as `{{qmark}} {{message}} [Y/n]? {{default_answer}}` where: (1) [Y/n] is in dim grey (DIM_GREY color), (2) default answer (y/n) is in blue (ANSWER_COLOR), (3) prompt submits immediately on y/n keypress (no Enter required), (4) Enter key submits default. ALWAYS use single-character input (tty.setraw on Unix, msvcrt.getch on Windows) for immediate submission."
-        - **Section**: "HEADER CODE BLOCKS AND REGION INDENTING > Interactive Prompt Indentation > Confirmation Prompt Formatting"
-    - Update terminal output formatting rules with confirm prompt format specification
-    - Document Windows vs Unix input handling differences
+        - **Rule Text**: "When presenting multiple interactive items (conflicts, errors, choices) to users, ALWAYS provide a summary view showing: resolved/completed items, pending items numbered for selection, progress indicators (X/Y completed), and batch action options. Use a git-like view format that allows users to see all items at once and navigate/select in any order. Separate detection/collection phase from resolution/interaction phase when dealing with multiple items."
+        - **Section**: "FORMATTING PATTERNS" > "Interactive Multi-Item Selection"
+    - Document batch conflict resolution patterns in sync-manager package documentation
+    - Add examples of git-like summary view implementation
 
 - **Response**: ✏️❓❌⚠️✅ No action required
 
@@ -111,26 +124,29 @@ You will understand that _add to trouble_ means to do the following:
 
 <!-- Close Fold -->
 
-## 2.0 :: Warning Message Formatting Standards <!-- Start Fold -->
+## 2.3 :: Batch Opening Multiple Files in IDE Diff View <!-- Start Fold -->
 
-- Learning: Warning messages must have a blank line above them and the entire warning line (including icon and text) should be colored yellow, not just the icon
-- Pattern: Print blank line before warning, apply COLOR_YELLOW at start of warning message, include entire message text within yellow color, apply COLOR_RESET only at end of message
-- Implementation: `print()` for blank line, then `print(f"{COLOR_YELLOW}⚠ {message_text}{COLOR_RESET}")` ensuring COLOR_RESET is at the very end
-- Benefit: Improves visual separation and makes warnings more prominent and readable
+- **Learning**: When multiple conflicts need to be resolved, opening all of them at once in the IDE's diff view allows users to resolve them efficiently in a familiar environment, rather than one at a time in the terminal.
 
-- **Not documented**: Warning formatting standards (blank line above, entire line yellow) are not documented in terminal output formatting rules
+- **Pattern**: For each conflict in a batch, open a separate diff window in the IDE using `cursor -d` or `code --diff` commands. Add small delays (0.2s) between opens to avoid overwhelming the IDE. Provide feedback on how many conflicts were opened.
 
-- **Mistake/Assumption**: Initially only colored the warning icon (⚠) yellow, leaving the message text in default color
-- **Correction**: Moved COLOR_RESET to end of entire warning message, ensuring both icon and text are yellow. Added blank line before all warnings for visual separation
+- **Implementation**: Created `_open_all_conflicts_in_editor()` function that iterates through all conflicts, opens each as a separate diff window in the detected IDE, with delays between opens. Integrated into batch conflict resolution menu as first option.
+
+- **Benefit**: Users can see all conflicts side-by-side in their IDE, resolve them using familiar IDE tools, and work more efficiently than terminal-based resolution. Maintains workflow continuity.
+
+- **Not documented**: Patterns for batch opening multiple files in external tools are not documented. The approach of opening multiple diff windows with delays is not captured in documentation.
+
+- **Mistake/Assumption**: None - this was a new feature request implemented correctly.
+
+- **Correction**: N/A
 
 - **Recommendation**:
     - **AI Agent Rule**: 
-        - **Action**: MODIFY existing rule file
+        - **Action**: ADD to existing rule file
         - **Rule File Path**: `.cursor/rules/formatting/terminal-output.mdc`
-        - **Rule Text**: "**CRITICAL**: Warning messages MUST: (1) Have a blank line (`print()`) above them, (2) Apply COLOR_YELLOW to the ENTIRE warning line (icon + text), (3) Place COLOR_RESET only at the end of the complete message. NEVER color only the warning icon - the entire line must be yellow."
-        - **Section**: "COLORATION AND ICONS FOR MESSAGES > Status Symbol Colors > Icon Usage"
-    - Add warning formatting standards to terminal output formatting rules
-    - Include examples showing correct vs incorrect warning formatting
+        - **Rule Text**: "When batch opening multiple files in external tools (IDEs, editors), ALWAYS open each file as a separate window/tab and add small delays (0.1-0.3s) between opens to avoid overwhelming the application. Provide feedback on how many items were successfully opened. Allow users to resolve items in the external tool, then continue in the terminal interface."
+        - **Section**: "FORMATTING PATTERNS" > "External Tool Integration"
+    - Document batch file opening patterns in sync-manager package documentation
 
 - **Response**: ✏️❓❌⚠️✅ No action required
 
@@ -138,51 +154,29 @@ You will understand that _add to trouble_ means to do the following:
 
 <!-- Close Fold -->
 
-## 2.0 :: Backward Compatibility Code Removal <!-- Start Fold -->
+## 2.4 :: Missing Function Implementation Error <!-- Start Fold -->
 
-- Learning: After refactoring prompt system from questionary to prompt_toolkit, all backward compatibility code (aliases, legacy function names, compatibility constants) should be removed immediately to avoid confusion and maintain clean codebase
-- Pattern: Remove legacy aliases (confirm_custom → confirm), remove compatibility constants (HAS_TERMINAL_MENU → HAS_PROMPT_TOOLKIT), remove unused style parameters, update all imports and function calls throughout codebase
-- Implementation: Search codebase for all references to legacy names, replace with new names, remove legacy function definitions, update __init__.py exports, remove compatibility comments
-- Benefit: Eliminates confusion about which functions to use, reduces code complexity, prevents accidental use of deprecated patterns
+- **Learning**: When adding new functionality that requires a function, both the function definition AND all references to it must be added. Import statements will fail if the function doesn't exist, even if the code structure appears correct.
 
-- **Not documented**: The principle that backward compatibility code should be removed after refactoring (not kept "just in case") is not documented
+- **Pattern**: When creating new functions that are imported elsewhere, ensure the function is actually implemented in the source file before adding import statements. The function definition must exist before it can be imported.
 
-- **Mistake/Assumption**: Initially kept backward compatibility aliases thinking they might be useful, but user explicitly requested removal
-- **Correction**: Removed all legacy code: confirm_custom function, HAS_TERMINAL_MENU constant, MENU_STYLE constant, updated all imports and calls throughout codebase
+- **Implementation**: Added `resolve_conflicts_batch()` function to `conflict_resolver.py` after it was already referenced in `file_sync.py` import statement, causing `ImportError: cannot import name 'resolve_conflicts_batch'`.
 
-- **Recommendation**:
-    - **AI Agent Rule**: 
-        - **Action**: CREATE new rule file
-        - **Rule File Path**: `.cursor/rules/code-maintenance.mdc`
-        - **Rule Text**: "**CRITICAL**: After refactoring code to use new patterns or libraries, ALWAYS remove ALL backward compatibility code (aliases, legacy function names, compatibility constants) immediately. NEVER keep backward compatibility code 'just in case' - it creates confusion and technical debt. Update all imports, function calls, and exports throughout the entire codebase in a single pass."
-        - **Section**: N/A (new file)
-    - Document code maintenance principles around backward compatibility removal
+- **Benefit**: Prevents import errors and ensures code is actually executable. Maintains proper dependency order.
 
-- **Response**: ✏️❓❓❌⚠️✅ No action required
+- **Not documented**: The pattern of ensuring function definitions exist before adding import statements is basic Python knowledge but not explicitly documented in project guidelines.
 
----
+- **Mistake/Assumption**: Initially added the import statement and function call before actually implementing the function definition, assuming it would be added in the same operation.
 
-<!-- Close Fold -->
-
-## 2.0 :: Nested Try-Except Block Indentation Patterns <!-- Start Fold -->
-
-- Learning: When nesting try-except-finally blocks, the except clause must be at the same indentation level as its corresponding try block, not nested inside finally blocks
-- Pattern: Structure nested exception handling as: outer try → inner try → finally (for cleanup) → except (for outer try, same level as outer try). The finally block belongs to the inner try, the except belongs to the outer try
-- Implementation: Ensure except clauses align with their corresponding try statements. Use finally for cleanup that must always execute, use except for handling exceptions from the try block
-- Benefit: Prevents syntax errors and ensures proper exception handling flow
-
-- **Not documented**: Nested try-except-finally block structure and indentation rules are not documented
-
-- **Mistake/Assumption**: Placed except block after finally block at incorrect indentation level, causing syntax error
-- **Correction**: Moved except block to same indentation level as outer try block, ensuring proper exception handling structure
+- **Correction**: Added the complete `resolve_conflicts_batch()` function implementation to `conflict_resolver.py`, including all helper functions like `_show_conflict_summary()` and `_open_all_conflicts_in_editor()`.
 
 - **Recommendation**:
     - **AI Agent Rule**: 
-        - **Action**: CREATE new rule file
-        - **Rule File Path**: `.cursor/rules/code-structure.mdc`
-        - **Rule Text**: "**CRITICAL**: When nesting try-except-finally blocks, ALWAYS ensure except clauses are at the same indentation level as their corresponding try blocks. NEVER place except blocks after finally blocks or at incorrect indentation levels. The structure MUST be: `try:` → `try:` → `finally:` → `except:` where the except aligns with the outer try."
-        - **Section**: N/A (new file)
-    - Document Python exception handling structure patterns
+        - **Action**: ADD to existing rule file
+        - **Rule File Path**: `.cursor/rules/by-language/python/code-organization.mdc`
+        - **Rule Text**: "When adding new functions that will be imported by other modules, ALWAYS implement the complete function definition in the source file BEFORE adding import statements in dependent files. Verify the function exists and is complete before referencing it in imports. This prevents ImportError exceptions and ensures code is executable."
+        - **Section**: "Import Management" or "Function Definition Order"
+    - This is basic Python knowledge but could be emphasized in code organization guidelines
 
 - **Response**: ✏️❓❌⚠️✅ No action required
 
@@ -190,26 +184,29 @@ You will understand that _add to trouble_ means to do the following:
 
 <!-- Close Fold -->
 
-## 2.0 :: Region System Indent Parameter Handling <!-- Start Fold -->
+## 2.5 :: Diff Display Formatting Improvements <!-- Start Fold -->
 
-- Learning: When calling prompt functions from within region contexts (using write_header), the indent parameter should be empty string ("") because the region system automatically adds base indentation via stdout wrapper
-- Pattern: Inside `with write_header()` blocks, pass `indent=""` to prompt functions. The region system's IndentedOutput wrapper automatically adds 2 spaces per active region. Only add manual indent if prompt_toolkit bypasses the wrapper
-- Implementation: Remove `indent=get_region_indent()` calls from within region contexts, use `indent=""` instead. For prompt_toolkit Application class, manually calculate indent since it bypasses wrapper
-- Benefit: Prevents double indentation, ensures consistent alignment with other region output
+- **Learning**: Git's word-level diff highlighting (`--word-diff=color`) provides much more readable diff output than standard unified diff format, especially for inline changes. Filtering out verbose git headers (diff --git, index, full paths) makes the output cleaner and easier to read.
 
-- **Not documented**: The rule that indent parameter should be empty within region contexts is not clearly documented. The distinction between region-aware prompts (empty indent) and prompt_toolkit Application (manual indent) needs clarification
+- **Pattern**: Use git diff with word-level highlighting as primary method, filter out header lines (diff --git, index, --- a/, +++ b/), show only filenames instead of full paths, and add visual separators around diff output for clarity.
 
-- **Mistake/Assumption**: Initially passed `get_region_indent()` to confirm_custom calls within region contexts, causing double indentation (region system + manual indent)
-- **Correction**: Changed to `indent=""` for confirm calls within regions, allowing region system to handle base indentation automatically
+- **Implementation**: Updated `_show_diff()` function to use `git diff --no-index --color=always --word-diff=color --word-diff-regex=.` as primary method, filter header lines, extract just filenames from paths, and add separator lines around diff output.
+
+- **Benefit**: Much more readable diff output that shows changes inline with color highlighting, similar to git's working tree view. Cleaner output without verbose headers.
+
+- **Not documented**: Git diff formatting options and word-level highlighting patterns are not documented. The approach of filtering headers for cleaner output is not captured in documentation.
+
+- **Mistake/Assumption**: Initially showed full git diff output with all headers, which was verbose and harder to read than necessary.
+
+- **Correction**: Added header filtering to show only relevant diff content, extracted filenames from full paths, and added visual separators for better readability.
 
 - **Recommendation**:
     - **AI Agent Rule**: 
-        - **Action**: MODIFY existing rule file
+        - **Action**: ADD to existing rule file
         - **Rule File Path**: `.cursor/rules/formatting/terminal-output.mdc`
-        - **Rule Text**: "**CRITICAL**: When calling prompt functions (text, select, confirm) from within `with write_header()` region contexts, ALWAYS pass `indent=""` (empty string). The region system's IndentedOutput wrapper automatically adds base indentation. ONLY manually calculate indent for prompt_toolkit Application class which bypasses the wrapper. NEVER pass `get_region_indent()` to prompt functions within regions - this causes double indentation."
-        - **Section**: "HEADER CODE BLOCKS AND REGION INDENTING > Interactive Prompt Indentation"
-    - Clarify indent parameter usage in terminal output formatting rules
-    - Add examples showing correct vs incorrect indent usage within regions
+        - **Rule Text**: "When displaying diff output in terminal, ALWAYS use git's word-level highlighting (`--word-diff=color`) when available for better readability. Filter out verbose headers (diff --git, index lines, full file paths) and show only filenames. Add visual separators (horizontal lines) around diff output for clarity. Prioritize readability over showing all available information."
+        - **Section**: "FORMATTING PATTERNS" > "Diff Display Formatting"
+    - Document git diff formatting best practices in sync-manager package documentation
 
 - **Response**: ✏️❓❌⚠️✅ No action required
 
@@ -217,25 +214,30 @@ You will understand that _add to trouble_ means to do the following:
 
 <!-- Close Fold -->
 
-## 2.0 :: Single Header Per Section Pattern <!-- Start Fold -->
+## 2.6 :: Duplicate Prompt Output Issue <!-- Start Fold -->
 
-- Learning: Each functional section (e.g., "Local Repository", "Remote Repository") should have only one header that wraps all related prompts, summaries, and confirmations, not multiple headers for different parts of the same section
-- Pattern: Consolidate all section logic (prompts, checks, summaries, confirmations) within a single `with write_header("Section Name")` block. Remove duplicate headers that were created for different parts of the same workflow
-- Implementation: Move all prompts, summary displays, and confirmations into one header context, ensuring logical flow within single section boundary
-- Benefit: Provides clear visual organization, prevents header duplication, maintains consistent user experience
+- **Learning**: When using `prompt_toolkit.Application`, the layout already handles displaying the selected answer inline. Adding explicit print statements after `app.run()` causes duplicate output - the answer appears twice.
 
-- **Not documented**: The pattern of single header per functional section is not documented
+- **Pattern**: `prompt_toolkit.Application`'s built-in layout automatically displays the selected answer when `is_answered` is true. Do not add manual print statements to display the answer after `app.run()` returns, as this creates duplicates.
 
-- **Mistake/Assumption**: Created multiple headers for same section (e.g., one for prompts, another for summary), causing visual duplication
-- **Correction**: Consolidated all section logic into single header block, removing duplicate headers
+- **Implementation**: Removed redundant print statements in `pyprompt/prompts.py` that were printing the selected answer after `app.run()` completed, since the Application layout already handles this display.
+
+- **Benefit**: Cleaner output without duplicate lines. Users see the answer once, as intended by prompt_toolkit's design.
+
+- **Not documented**: The behavior of `prompt_toolkit.Application` regarding automatic answer display is not documented in the pyprompt package. The fact that manual printing causes duplicates is not captured.
+
+- **Mistake/Assumption**: Initially added explicit print statements to show the selected answer, not realizing that `prompt_toolkit.Application` already handles this automatically through its layout system.
+
+- **Correction**: Removed the redundant print statements that were causing duplicate output, relying on prompt_toolkit's built-in answer display mechanism.
 
 - **Recommendation**:
     - **AI Agent Rule**: 
-        - **Action**: MODIFY existing rule file
-        - **Rule File Path**: `.cursor/rules/formatting/terminal-output.mdc`
-        - **Rule Text**: "**CRITICAL**: Each functional section (e.g., 'Local Repository', 'Remote Repository') MUST have only ONE header that wraps ALL related functionality (prompts, checks, summaries, confirmations). NEVER create multiple headers for different parts of the same section. Consolidate all section logic within a single `with write_header()` block."
-        - **Section**: "HEADER CODE BLOCKS AND REGION INDENTING > Header Functions"
-    - Document single header per section pattern in terminal output formatting rules
+        - **Action**: ADD to existing rule file
+        - **Rule File Path**: `.cursor/rules/by-language/python/code-organization.mdc`
+        - **Rule Text**: "When using `prompt_toolkit.Application` for interactive prompts, NEVER add manual print statements to display the selected answer after `app.run()` returns. The Application's layout automatically handles displaying the answer inline when `is_answered` is true. Adding manual prints causes duplicate output."
+        - **Section**: "Interactive Prompt Patterns" or "Library-Specific Patterns"
+    - Document prompt_toolkit behavior in pyprompt package documentation
+    - Add note about automatic answer display in Application layout
 
 - **Response**: ✏️❓❌⚠️✅ No action required
 

@@ -11,10 +11,17 @@ alwaysApply: false
 
 **MANDATORY EXECUTION PROTOCOL**:
 
-1. **NO DEVIATION**: All code quality rules must be followed exactly as written
-2. **NO SKIPPING**: No steps may be skipped, abbreviated, or modified
-3. **NO SELECTIVE COMPLIANCE**: All rules apply to all code quality activities
-4. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
+1. **PROACTIVE RULE DISCOVERY**: Before starting ANY Python code quality or linter configuration task, MUST check for relevant rules in `.cursor/rules/by-language/python/` directory
+2. **NO DEVIATION**: All code quality rules must be followed exactly as written
+3. **NO SKIPPING**: No steps may be skipped, abbreviated, or modified
+4. **NO SELECTIVE COMPLIANCE**: All rules apply to all code quality activities
+5. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
+
+**REQUIRED PRE-TASK CHECKLIST**:
+
+- [ ] **Rule Discovery**: Checked `.cursor/rules/by-language/python/code-quality.mdc` before starting task
+- [ ] **Rule Review**: Read and understood all relevant sections before making changes
+- [ ] **Rule Application**: Applied rules from the start, not after errors appear
 
 ## **RUNTIME IMPORTS AND LINTER CONFIGURATION**
 
@@ -197,6 +204,12 @@ from pyprompt import select
 
 ## **ANTI-PATTERNS**
 
+### **❌ Rule Discovery Violations**
+
+- ❌ **Missing Rule Check** - Don't start Python code quality tasks without first checking `.cursor/rules/by-language/python/code-quality.mdc`
+- ❌ **Reactive Rule Application** - Don't apply rules only after errors appear - check and apply rules proactively
+- ❌ **Ignoring CRITICAL EXECUTION DIRECTIVE** - Don't skip the mandatory rule discovery step in the execution protocol
+
 ### **❌ Runtime Import Violations**
 
 - ❌ **Missing Type Ignore** - Don't skip `# type: ignore` on imports resolved via sys.path
@@ -207,6 +220,7 @@ from pyprompt import select
 
 ## **QUALITY GATES**
 
+- [ ] **Rule Discovery**: Checked `.cursor/rules/by-language/python/code-quality.mdc` before starting task
 - [ ] **Type Ignore Comments**: All runtime imports have `# type: ignore` comments
 - [ ] **Path Setup Before Imports**: sys.path modifications occur before importing local packages
 - [ ] **Linter Configuration**: pyrightconfig.json or pyproject.toml has executionEnvironments configured
@@ -227,6 +241,7 @@ After implementing proper runtime import handling:
 
 ### **CRITICAL PRIORITY (Execute immediately)**
 
+- **Check relevant rules files** - Before starting task, check `.cursor/rules/by-language/python/code-quality.mdc` for applicable rules
 - Add `# type: ignore` to all imports resolved via sys.path modifications
 - Configure pyrightconfig.json or pyproject.toml with executionEnvironments
 - Ensure sys.path modifications occur before imports

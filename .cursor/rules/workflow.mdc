@@ -1,0 +1,122 @@
+---
+alwaysApply: true
+---
+
+# Workflow Rules
+
+## **CRITICAL EXECUTION DIRECTIVE**
+
+**AI Agent Directive**: Follow workflow rules exactly for all coding tasks to ensure proper rule discovery and compliance.
+
+**MANDATORY EXECUTION PROTOCOL**:
+
+1. **PROACTIVE RULE DISCOVERY**: Before starting ANY task, MUST check for relevant rule files in `.cursor/rules/` directory structure
+2. **NO DEVIATION**: All workflow rules must be followed exactly as written
+3. **NO SKIPPING**: No steps may be skipped, abbreviated, or modified
+4. **NO SELECTIVE COMPLIANCE**: All rules apply to all coding activities
+5. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
+
+## **RULE DISCOVERY PROTOCOL**
+
+### **1. :: Mandatory Pre-Task Rule Discovery**
+
+**✅ CORRECT - Check relevant rules before starting task**:
+
+1. **Identify Task Category**: Determine what type of task you're working on:
+   - Language-specific (Python, JavaScript, etc.) → Check `.cursor/rules/by-language/[language]/`
+   - Tool-specific (UV, etc.) → Check `.cursor/rules/tool/[tool]/`
+   - Formatting (markdown, terminal output, etc.) → Check `.cursor/rules/formatting/`
+   - Code quality/linter → Check `.cursor/rules/by-language/[language]/code-quality.mdc`
+   - Code maintenance/refactoring → Already loaded (universal rule)
+   - Documentation → Check `.cursor/rules/documentation.mdc` (universal rule)
+   - Project-specific → Check `.cursor/rules/dev-boards/` or other project directories
+
+2. **List Relevant Rule Files**: Search for and list all rule files that might apply to your task
+
+3. **Read Rule Files**: Read all relevant rule files BEFORE making any changes
+
+4. **Apply Rules**: Apply rules from the start, not after errors appear
+
+**❌ INCORRECT - Starting task without rule discovery**:
+
+1. Start making code changes immediately
+2. Only check rules after errors appear
+3. Assume rules don't exist or aren't relevant
+4. Skip rule discovery step
+
+### **2. :: Rule Discovery Checklist**
+
+**REQUIRED PRE-TASK CHECKLIST**:
+
+- [ ] **Task Category Identified**: Determined what type of task this is (language, tool, formatting, etc.)
+- [ ] **Rule Files Located**: Found all relevant rule files in `.cursor/rules/` directory structure
+- [ ] **Rule Files Read**: Read and understood all relevant rule files before starting
+- [ ] **Rules Applied**: Applied rules from the start, not reactively after errors
+
+### **3. :: Rule File Locations**
+
+**Language-Specific Rules**:
+- `.cursor/rules/by-language/[language]/` - Check for relevant rule files based on file type
+- Example: `.cursor/rules/by-language/python/code-quality.mdc` for Python code quality tasks
+
+**Tool-Specific Rules**:
+- `.cursor/rules/tool/[tool]/` - Check for tool-specific rules
+- Example: `.cursor/rules/tool/uv/workspace.mdc` for UV workspace tasks
+
+**Formatting Rules**:
+- `.cursor/rules/formatting/` - Check for formatting-specific rules
+- Example: `.cursor/rules/formatting/terminal-output.mdc` for terminal output
+
+**Universal Rules** (already loaded with `alwaysApply: true`):
+- `.cursor/rules/code-maintenance.mdc`
+- `.cursor/rules/documentation.mdc`
+- `.cursor/rules/workflow.mdc` (this file)
+
+**Project-Specific Rules**:
+- `.cursor/rules/dev-boards/` - Check for dev-boards project-specific rules
+- Other project directories as needed
+
+## **ANTI-PATTERNS**
+
+### **❌ Workflow Violations**
+
+- ❌ **Missing Rule Discovery** - Don't start tasks without checking for relevant rule files
+- ❌ **Reactive Rule Application** - Don't apply rules only after errors appear
+- ❌ **Assuming No Rules** - Don't assume rule files don't exist or aren't relevant
+- ❌ **Skipping Rule Discovery** - Don't skip the mandatory rule discovery step
+- ❌ **Selective Rule Compliance** - Don't pick and choose which rules to follow
+
+## **QUALITY GATES**
+
+- [ ] **Rule Discovery Completed**: Checked for and located all relevant rule files before starting task
+- [ ] **Rule Files Read**: Read and understood all relevant rule files before making changes
+- [ ] **Rules Applied Proactively**: Applied rules from the start, not after errors appear
+- [ ] **No Reactive Rule Application**: Rules were not applied only after errors or warnings
+
+## **SUCCESS METRICS**
+
+After implementing proper workflow:
+
+- ✅ **Proactive Rule Discovery** - All relevant rules checked before starting tasks
+- ✅ **No Reactive Rule Application** - Rules applied from the start, not after errors
+- ✅ **Comprehensive Rule Coverage** - All applicable rule files discovered and followed
+- ✅ **Consistent Compliance** - All tasks follow the same rule discovery protocol
+
+## **EXECUTION PRIORITY MATRIX**
+
+### **CRITICAL PRIORITY (Execute immediately)**
+
+- **Rule Discovery**: Check for relevant rule files in `.cursor/rules/` before starting ANY task
+- **Read Rule Files**: Read all relevant rule files before making changes
+- **Apply Rules Proactively**: Apply rules from the start, not after errors
+
+### **HIGH PRIORITY (Execute before proceeding)**
+
+- Verify all relevant rule categories have been checked
+- Confirm rule files have been read and understood
+- Ensure rules are being applied proactively
+
+### **MEDIUM PRIORITY (Execute during normal operation)**
+
+- Maintain awareness of new rule files as they're added
+- Update rule discovery process as directory structure evolves
