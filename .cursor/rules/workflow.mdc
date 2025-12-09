@@ -24,6 +24,7 @@ alwaysApply: true
 
 1. **Identify Task Category**: Determine what type of task you're working on:
    - Language-specific (Python, JavaScript, etc.) → Check `.cursor/rules/by-language/[language]/`
+   - **Python tasks**: MUST check `.cursor/rules/by-language/python/code-quality.mdc` before starting
    - Tool-specific (UV, etc.) → Check `.cursor/rules/tool/[tool]/`
    - Formatting (markdown, terminal output, etc.) → Check `.cursor/rules/formatting/`
    - Code quality/linter → Check `.cursor/rules/by-language/[language]/code-quality.mdc`
@@ -50,6 +51,7 @@ alwaysApply: true
 
 - [ ] **Task Category Identified**: Determined what type of task this is (language, tool, formatting, etc.)
 - [ ] **Rule Files Located**: Found all relevant rule files in `.cursor/rules/` directory structure
+- [ ] **Code Quality Rules Checked**: For Python tasks, checked `.cursor/rules/by-language/python/code-quality.mdc` before starting
 - [ ] **Rule Files Read**: Read and understood all relevant rule files before starting
 - [ ] **Rules Applied**: Applied rules from the start, not reactively after errors
 

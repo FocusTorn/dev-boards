@@ -1,20 +1,198 @@
 ---
-alwaysApply: false
+alwaysApply: true
 ---
-
 # Workspace Rules
 
 ## **CRITICAL EXECUTION DIRECTIVE**
 
-**AI Agent Directive**: This file has been moved. Follow workspace rules from the new location.
+**AI Agent Directive**: Follow workspace rules exactly for all file handling and rule application tasks.
 
 **MANDATORY EXECUTION PROTOCOL**:
 
 1. **NO DEVIATION**: All workspace rules must be followed exactly as written
 2. **NO SKIPPING**: No steps may be skipped, abbreviated, or modified
-3. **NO SELECTIVE COMPLIANCE**: All rules apply to all workspace configuration activities
+3. **NO SELECTIVE COMPLIANCE**: All rules apply to all workspace activities
 4. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
 
+## **EXTENSIONLESS FILE HANDLING**
+
+### **1. :: Syntax-Based Rule Application**
+
+**✅ CORRECT - Treat extensionless files based on syntax**:
+
+When working with a file that has no extension, the AI must:
+
+1. **Detect File Syntax**: Analyze the file content to determine the programming language or file type
+2. **Apply Corresponding Rules**: Treat the file as though it has the appropriate extension and apply all relevant rules
+3. **Language-Specific Rules**: Apply all rules from `.cursor/rules/by-language/[detected-language]/` as if the file had the correct extension
+4. **Formatting Rules**: Apply formatting rules appropriate to the detected syntax
+5. **Code Quality Rules**: Apply code quality rules for the detected language
+
+**✅ CORRECT - Example: Extensionless Python file**:
+
+```python
+#!/usr/bin/env python3
+"""Extensionless file containing Python code."""
+
+def example_function():
+    """This file has no .py extension but contains Python code."""
+    return True
+```
+
+**AI Behavior**: 
+- Detect Python syntax from shebang (`#!/usr/bin/env python3`) and code structure
+- Apply all `.cursor/rules/by-language/python/*.mdc` rules
+- Apply Python formatting rules
+- Apply Python code quality rules
+- Treat as if file extension is `.py`
+
+**✅ CORRECT - Example: Extensionless shell script**:
+
+```bash
+#!/bin/bash
+# Extensionless bash script
+echo "Hello World"
+```
+
+**AI Behavior**:
+- Detect shell script syntax from shebang (`#!/bin/bash`)
+- Apply shell script formatting rules
+- Treat as if file extension is `.sh` or `.bash`
+
+**✅ CORRECT - Example: Extensionless JavaScript/TypeScript**:
+
+```javascript
+// Extensionless JavaScript file
+function example() {
+    return true;
+}
+```
+
+**AI Behavior**:
+- Detect JavaScript/TypeScript syntax from code structure
+- Apply all `.cursor/rules/by-language/javascript/*.mdc` or `.cursor/rules/by-language/typescript/*.mdc` rules
+- Treat as if file extension is `.js` or `.ts`
+
+**❌ INCORRECT - Ignoring extensionless files**:
+
+```python
+# Wrong: Not applying Python rules to extensionless Python file
+# File: sync (no extension, but contains Python code)
+# AI ignores Python rules because file has no .py extension
+```
+
+**❌ INCORRECT - Applying wrong language rules**:
+
+```python
+# Wrong: Applying JavaScript rules to extensionless Python file
+# File: sync (no extension, contains Python code)
+# AI incorrectly applies JavaScript rules
+```
+
+### **2. :: Detection Methods**
+
+**✅ CORRECT - Syntax detection priority**:
+
+1. **Shebang Line**: Check for shebang (`#!/usr/bin/env python3`, `#!/bin/bash`, etc.)
+2. **File Content**: Analyze code structure, keywords, and syntax patterns
+3. **File Location**: Consider directory context (e.g., `scripts/` directory often contains scripts)
+4. **File Name Patterns**: Consider common naming patterns (e.g., `sync`, `build`, `test`)
+
+**✅ CORRECT - Multi-language detection**:
+
+```python
+#!/usr/bin/env python3
+"""File may contain multiple languages."""
+# Python code here
+```
+
+```bash
+# Shell script embedded
+echo "Shell commands"
+```
+
+**AI Behavior**: 
+- Primary language: Python (from shebang)
+- Apply Python rules primarily
+- Recognize embedded shell commands and apply appropriate handling
+
+**❌ INCORRECT - Single detection method**:
+
+```python
+# Wrong: Only checking file extension
+# If no extension, skip all rules
+
+# Wrong: Only checking shebang
+# If no shebang, skip all rules
+```
+
+### **3. :: Rule Application**
+
+**✅ CORRECT - Complete rule application**:
+
+When an extensionless file is detected as a specific language:
+
+1. **Language-Specific Rules**: Apply all rules from `.cursor/rules/by-language/[language]/`
+2. **Formatting Rules**: Apply formatting rules for the detected language
+3. **Code Quality Rules**: Apply code quality rules for the detected language
+4. **Tool-Specific Rules**: Apply tool-specific rules if applicable (e.g., UV for Python)
+5. **Project-Specific Rules**: Apply project-specific rules if applicable
+
+**✅ CORRECT - Example: Extensionless Python script**:
+
+```
+File: D:\_dev\_Projects\dev-boards\___shared\.sync-manager\scripts\sync
+Content: Python code
+```
+
+**Applied Rules**:
+- `.cursor/rules/by-language/python/code-organization.mdc`
+- `.cursor/rules/by-language/python/code-structure.mdc`
+- `.cursor/rules/formatting/terminal-output.mdc` (if applicable)
+- `.cursor/rules/tool/uv/workspace.mdc` (if using UV)
+- All other Python-specific rules
+
+**❌ INCORRECT - Partial rule application**:
+
+```python
+# Wrong: Only applying some rules
+# File: sync (extensionless Python)
+# AI only applies code-organization.mdc but ignores code-structure.mdc
+```
+
+**❌ INCORRECT - No rule application**:
+
+```python
+# Wrong: Not applying any rules
+# File: sync (extensionless Python)
+# AI treats as plain text, no rules applied
+```
 
 ## **ANTI-PATTERNS**
+
+### **❌ Extensionless File Handling Violations**
+
+- ❌ **Ignoring Extensionless Files** - Don't skip rule application for files without extensions
+- ❌ **Wrong Language Detection** - Don't apply incorrect language rules to extensionless files
+- ❌ **Partial Rule Application** - Don't apply only some rules to extensionless files
+- ❌ **No Syntax Detection** - Don't skip syntax detection for extensionless files
+- ❌ **Single Detection Method** - Don't rely on only one method for syntax detection
+
+## **QUALITY GATES**
+
+- [ ] **Syntax Detection**: File syntax is correctly detected from shebang, content, or context
+- [ ] **Rule Application**: All appropriate rules for detected language are applied
+- [ ] **Formatting Rules**: Formatting rules for detected language are applied
+- [ ] **Code Quality Rules**: Code quality rules for detected language are applied
+- [ ] **Complete Coverage**: All relevant rules are applied, not just a subset
+
+## **SUCCESS METRICS**
+
+After implementing proper extensionless file handling:
+
+- ✅ **Correct Rule Application** - Extensionless files receive appropriate rules based on syntax
+- ✅ **Language Detection** - File syntax is correctly identified through multiple methods
+- ✅ **Complete Coverage** - All relevant rules are applied to extensionless files
+- ✅ **Consistent Behavior** - Extensionless files are treated the same as files with extensions
+- ✅ **No Rule Gaps** - No rules are skipped for extensionless files
 

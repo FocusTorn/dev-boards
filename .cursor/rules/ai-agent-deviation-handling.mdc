@@ -1,0 +1,308 @@
+---
+globs: **/*
+alwaysApply: true
+---
+
+# AI Agent Deviation Handling Rules
+
+## **REFERENCE FILES**
+
+### **Documentation References**
+
+- **LESSONS_LEARNED_FORMAT**: `.cursor/commands/SumUp - 3. Lessons Learned.md`
+- **CODE_QUALITY_RULES**: `.cursor/rules/by-language/python/code-quality.mdc`
+- **WORKFLOW_RULES**: `.cursor/rules/workflow.mdc`
+
+---
+
+## **CRITICAL EXECUTION DIRECTIVE**
+
+**AI Agent Directive**: Follow deviation handling rules exactly when encountering deviation markers or rule violations.
+
+**MANDATORY EXECUTION PROTOCOL**:
+
+1. **NO DEVIATION**: All deviation handling rules must be followed exactly as written
+2. **NO SKIPPING**: No steps may be skipped, abbreviated, or modified
+3. **NO SELECTIVE COMPLIANCE**: All rules apply to all deviation handling activities
+4. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
+
+## **DEVIATION DETECTION AND ANALYSIS**
+
+### **1. :: Deviation Marker Recognition**
+
+**✅ CORRECT - Recognize deviation markers**:
+
+When the user provides a message starting with `Deviation:` followed by error information, the AI Agent MUST:
+
+1. **Immediately Stop**: Stop any current task or response
+2. **Acknowledge Deviation**: Explicitly acknowledge that a deviation has been detected
+3. **Begin Root Cause Analysis**: Start the deviation analysis protocol (see section 2)
+4. **Do NOT Defend**: Do not explain why the deviation occurred until root cause analysis is complete
+5. **Do NOT Make Excuses**: Focus on identifying the systemic cause, not justifying actions
+
+**✅ CORRECT - Deviation marker format**:
+
+```
+Deviation: [Brief description of what was not followed]
+
+[Error details, linting errors, or rule violation information]
+```
+
+**❌ INCORRECT - Ignoring deviation markers**:
+
+- Continuing with current task after seeing `Deviation:`
+- Providing explanations before root cause analysis
+- Defending actions instead of analyzing systemic causes
+- Treating deviation as a one-time error rather than a systemic issue
+
+### **2. :: Root Cause Analysis Protocol**
+
+**✅ CORRECT - Systematic root cause analysis**:
+
+When a deviation is detected, the AI Agent MUST perform the following analysis in order:
+
+#### **2.1. :: Rule Discovery Analysis**
+
+1. **Check Rule Discovery**: Determine if relevant rules were checked before the task
+   - Was the workflow rule for proactive rule discovery followed?
+   - Were relevant rule files read before starting the task?
+   - Did the agent check `.cursor/rules/` directory structure?
+
+2. **Identify Missing Rule Checks**: List all rule files that should have been checked but weren't
+   - Language-specific rules (`.cursor/rules/by-language/[language]/`)
+   - Tool-specific rules (`.cursor/rules/tool/[tool]/`)
+   - Formatting rules (`.cursor/rules/formatting/`)
+   - Universal rules (workflow, code-maintenance, documentation, etc.)
+
+#### **2.2. :: Rule Sufficiency Analysis**
+
+1. **Evaluate Existing Rules**: Determine if existing rules cover the deviation
+   - Do existing rules explicitly address this scenario?
+   - Are the rules clear and unambiguous?
+   - Do the rules provide sufficient guidance to prevent the deviation?
+
+2. **Identify Rule Gaps**: Determine what's missing from existing rules
+   - Missing coverage: No rule exists for this scenario
+   - Insufficient clarity: Rule exists but is unclear or ambiguous
+   - Missing enforcement: Rule exists but lacks enforcement mechanisms
+   - Incomplete scope: Rule covers part but not all of the scenario
+
+#### **2.3. :: Execution Analysis**
+
+1. **Check Execution Steps**: Determine if rules were followed during execution
+   - Were all required steps from the rule executed?
+   - Were steps executed in the correct order?
+   - Were quality gates checked?
+
+2. **Identify Execution Gaps**: Determine what execution steps were missed
+   - Skipped steps: Required steps that were not executed
+   - Wrong order: Steps executed in incorrect sequence
+   - Missing validation: Quality gates or checks that were skipped
+
+#### **2.4. :: Tool and Process Analysis**
+
+1. **Evaluate Tool Usage**: Determine if tools were used correctly
+   - Were appropriate tools selected for the task?
+   - Were tools used with correct parameters?
+   - Did tool outputs provide expected information?
+
+2. **Identify Tool Gaps**: Determine if tool limitations contributed to deviation
+   - Tool limitations: Tools that don't catch certain errors
+   - Incomplete tool usage: Tools that should have been used but weren't
+   - Tool output misinterpretation: Tool outputs that were misunderstood
+
+### **3. :: Root Cause Categorization**
+
+**✅ CORRECT - Categorize root cause**:
+
+After completing root cause analysis, categorize the deviation as one of:
+
+1. **Missing Rule**: No rule exists that covers this scenario
+   - **Evidence**: No rule file or rule section addresses this scenario
+   - **Remediation**: Create new rule or add to existing rule file
+
+2. **Insufficient Rule**: Rule exists but is inadequate
+   - **Evidence**: Rule exists but is unclear, ambiguous, or incomplete
+   - **Remediation**: Modify existing rule to be more explicit and comprehensive
+
+3. **Rule Discovery Failure**: Rules exist but weren't checked
+   - **Evidence**: Relevant rules exist but weren't read before task
+   - **Remediation**: Strengthen workflow rules for rule discovery
+
+4. **Rule Application Failure**: Rules were checked but not applied
+   - **Evidence**: Rules were read but not followed during execution
+   - **Remediation**: Strengthen rule enforcement mechanisms
+
+5. **Tool Limitation**: Tools used don't catch the error
+   - **Evidence**: Tools were used correctly but didn't detect the issue
+   - **Remediation**: Add additional validation steps or use additional tools
+
+6. **Process Gap**: Missing process steps or quality gates
+   - **Evidence**: Required process steps or quality gates are missing
+   - **Remediation**: Add missing process steps or quality gates to rules
+
+## **EXECUTIVE SUMMARY GENERATION**
+
+### **4. :: Executive Summary Format**
+
+**✅ CORRECT - Generate executive summary using Lessons Learned format**:
+
+After root cause analysis, generate an executive summary following the format from `SumUp - 3. Lessons Learned.md`:
+
+```markdown
+## Deviation Analysis: [Brief Description]
+
+- **Learning**: [What was discovered about the deviation]
+- **Pattern**: [The specific deviation pattern that occurred]
+- **Root Cause**: [Categorized root cause: Missing Rule | Insufficient Rule | Rule Discovery Failure | Rule Application Failure | Tool Limitation | Process Gap]
+- **Evidence**: [Specific evidence supporting the root cause categorization]
+
+- **Not Documented**: [What gaps exist in current rules or documentation]
+  - [Specific rule file or section that is missing or insufficient]
+  - [Specific process step or quality gate that is missing]
+
+- **Mistake/Assumption**: [What was wrong or incorrectly assumed]
+  - [Specific mistake made during execution]
+  - [Incorrect assumption that led to the deviation]
+
+- **Correction**: [How the deviation should be prevented in the future]
+  - [Specific rule changes needed]
+  - [Specific process improvements needed]
+  - [Specific tool usage improvements needed]
+
+- **Recommendation**:
+    - **AI Agent Rule**: [MUST be the first item if rule changes are needed]
+        - **Action**: [ADD to existing rule file | MODIFY existing rule file | CREATE new rule file]
+        - **Rule File Path**: [Relative path to rule file, e.g., `.cursor/rules/by-language/python/code-quality.mdc`]
+        - **Rule Text**: "[Exact rule text that would have prevented this deviation]"
+        - **Section**: [If ADD/MODIFY, specify which section in the rule file]
+        - **Rationale**: [Explanation of why this rule is needed and how it prevents the deviation from recurring]
+    - [Additional remediation recommendations]
+    - [Process improvements needed]
+    - [Tool usage improvements needed]
+
+- **Response**: ⚠️ {Directive for AI to address}
+```
+
+**✅ CORRECT - Executive summary requirements**:
+
+1. **Complete Analysis**: All sections must be filled out
+2. **Specific Evidence**: Provide specific evidence, not general statements
+3. **Actionable Recommendations**: Recommendations must be specific and actionable
+4. **Rule Text**: If rule changes are needed, provide exact rule text
+5. **File Paths**: Use relative paths from workspace root
+6. **Categorization**: Root cause must be one of the six categories
+
+**❌ INCORRECT - Incomplete executive summary**:
+
+- Missing sections (Learning, Pattern, Root Cause, etc.)
+- Vague statements without specific evidence
+- Recommendations without actionable steps
+- Missing rule text when rule changes are needed
+- Incorrect root cause categorization
+
+### **5. :: Rule File Path Discovery**
+
+**✅ CORRECT - Discover all rule files before recommending changes**:
+
+When recommending rule changes, the AI Agent MUST:
+
+1. **Search Entire Workspace**: Scan all `.cursor/` directories for rule files
+   - Use `glob_file_search` to find all `.cursor/rules/**/*.mdc` files
+   - Use `list_dir` to explore `.cursor/rules/` directory structure
+   - Do NOT rely only on rules the agent is currently aware of
+
+2. **Identify Best Match**: Determine the best rule file for the change
+   - **ADD to existing**: If a rule file exists that covers this scenario
+   - **MODIFY existing**: If an existing rule needs to be updated
+   - **CREATE new**: If no existing rule file is appropriate
+
+3. **Provide Full Path**: Always provide relative path from workspace root
+   - Format: `.cursor/rules/[category]/[filename].mdc`
+   - For language-specific: `.cursor/rules/by-language/[language]/[filename].mdc`
+   - For tool-specific: `.cursor/rules/tool/[tool]/[filename].mdc`
+   - For formatting: `.cursor/rules/formatting/[filename].mdc`
+
+**❌ INCORRECT - Incomplete rule file discovery**:
+
+- Recommending CREATE when ADD/MODIFY is appropriate
+- Not searching entire workspace for rule files
+- Using incorrect file paths
+- Not identifying the best existing rule file match
+
+## **DEVIATION REMEDIATION**
+
+### **6. :: Remediation Protocol**
+
+**✅ CORRECT - Follow remediation protocol**:
+
+After generating executive summary, the AI Agent MUST:
+
+1. **Present Summary**: Display the executive summary for user review
+2. **Wait for User Input**: Do NOT implement changes until user reviews and approves
+3. **Collaborate on Remediation**: Work with user to refine recommendations
+4. **Implement Approved Changes**: Only implement changes after user approval
+
+**❌ INCORRECT - Implementing without approval**:
+
+- Implementing rule changes before user review
+- Making assumptions about what user wants
+- Skipping collaboration step
+- Not waiting for explicit approval
+
+## **ANTI-PATTERNS**
+
+### **❌ Deviation Handling Violations**
+
+- ❌ **Ignoring Deviation Markers** - Don't continue tasks after seeing `Deviation:` marker
+- ❌ **Defending Instead of Analyzing** - Don't explain why deviation occurred before root cause analysis
+- ❌ **Incomplete Root Cause Analysis** - Don't skip any of the four analysis steps
+- ❌ **Vague Executive Summary** - Don't provide vague or incomplete executive summaries
+- ❌ **Missing Rule Discovery** - Don't recommend rule changes without searching entire workspace for rule files
+- ❌ **Implementing Without Approval** - Don't implement changes before user reviews and approves
+- ❌ **Incorrect Categorization** - Don't mis categorize root cause (must be one of six categories)
+
+## **QUALITY GATES**
+
+- [ ] **Deviation Acknowledged**: Deviation marker was recognized and acknowledged
+- [ ] **Root Cause Analysis Complete**: All four analysis steps completed
+- [ ] **Root Cause Categorized**: Deviation categorized as one of six root cause types
+- [ ] **Executive Summary Generated**: Complete executive summary following Lessons Learned format
+- [ ] **Rule Files Discovered**: Entire workspace searched for relevant rule files
+- [ ] **Specific Recommendations**: Actionable recommendations with exact rule text provided
+- [ ] **User Review**: Executive summary presented for user review before implementation
+
+## **SUCCESS METRICS**
+
+After implementing proper deviation handling:
+
+- ✅ **Systemic Issues Identified** - Root causes identified, not just symptoms
+- ✅ **Rules Improved** - Rules updated to prevent future deviations
+- ✅ **Process Strengthened** - Process gaps identified and remediated
+- ✅ **Preventive Measures** - Proactive measures added to prevent recurrence
+- ✅ **Clear Documentation** - Executive summaries provide clear remediation path
+
+## **EXECUTION PRIORITY MATRIX**
+
+### **CRITICAL PRIORITY (Execute immediately)**
+
+- **Stop Current Task**: Immediately stop when deviation marker is detected
+- **Acknowledge Deviation**: Explicitly acknowledge deviation detection
+- **Begin Root Cause Analysis**: Start systematic root cause analysis protocol
+- **Generate Executive Summary**: Create complete executive summary following format
+
+### **HIGH PRIORITY (Execute before proceeding)**
+
+- **Search Rule Files**: Discover all relevant rule files in workspace
+- **Categorize Root Cause**: Determine which of six categories applies
+- **Provide Specific Recommendations**: Include exact rule text and file paths
+
+### **MEDIUM PRIORITY (Execute during normal operation)**
+
+- **Wait for User Approval**: Present summary and wait for user review
+- **Collaborate on Remediation**: Work with user to refine recommendations
+- **Implement Approved Changes**: Execute only after explicit user approval
+
+## **DYNAMIC MANAGEMENT NOTE**
+
+This document is optimized for AI agent internal processing and may be updated dynamically based on operational needs and pattern recognition. The structure prioritizes AI agent compliance and effectiveness over traditional documentation practices.

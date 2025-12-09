@@ -104,6 +104,7 @@ If an AI Agent rule is needed, it MUST be the FIRST item in the Recommendation s
     - **Rule File Path**: [Relative path to rule file, e.g., `.cursor/rules/formatting/terminal-output.mdc`]
     - **Rule Text**: "[Exact rule text that enforces the pattern or prevents the mistake]"
     - **Section**: [If ADD/MODIFY, specify which section in the rule file, e.g., "Terminal Output Formatting Rules > Region Indentation System"]
+    - **Rationale**: [Explanation of why this rule is needed and how it prevents the pitfall from recurring]
 ```
 
 **Rule File Path Guidelines**:
@@ -154,7 +155,7 @@ If an AI Agent rule is needed, it MUST be the FIRST item in the Recommendation s
 3. If yes, create an AI Agent rule with exact, enforceable language
 4. The AI Agent rule MUST be the FIRST item in the Recommendation section
 5. Determine the appropriate action (ADD/MODIFY/CREATE) and identify the rule file path
-6. Format with Action, Rule File Path, Rule Text, and Section (if ADD/MODIFY)
+6. Format with Action, Rule File Path, Rule Text, Section (if ADD/MODIFY), and Rationale
 
 **Rule Format Guidelines**:
 - Use imperative language (ALWAYS, NEVER, MUST)
@@ -193,6 +194,7 @@ Benefit: [Why this approach is better]
         - **Rule File Path**: [Relative path to rule file]
         - **Rule Text**: "[Exact rule text that enforces the pattern or prevents the mistake]"
         - **Section**: [If ADD/MODIFY, specify which section in the rule file]
+        - **Rationale**: [Explanation of why this rule is needed and how it prevents the pitfall from recurring]
     - [Other recommended actions to be taken to prevent this issue in the future]
 
 - **Response**: ✏️❓❌⚠️✅ No action required
@@ -258,6 +260,7 @@ You will understand that _add to trouble_ means to do the following:
         - **Rule File Path**: [Relative path to rule file]
         - **Rule Text**: "[Exact rule text that enforces the pattern or prevents the mistake]"
         - **Section**: [If ADD/MODIFY, specify which section in the rule file]
+        - **Rationale**: [Explanation of why this rule is needed and how it prevents the pitfall from recurring]
     - [AI Agent provides specific remediation recommendations to prevent this pitfall in the future]
 
 - **Response**: ✏️❓❌⚠️✅ No action required
@@ -284,6 +287,7 @@ You will understand that _add to trouble_ means to do the following:
         - **Rule File Path**: [Relative path to rule file]
         - **Rule Text**: "[Exact rule text that enforces the pattern or prevents the mistake]"
         - **Section**: [If ADD/MODIFY, specify which section in the rule file]
+        - **Rationale**: [Explanation of why this rule is needed and how it prevents the pitfall from recurring]
     - [AI Agent provides specific remediation recommendations to prevent this pitfall in the future]
 
 - **Response**: ✏️❓❌⚠️✅ No action required

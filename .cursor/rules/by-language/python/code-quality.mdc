@@ -159,7 +159,66 @@ from lib.config import load_config  # Shows warning
 }
 ```
 
+#### **2.1. :: Linter Verification Protocol**
+
+**✅ CORRECT - Verify basedpyright separately**:
+
+After calling `read_lints`, if working with Python code, verify basedpyright errors separately. The `read_lints` tool may not catch all basedpyright diagnostics. Check IDE diagnostics or basedpyright output directly.
+
+**✅ CORRECT - Verification steps**:
+
+1. Call `read_lints` to check for general linting errors
+2. If working with Python code, also check IDE diagnostics for basedpyright errors
+3. Look for `reportMissingImports` errors from basedpyright
+4. If basedpyright errors are found, apply appropriate fixes (e.g., add `# type: ignore` to runtime imports)
+
+**❌ INCORRECT - Relying solely on read_lints**:
+
+```python
+# Wrong: Assuming read_lints catches all errors
+# read_lints may not catch basedpyright errors
+# Always verify basedpyright separately for Python code
+```
+
 ### **3. :: Type Ignore Comments**
+
+#### **3.1. :: Indirect Runtime Imports**
+
+**✅ CORRECT - Indirect runtime imports also require type: ignore**:
+
+Any import of a module that internally modifies `sys.path` (even if the importing file doesn't modify `sys.path` itself) qualifies as a runtime import and MUST have `# type: ignore`. This includes importing helper modules that load other packages via `sys.path` modifications.
+
+```python
+# Helper module (local_imports.py) internally modifies sys.path to load packages
+from local_imports import (  # type: ignore
+    write_header,
+    error,
+    warning,
+    text,
+    select,
+)
+```
+
+**✅ CORRECT - Direct runtime imports**:
+
+```python
+# Imports that are resolved at runtime via sys.path modifications
+from lib.config import load_config  # type: ignore
+from lib.output import (  # type: ignore
+    print_error, print_success, print_warning
+)
+from lib.sync_ops import sync_package_mapping  # type: ignore
+from pyprompt import select as pyprompt_select  # type: ignore
+```
+
+**❌ INCORRECT - Missing type: ignore on indirect runtime imports**:
+
+```python
+# Wrong: local_imports.py internally modifies sys.path, so this needs type: ignore
+from local_imports import write_header, error  # Missing # type: ignore
+```
+
+#### **3.2. :: Direct Runtime Imports**
 
 **✅ CORRECT - Add type: ignore to runtime imports**:
 
