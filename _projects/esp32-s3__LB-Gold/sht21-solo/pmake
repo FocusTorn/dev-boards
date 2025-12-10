@@ -25,7 +25,7 @@ import re
 import time
 import threading
 from pathlib import Path
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict, Tuple, Callable
 from enum import Enum
 
 # Add shared-python directory to sys.path
@@ -83,7 +83,7 @@ def verify_sketch() -> bool: #>
 
  #<
 
-def run_arduino_cli(args: List[str], capture_output: bool = False) -> subprocess.CompletedProcess: #>
+def run_arduino_cli(args: List[str], capture_output: bool = False, output_handler: Optional[Callable[[str], Optional[str]]] = None) -> subprocess.CompletedProcess: #>
     """Run Arduino CLI command."""
     cmd = [str(ARDUINO_CLI)] + args
     try:
@@ -131,8 +131,14 @@ def run_arduino_cli(args: List[str], capture_output: bool = False) -> subprocess
                 def read_stdout():
                     for line in iter(process.stdout.readline, ''):
                         if line:
-                            sys.stdout.write(line)
-                            sys.stdout.flush()
+                            if output_handler:
+                                processed = output_handler(line)
+                                if processed is not None:
+                                    sys.stdout.write(processed)
+                                    sys.stdout.flush()
+                            else:
+                                sys.stdout.write(line)
+                                sys.stdout.flush()
                             output_lines.append(line)
                     process.stdout.close()
                 
@@ -192,6 +198,7 @@ def cmd_help(): #>
     print("  python pmake compile      - Compile with verbose output")
     print("  python pmake progress     - Compile with progress bar")
     print("  python pmake upload       - Upload to ESP32-S3")
+    print("  python pmake upload-custom - Upload with customized output")
     print("  python pmake monitor      - Open serial monitor")
     print("  python pmake clean        - Clean build artifacts")
     print("  python pmake all          - Compile and upload")
@@ -225,6 +232,7 @@ def select_action_interactive() -> Optional[str]: #>
         ("Compile", "Compile with verbose output"),
         ("Progress", "Compile with progress bar"),
         ("Upload", "Upload to ESP32-S3 (no compile)"),
+        ("Upload_custom", "Upload with customized output"),
         ("Monitor", "Open serial monitor"),
         ("Clean", " Clean build artifacts"),
         ("All", "Compile and upload in one step"),
@@ -1129,7 +1137,7 @@ def cmd_progress(): #>
         return 1
     
     try:
-        from alive_progress import alive_bar
+        from alive_progress import alive_bar  # pyright: ignore[reportMissingImports]
     except ImportError:
         print()  # Ensure we're on a new line
         error("alive_progress not available. Please install alive-progress to use progress bar.")
@@ -1566,6 +1574,147 @@ def cmd_upload(): #>
 
  #<
 
+def cmd_upload_custom(): #>
+    """Upload to ESP32-S3 with customized output."""
+    if not verify_sketch():
+        return 1
+        
+    try:
+        from alive_progress import alive_bar
+    except ImportError:
+        print()
+        error("alive_progress not available. Please install alive-progress.")
+        error("Install with: pip install alive-progress")
+        print()
+        return 1
+        
+    write_header_fat("Uploading (Custom)")
+    print()
+    action(f"Uploading to ESP32-S3 on {PORT}...")
+    print()
+    
+    args = [
+        "upload",
+        "-p", PORT,
+        "--fqbn", FQBN,
+        "--build-path", str(BUILD_PATH),
+        str(SKETCH_DIR),
+    ]
+    
+    # Force terminal width to ensure alive_progress doesn't truncate text
+    os.environ["COLUMNS"] = "160"
+    
+    cmd = [str(ARDUINO_CLI)] + args
+    
+    try:
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            universal_newlines=True,
+        )
+        
+        # Track current bar
+        current_bar = None
+        current_bar_cm = None 
+        
+        while True:
+            line = process.stdout.readline()
+            if not line and process.poll() is not None:
+                break
+                
+            if line:
+                line_strip = line.strip()
+                
+                # Suppress "Hash of data verified"
+                if "Hash of data verified" in line:
+                    continue
+                
+                # Handle "Writing at" lines - Progress
+                if "Writing at" in line:
+                    # Regex to capture address and percentage
+                    match = re.search(r'Writing at (0x[0-9a-fA-F]+).*?(\d+\.?\d*)%', line)
+                    if match:
+                        addr = match.group(1)
+                        percent = float(match.group(2))
+                        
+                        # Start new bar if needed
+                        if current_bar is None:
+                            # Use manual bar
+                            # Title: "Writing at 0x..." (initial)
+                            current_bar_cm = alive_bar(100, manual=True, title=f"Writing at {addr}", bar="smooth", spinner="dots")
+                            current_bar = current_bar_cm.__enter__()
+                        
+                        # Update title to current writing address
+                        current_bar.title(f"Writing at {addr}")
+                        # Update progress
+                        current_bar(percent / 100.0)
+                        continue
+
+                # Handle "Wrote" lines - Completion of a block
+                elif "Wrote" in line and "compressed" in line:
+                    if current_bar:
+                        # Parse summary: "20224 bytes (13061 compressed) at 0x00000000"
+                        # From: "Wrote 20224 bytes (13061 compressed) at 0x00000000 in 0.5 seconds..."
+                        # Regex to capture everything between "Wrote " and " in"
+                        match = re.search(r'Wrote (.*?) in', line)
+                        if match:
+                            summary = match.group(1)
+                            # Add pipe separator and summary
+                            current_bar.text(f"| {summary}")
+                        else:
+                            current_bar.text(f"| {line_strip}")
+                        
+                        # Force final update to ensure text is rendered
+                        current_bar(1.0)
+                            
+                        # Close the bar (it persists on screen)
+                        current_bar_cm.__exit__(None, None, None)
+                        current_bar = None
+                        current_bar_cm = None
+                        continue
+                
+                # Handle "Connecting" or "Hard resetting" - Special single-line bars?
+                # Or just print? User example showed "Hard resetting..." as text
+                # But requested bars for initial blocks.
+                # Let's just print these normally if no bar is active.
+                
+                if current_bar:
+                    # If we have an active bar but see something else (like blank line), ignore
+                    if not line_strip:
+                        continue
+                    # Ideally we wouldn't see other output while writing
+                else:
+                    # Print normal lines
+                    if line_strip:
+                        print(line_strip)
+                        
+        # Wait for process to complete
+        return_code = process.wait()
+        
+        # Ensure any open bar is closed
+        if current_bar_cm:
+            current_bar_cm.__exit__(None, None, None)
+            
+        if return_code == 0:
+            print()
+            success("Upload successful!")
+            return 0
+        else:
+            print()
+            error("Upload failed!")
+            # Errors are already printed in real-time or swallowed?
+            # Swallowed lines might be lost. But "Error" lines usually don't match loop conditions so they print.
+            return 1
+
+    except Exception as e:
+        error(f"Error during upload: {e}")
+        return 1
+
+ #<
+
 def cmd_monitor(): #>
     """Open serial monitor."""
     action(f"Opening serial monitor on {PORT} at {BAUDRATE} baud...")
@@ -1636,6 +1785,8 @@ def main(): #>
         "Compile": lambda: cmd_compile(),
         "Progress": cmd_progress,
         "Upload": cmd_upload,
+        "Upload-custom": cmd_upload_custom,
+        "Upload_custom": cmd_upload_custom,
         "Monitor": cmd_monitor,
         "Clean": cmd_clean,
         "All": cmd_all,
