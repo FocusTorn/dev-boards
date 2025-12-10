@@ -171,6 +171,18 @@ After calling `read_lints`, if working with Python code, verify basedpyright err
 2. If working with Python code, also check IDE diagnostics for basedpyright errors
 3. Look for `reportMissingImports` errors from basedpyright
 4. If basedpyright errors are found, apply appropriate fixes (e.g., add `# type: ignore` to runtime imports)
+5. **Remediate ALL detected linting errors**, even if they were pre-existing before the current changes
+
+**✅ CORRECT - Remediate pre-existing linting errors**:
+
+When linting errors are detected (via `read_lints` or IDE diagnostics), they MUST be remediated regardless of whether they existed before the current changes. Pre-existing linting errors should not be ignored or left unfixed.
+
+```python
+# Example: If read_lints shows a pre-existing error:
+# "Import 'lib.git_ops' could not be resolved"
+# This MUST be fixed, even if it existed before current changes
+from lib.git_ops import commit_changes  # type: ignore  # Add type: ignore if needed
+```
 
 **❌ INCORRECT - Relying solely on read_lints**:
 
@@ -178,6 +190,13 @@ After calling `read_lints`, if working with Python code, verify basedpyright err
 # Wrong: Assuming read_lints catches all errors
 # read_lints may not catch basedpyright errors
 # Always verify basedpyright separately for Python code
+```
+
+**❌ INCORRECT - Ignoring pre-existing linting errors**:
+
+```python
+# Wrong: Not fixing linting errors because they existed before current changes
+# All detected linting errors must be remediated, regardless of when they were introduced
 ```
 
 ### **3. :: Type Ignore Comments**
@@ -276,6 +295,7 @@ from pyprompt import select
 - ❌ **Missing Linter Config** - Don't skip pyrightconfig.json or pyproject.toml configuration
 - ❌ **Wrong Execution Environment** - Don't use wrong root in executionEnvironments
 - ❌ **Hardcoded Absolute Paths** - Prefer relative paths in config when possible (use absolute only if relative doesn't work)
+- ❌ **Ignoring Pre-Existing Errors** - Don't skip fixing linting errors because they existed before current changes
 
 ## **QUALITY GATES**
 
@@ -286,6 +306,7 @@ from pyprompt import select
 - [ ] **Correct Root**: executionEnvironments root matches the directory containing the script
 - [ ] **Extra Paths**: All runtime paths are included in extraPaths
 - [ ] **Report Missing Imports**: Set to "none" to suppress warnings for runtime imports
+- [ ] **Pre-Existing Error Remediation**: All detected linting errors (including pre-existing ones) have been remediated
 
 ## **SUCCESS METRICS**
 

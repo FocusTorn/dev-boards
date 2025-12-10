@@ -3,15 +3,23 @@
 
 # Configuration
 FQBN = esp32:esp32:esp32s3
-SKETCH = bme680.ino
+SKETCH = bme680
 PORT = COM9
 BAUDRATE = 115200
+
+# Sketch selection: "bme680" (full with calculations) or "bme680-simplified" (raw data only)
+# Usage: make SKETCH=bme680-simplified build
+#        make SKETCH=bme680 build
+# Default: bme680 (full version)
+SKETCH_FILE = $(SKETCH).ino
+SKETCH_ACTIVE = bme680.ino
 
 PROJECT_ROOT = D:/_dev/_Projects/dev-boards/
 LIBRARY_PATH = $(PROJECT_ROOT)/_libs/esp32-s3
 ARDUINO_CLI = $(PROJECT_ROOT)/Arduino/arduino-cli.exe
 SKETCH_DIR = $(PROJECT_ROOT)/_projects/esp32-s3__LB-Gold/bme680
 BUILD_PATH = $(SKETCH_DIR)/build
+PYTHON_SCRIPT = $(SKETCH_DIR)/select_sketch.py
 
 # Colors for output (Git Bash compatible)
 GREEN = \033[0;32m
@@ -19,7 +27,7 @@ YELLOW = \033[1;33m
 RED = \033[0;31m
 NC = \033[0m
 
-.PHONY: help build compile progress upload monitor clean all
+.PHONY: help build compile progress upload monitor clean all select-sketch select-sketch-interactive select-sketch-apply sketch-status
 
 # Default target
 help:
@@ -29,22 +37,70 @@ help:
 	@echo "  make compile     - Compile the sketch (verbose output)"
 	@echo "  make progress    - Compile with progress bar"
 	@echo "  make upload      - Upload (no compile)"
-	@echo "  make monitor      - Open serial monitor"
+	@echo "  make monitor     - Open serial monitor"
 	@echo "  make clean       - Clean build artifacts"
 	@echo "  make all         - Compile and upload"
+	@echo ""
+	@echo "Sketch Selection:"
+	@echo "  make SKETCH=bme680 build          - Full version (with calculations)"
+	@echo "  make SKETCH=bme680-simplified build - Simplified (raw data only)"
+	@echo "  make sketch-status                 - Show current sketch status"
 	@echo ""
 	@echo "Configuration:"
 	@echo "  FQBN: $(FQBN)"
 	@echo "  PORT: $(PORT)"
-	@echo "  Sketch: $(SKETCH)"
+	@echo "  Active Sketch: $(SKETCH_ACTIVE)"
+	@echo "  Selected Sketch: $(SKETCH_FILE)"
+
+# Interactive sketch selection (called by select-sketch if SKETCH not set)
+select-sketch-interactive:
+	@if [ -f "$(PYTHON_SCRIPT)" ]; then \
+		echo -e "$(YELLOW)Launching interactive sketch selector...$(NC)"; \
+		SELECTED_SKETCH=$$(python3 "$(PYTHON_SCRIPT)" 2>/dev/null || python "$(PYTHON_SCRIPT)" 2>/dev/null); \
+		if [ -n "$$SELECTED_SKETCH" ]; then \
+			$(MAKE) SKETCH=$$SELECTED_SKETCH select-sketch-apply; \
+		else \
+			echo -e "$(RED)Error: Failed to select sketch$(NC)"; \
+			exit 1; \
+		fi; \
+	else \
+		echo -e "$(YELLOW)Python selector not found, using default: $(SKETCH)$(NC)"; \
+		$(MAKE) select-sketch-apply; \
+	fi
+
+# Apply selected sketch (internal target)
+select-sketch-apply:
+	@if [ ! -f "$(SKETCH_DIR)/$(SKETCH_FILE)" ]; then \
+		echo -e "$(RED)Error: Sketch file '$(SKETCH_FILE)' not found!$(NC)"; \
+		echo "Available sketches:"; \
+		ls -1 "$(SKETCH_DIR)"/*.ino 2>/dev/null | xargs -n1 basename || true; \
+		exit 1; \
+	fi
+	@if [ -f "$(SKETCH_DIR)/$(SKETCH_ACTIVE)" ] && [ "$(SKETCH_FILE)" != "$(SKETCH_ACTIVE)" ]; then \
+		echo -e "$(YELLOW)Switching sketch: $(SKETCH_ACTIVE) → $(SKETCH_FILE)$(NC)"; \
+		cp "$(SKETCH_DIR)/$(SKETCH_FILE)" "$(SKETCH_DIR)/$(SKETCH_ACTIVE)"; \
+		echo -e "$(GREEN)✓ Sketch switched to $(SKETCH_FILE)$(NC)"; \
+	elif [ "$(SKETCH_FILE)" = "$(SKETCH_ACTIVE)" ]; then \
+		echo -e "$(GREEN)✓ Using sketch: $(SKETCH_FILE)$(NC)"; \
+	fi
+
+# Select and prepare sketch before building
+# If SKETCH was explicitly set (e.g., make SKETCH=bme680 build), use it directly
+# Otherwise, launch interactive selector
+select-sketch:
+	@if [ "$(SKETCH)" != "bme680" ] || [ -n "$(filter SKETCH=%,$(MAKEFLAGS))" ] || [ -n "$(filter SKETCH=%,$(MAKECMDGOALS))" ]; then \
+		$(MAKE) select-sketch-apply; \
+	else \
+		$(MAKE) select-sketch-interactive; \
+	fi
 
 # Build/Compile the sketch (build is alias for compile)
-build: compile
+build: select-sketch compile
 
 # Compile the sketch
-compile:
+compile: select-sketch
 	@echo -e "$(YELLOW)========================================$(NC)"
-	@echo -e "$(YELLOW)Compiling $(SKETCH)...$(NC)"
+	@echo -e "$(YELLOW)Compiling $(SKETCH_ACTIVE) ($(SKETCH))...$(NC)"
 	@echo -e "$(YELLOW)========================================$(NC)"
 	@echo ""
 	$(ARDUINO_CLI) compile --fqbn $(FQBN) --libraries "$(LIBRARY_PATH)" --build-path "$(BUILD_PATH)" --verbose "$(SKETCH_DIR)" || (echo -e "$(RED)[FAIL] Compilation failed!$(NC)" && exit 1)
@@ -52,9 +108,9 @@ compile:
 	@echo -e "$(GREEN)[OK] Compilation successful!$(NC)"
 
 # Compile with progress bar
-progress:
+progress: select-sketch
 	@echo -e "$(YELLOW)========================================$(NC)"
-	@echo -e "$(YELLOW)Compiling $(SKETCH) with progress...$(NC)"
+	@echo -e "$(YELLOW)Compiling $(SKETCH_ACTIVE) ($(SKETCH)) with progress...$(NC)"
 	@echo -e "$(YELLOW)========================================$(NC)"
 	@echo ""
 	@bash -c '\
@@ -201,7 +257,7 @@ monitor:
 	@$(ARDUINO_CLI) monitor -p $(PORT) --config baudrate=$(BAUDRATE)
 
 # Compile and upload in one step
-all: compile upload
+all: select-sketch compile upload
 	@echo -e "$(GREEN)[OK] Build and upload complete!$(NC)"
 
 # Clean build artifacts
@@ -225,4 +281,22 @@ board-info:
 list-boards:
 	@echo -e "$(YELLOW)Connected boards:$(NC)"
 	@$(ARDUINO_CLI) board list
+
+# Show current sketch status
+sketch-status:
+	@echo -e "$(YELLOW)Sketch Status:$(NC)"
+	@echo "  Selected: $(SKETCH_FILE)"
+	@echo "  Active: $(SKETCH_ACTIVE)"
+	@if [ -f "$(SKETCH_DIR)/$(SKETCH_ACTIVE)" ]; then \
+		echo "  Active file exists: ✓"; \
+		SKETCH_SOURCE=$$(head -n 1 "$(SKETCH_DIR)/$(SKETCH_ACTIVE)" | grep -o "bme680[^ ]*" | head -1 || echo "unknown"); \
+		if [ -n "$$SKETCH_SOURCE" ]; then \
+			echo "  Source: $$SKETCH_SOURCE"; \
+		fi; \
+	else \
+		echo "  Active file exists: ✗"; \
+	fi
+	@echo ""
+	@echo "Available sketches:"
+	@ls -1 "$(SKETCH_DIR)"/*.ino 2>/dev/null | xargs -n1 basename || echo "  (none found)"
 

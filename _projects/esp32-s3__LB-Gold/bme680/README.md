@@ -73,3 +73,48 @@ All configuration matches RPi defaults:
 - Max rate: 0.1°C/min
 - IAQ threshold: 80.0
 
+## Building
+
+This project uses a Python-based build system (`make` script) that provides interactive sketch selection and flexible build options.
+
+### Quick Start
+
+```bash
+# Interactive sketch selection (recommended)
+./make build
+
+# Or specify sketch directly
+SKETCH=bme680 ./make build
+SKETCH=bme680-simplified ./make build
+```
+
+### Available Commands
+
+- `./make build` - Compile the sketch (interactive sketch selection)
+- `./make compile` - Compile with verbose output
+- `./make progress` - Compile with progress bar
+- `./make upload` - Upload to ESP32-S3 (no compile)
+- `./make monitor` - Open serial monitor
+- `./make clean` - Clean build artifacts
+- `./make all` - Compile and upload in one step
+- `./make help` - Show help message
+- `./make sketch-status` - Show current sketch status
+
+### Sketch Selection
+
+The build system supports two sketches:
+
+1. **`bme680.ino`** - Full version with heatsoak and IAQ calculations on ESP32
+2. **`bme680-simplified.ino`** - Simplified version that publishes raw sensor data only (calculations done on RPi)
+
+By default, running `./make build` will show an interactive menu to select which sketch to compile. You can also specify the sketch directly using the `SKETCH` environment variable.
+
+### Legacy Makefile
+
+A traditional `Makefile` is also available if you prefer standard make syntax:
+
+```bash
+make build
+make SKETCH=bme680-simplified build
+```
+

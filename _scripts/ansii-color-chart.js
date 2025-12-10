@@ -449,13 +449,15 @@ function showIntensityVariations(colorCode, isBackground, foregroundColorCode = 
             else {
                 // Background color with matching text color
                 const fgCode = `\u001B[38;2;${rgb.r};${rgb.g};${rgb.b}m`
-                console.log(` ${bgCode}${fgCode}[|||]${reset} ${percentPadding}${percentLabel}%  ${rgbString}  ${hexString}`)
+                const displayText = customText !== 'Text' ? ` ${customText} ` : '[|||]'
+                console.log(` ${bgCode}${fgCode}${displayText}${reset} ${percentPadding}${percentLabel}%  ${rgbString}  ${hexString}`)
             }
         }
         else {
             // Foreground color
             const fgCode = `\u001B[38;2;${rgb.r};${rgb.g};${rgb.b}m`
-            console.log(` ${fgCode}[|||]${reset} ${percentPadding}${percentLabel}%  ${rgbString}  ${hexString}`)
+            const displayText = customText !== 'Text' ? ` ${customText} ` : '[|||]'
+            console.log(` ${fgCode}${displayText}${reset} ${percentPadding}${percentLabel}%  ${rgbString}  ${hexString}`)
         }
     }
     
@@ -593,23 +595,148 @@ function showColorCodes() { //>
 // const nearest = nearestColor.from(colors)
 // console.log(nearest('#0099ff'))
 
+// Help function
+function showHelp() { //>
+    const reset = '\u001B[0m'
+    const bold = '\u001B[1m'
+    const cyan = '\u001B[38;5;51m'
+    const gold = '\u001B[38;5;179m'
+    const green = '\u001B[38;5;46m'
+    const blue = '\u001B[38;5;39m'
+    
+    console.log(`\n${bold}${cyan}ANSI Color Chart - Help${reset}\n`)
+    
+    console.log(`${bold}${gold}Usage:${reset}`)
+    console.log(`  node ansii-color-chart.js [options] [color-specs]\n`)
+    
+    console.log(`${bold}${gold}Options:${reset}`)
+    console.log(`  ${green}--help${reset}              Show this help message`)
+    console.log(`  ${green}dim${reset}                  Show dim color charts\n`)
+    
+    console.log(`${bold}${gold}Color Specifications:${reset}`)
+    console.log(`  ${green}bg<number>${reset}            Show background color variations (e.g., bg42)`)
+    console.log(`  ${green}fg<number>${reset}            Show foreground color variations (e.g., fg42)`)
+    console.log(`  ${green}bg<num>,fg<num>${reset}      Show background with fixed foreground (e.g., bg21,fg196)`)
+    console.log(`  ${green}bg<num>,fg<num>,<text>${reset}  Same as above with custom text (e.g., bg21,fg196,Hello)`)
+    console.log(`  ${green}bg<num>fg<num>${reset}        Show background with fixed foreground, no comma (e.g., bg21fg196)`)
+    console.log(`  ${green}bg<num>fg<num><text>${reset}  Same as above with custom text (e.g., bg21fg196Hello)`)
+    console.log(`  ${green}bg<num> '<text>'${reset}      Background with quoted custom text (e.g., bg42 '[0.01s]')`)
+    console.log(`  ${green}fg<num> '<text>'${reset}      Foreground with quoted custom text (e.g., fg28 '[0.01s]')`)
+    console.log(`  ${green}bg<num>fg<num> '<text>'${reset} Combined with quoted custom text (e.g., bg21fg196 '[0.01s]')\n`)
+    
+    console.log(`${bold}${gold}Examples:${reset}`)
+    console.log(`  ${blue}node ansii-color-chart.js${reset}                    # Show all color charts`)
+    console.log(`  ${blue}node ansii-color-chart.js dim${reset}                # Include dim color charts`)
+    console.log(`  ${blue}node ansii-color-chart.js bg42${reset}               # Show background color 42 variations`)
+    console.log(`  ${blue}node ansii-color-chart.js fg196${reset}              # Show foreground color 196 variations`)
+    console.log(`  ${blue}node ansii-color-chart.js fg28 '[0.01s]'${reset}     # Foreground 28 with custom text`)
+    console.log(`  ${blue}node ansii-color-chart.js bg21,fg196${reset}         # Show bg21 with fg196`)
+    console.log(`  ${blue}node ansii-color-chart.js bg21fg196${reset}          # Same as above (no comma)`)
+    console.log(`  ${blue}node ansii-color-chart.js bg21,fg196,Test${reset}    # With custom text "Test"`)
+    console.log(`  ${blue}node ansii-color-chart.js bg21fg196Test${reset}     # Same as above (no comma)`)
+    console.log(`  ${blue}node ansii-color-chart.js bg21fg196 '[0.01s]'${reset} # Combined with quoted text\n`)
+    
+    console.log(`${bold}${gold}Color Code Ranges:${reset}`)
+    console.log(`  ${green}0-7${reset}      Standard colors (black, red, green, yellow, blue, magenta, cyan, white)`)
+    console.log(`  ${green}8-15${reset}     Bright colors (bright versions of 0-7)`)
+    console.log(`  ${green}16-231${reset}  216-color palette (RGB combinations)`)
+    console.log(`  ${green}232-255${reset}  Grayscale colors\n`)
+    
+    process.exit(0)
+} //<
+
 // Parse command-line arguments
 const args = process.argv.slice(2)
+
+// Check for help flag first
+if (args.includes('--help') || args.includes('-h') || args.includes('help')) {
+    showHelp()
+}
+
 const showDim = args.includes('dim')
 
-// Parse bg# and fg# arguments (including combined format bg#,fg#)
+// Helper function to extract text from quoted string or check if argument is custom text
+function extractQuotedText(str) { //>
+    if (!str) return null
+    // Remove surrounding single or double quotes
+    const trimmed = str.trim()
+    if ((trimmed.startsWith("'") && trimmed.endsWith("'")) || 
+        (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
+        return trimmed.slice(1, -1)
+    }
+    return null
+} //<
+
+// Helper function to check if an argument is a color code pattern
+function isColorCodePattern(str) { //>
+    if (!str) return false
+    // Check if it matches bg#, fg#, bg#,fg#, bg#fg#, dim, help flags, etc.
+    return /^(bg\d+|fg\d+|bg\d+,fg\d+|bg\d+fg\d+|dim|--help|-h|help)$/.test(str)
+} //<
+
+// Parse bg# and fg# arguments (including combined format bg#,fg# and bg#fg#)
 let bgColorCode = null
 let fgColorCode = null
+let bgCustomText = null
+let fgCustomText = null
 let combinedBgFg = null
 
-for (const arg of args) {
-    // Check for combined format: bg#,fg# or bg#,fg#,Text
+for (let i = 0; i < args.length; i++) {
+    const arg = args[i]
+    
+    // Skip help and dim flags
+    if (arg === '--help' || arg === '-h' || arg === 'help' || arg === 'dim') {
+        continue
+    }
+    
+    // Check for combined format with comma: bg#,fg# or bg#,fg#,Text
     const combinedMatch = arg.match(/^bg(\d+),fg(\d+)(?:,(.+))?$/)
     if (combinedMatch) {
+        let text = combinedMatch[3] || 'Text'
+        // Check if next argument is quoted text or custom text (not a color code pattern)
+        if (i + 1 < args.length) {
+            const nextArg = args[i + 1]
+            const quotedText = extractQuotedText(nextArg)
+            if (quotedText !== null) {
+                text = quotedText
+                i++ // Skip the next argument since we consumed it
+            }
+            else if (!isColorCodePattern(nextArg)) {
+                // Next argument is not a color code pattern, treat it as custom text
+                text = nextArg
+                i++ // Skip the next argument since we consumed it
+            }
+        }
         combinedBgFg = {
             bg: Number.parseInt(combinedMatch[1], 10),
             fg: Number.parseInt(combinedMatch[2], 10),
-            text: combinedMatch[3] || 'Text', // Default to 'Text' if not provided
+            text: text,
+        }
+        continue
+    }
+    
+    // Check for combined format without comma: bg#fg# or bg#fg#Text
+    const combinedNoCommaMatch = arg.match(/^bg(\d+)fg(\d+)(.+)?$/)
+    if (combinedNoCommaMatch) {
+        let text = combinedNoCommaMatch[3] || 'Text'
+        // Check if next argument is quoted text or custom text (overrides inline text)
+        if (i + 1 < args.length) {
+            const nextArg = args[i + 1]
+            const quotedText = extractQuotedText(nextArg)
+            if (quotedText !== null) {
+                text = quotedText
+                i++ // Skip the next argument since we consumed it
+            }
+            else if (!isColorCodePattern(nextArg)) {
+                // Next argument is not a color code pattern, treat it as custom text
+                text = nextArg
+                i++ // Skip the next argument since we consumed it
+            }
+        }
+        combinedBgFg = {
+            bg: Number.parseInt(combinedNoCommaMatch[1], 10),
+            fg: Number.parseInt(combinedNoCommaMatch[2], 10),
+            text: text,
         }
         continue
     }
@@ -617,12 +744,40 @@ for (const arg of args) {
     // Check for separate bg# format
     if (/^bg\d+$/.test(arg)) {
         bgColorCode = Number.parseInt(arg.slice(2), 10)
+        // Check if next argument is quoted text or custom text (not a color code pattern)
+        if (i + 1 < args.length) {
+            const nextArg = args[i + 1]
+            const quotedText = extractQuotedText(nextArg)
+            if (quotedText !== null) {
+                bgCustomText = quotedText
+                i++ // Skip the next argument since we consumed it
+            }
+            else if (!isColorCodePattern(nextArg)) {
+                // Next argument is not a color code pattern, treat it as custom text
+                bgCustomText = nextArg
+                i++ // Skip the next argument since we consumed it
+            }
+        }
         continue
     }
     
     // Check for separate fg# format
     if (/^fg\d+$/.test(arg)) {
         fgColorCode = Number.parseInt(arg.slice(2), 10)
+        // Check if next argument is quoted text or custom text (not a color code pattern)
+        if (i + 1 < args.length) {
+            const nextArg = args[i + 1]
+            const quotedText = extractQuotedText(nextArg)
+            if (quotedText !== null) {
+                fgCustomText = quotedText
+                i++ // Skip the next argument since we consumed it
+            }
+            else if (!isColorCodePattern(nextArg)) {
+                // Next argument is not a color code pattern, treat it as custom text
+                fgCustomText = nextArg
+                i++ // Skip the next argument since we consumed it
+            }
+        }
         continue
     }
 }
@@ -672,11 +827,11 @@ if (combinedBgFg !== null) {
 }
 else {
     if (bgColorCode !== null) {
-        showIntensityVariations(bgColorCode, true)
+        showIntensityVariations(bgColorCode, true, null, bgCustomText || 'Text')
     }
 
     if (fgColorCode !== null) {
-        showIntensityVariations(fgColorCode, false)
+        showIntensityVariations(fgColorCode, false, null, fgCustomText || 'Text')
     }
 }
 
