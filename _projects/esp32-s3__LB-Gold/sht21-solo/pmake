@@ -511,9 +511,19 @@ class ProgressMonitor: #>
                     self.generating_prototypes = False
                 elif "compiling library" in line_lower or "compiling libraries" in line_lower:
                     # Extract library name: "Compiling library \"Wire\"" or "Compiling libraries..."
-                    match = re.search(r'compiling libraries?[:\s]+"?([^"]+)"?', line_lower)
+                    # Try multiple patterns to catch different formats
+                    match = None
+                    # Pattern 1: "Compiling library "Wire""
+                    match = re.search(r'compiling library\s+"([^"]+)"', line_lower)
+                    if not match:
+                        # Pattern 2: "Compiling library Wire" (no quotes)
+                        match = re.search(r'compiling library\s+([^\s]+)', line_lower)
+                    if not match:
+                        # Pattern 3: "Compiling libraries:" (generic)
+                        match = re.search(r'compiling libraries?[:\s]+"?([^"]+)"?', line_lower)
+                    
                     if match:
-                        lib_name = match.group(1)
+                        lib_name = match.group(1).strip()
                         
                         # If we're switching to a new library, mark the previous one as compiled
                         if self.current_library and self.current_library != lib_name and self.current_library.lower() != "libraries":
@@ -543,15 +553,20 @@ class ProgressMonitor: #>
                     if self.current_library and self.current_library.lower() != "libraries":
                         self.libraries_compiled.add(self.current_library)
                         self.current_library = ""
+                    # Mark all seen libraries as compiled since we're moving to core
+                    # (all library compilation is done)
+                    self.libraries_compiled.update(self.libraries_seen)
                     self.current_file = "core"
                     self.compiling_core = True
+                    self.compiling_libraries = False  # No longer compiling libraries
                     # Mark that prototypes are done (core compilation comes after)
                     self.prototypes_generated = True
                     self.generating_prototypes = False
             
             # Pattern 2: Count compiled files - look for object file creation or archive operations
             # Match: ".cpp.o", ".c.o", "gcc-ar" (archive creation means files compiled), or "Compiled" messages
-            if re.search(r'\.(cpp|c|ino|S)\.o|gcc-ar|compiled\s+[^\s]+\.(cpp|c|ino|S)', line_lower, re.IGNORECASE):
+            # Also match "Using previously compiled file" - this means a file was compiled (even if cached)
+            if re.search(r'\.(cpp|c|ino|S)\.o|gcc-ar|compiled\s+[^\s]+\.(cpp|c|ino|S)|using previously compiled file', line_lower, re.IGNORECASE):
                 # Found evidence of a file being compiled (object file created or archived)
                 if line_stripped not in self.compiled_lines:
                     # Track compilation time for this file
@@ -567,6 +582,50 @@ class ProgressMonitor: #>
                     # Cap at total_files if we know it
                     if self.total_files > 0 and self.files_compiled > self.total_files:
                         self.files_compiled = self.total_files
+                    
+                    # If "Using previously compiled file", try to extract library name from path
+                    if "using previously compiled file" in line_lower:
+                        # Extract library from path: libraries/LibraryName/file.cpp.o
+                        lib_match = re.search(r'libraries[/\\]([^/\\]+)', line_lower, re.IGNORECASE)
+                        if lib_match:
+                            lib_name = lib_match.group(1)
+                            # Mark this library as having files compiled
+                            if lib_name not in self.libraries_seen:
+                                self.libraries_seen.add(lib_name)
+                                self.total_libraries = len(self.libraries_seen)
+                            # Track file for this library
+                            if lib_name not in self.library_files:
+                                self.library_files[lib_name] = []
+                            # Extract filename from path
+                            file_match = re.search(r'([^/\\]+\.(cpp|c|ino|S))\.o', line_lower, re.IGNORECASE)
+                            if file_match:
+                                file_name = file_match.group(1)
+                                if file_name not in self.library_files[lib_name]:
+                                    self.library_files[lib_name].append(file_name)
+                            # If we're currently compiling this library, mark progress
+                            # Also, if we see all files for a library are "previously compiled", mark library as done
+                            if self.current_library == lib_name:
+                                # Check if we've seen all files for this library
+                                # (This is approximate - we don't know total files per library)
+                                # But if we see multiple files, assume library is progressing
+                                pass  # Library progress will be calculated from libraries_compiled count
+                            elif not self.current_library and self.compiling_libraries:
+                                # We're compiling libraries but no specific library set
+                                # This file belongs to a library, so track it
+                                pass
+            
+            # Pattern 2b: Detect libraries from "Using library" lines in summary
+            if "using library" in line_lower and "at version" in line_lower:
+                # Extract library name: "Using library Wire at version 3.3.3 in folder: ..."
+                lib_match = re.search(r'using library\s+([^\s]+)\s+at version', line_lower, re.IGNORECASE)
+                if lib_match:
+                    lib_name = lib_match.group(1)
+                    if lib_name not in self.libraries_seen:
+                        self.libraries_seen.add(lib_name)
+                        self.total_libraries = len(self.libraries_seen)
+                    # Mark as compiled since it's in the summary (compilation is done)
+                    if lib_name not in self.libraries_compiled:
+                        self.libraries_compiled.add(lib_name)
             
             # Pattern 2: "Linking everything together..."
             elif "linking everything together" in line_lower or ("linking" in line_lower and "together" in line_lower):
@@ -584,17 +643,44 @@ class ProgressMonitor: #>
                 self.current_file = ""
             
             # Pattern 3: "Creating ESP32S3 image..." or esptool output
-            elif "creating esp32" in line_lower or "creating image" in line_lower or ("esptool" in line_lower and "elf2image" in line_lower):
-                if self.stage != CompileStage.GENERATING:
-                    self.stage = CompileStage.GENERATING
-                    if self.generate_stage_start_time is None:
-                        self.generate_stage_start_time = time.time()
-                self.current_file = ""
+            # Only trigger GENERATING stage if we're already in LINKING stage
+            # This prevents bootloader creation (which happens early during INITIALIZING) from triggering GENERATING
+            # Bootloader creation happens BEFORE "Detecting libraries", so we can use that as a check
+            elif ("creating esp32" in line_lower or "creating image" in line_lower) or \
+                 ("esptool" in line_lower and "elf2image" in line_lower):
+                # Only transition to GENERATING if:
+                # 1. We're in LINKING stage (definitely final image), OR
+                # 2. We're past INITIALIZING and have seen library detection (past bootloader phase)
+                if self.stage == CompileStage.LINKING:
+                    # We're in linking, so this is the final image creation
+                    if self.stage != CompileStage.GENERATING:
+                        self.stage = CompileStage.GENERATING
+                        if self.generate_stage_start_time is None:
+                            self.generate_stage_start_time = time.time()
+                    self.current_file = ""
+                elif self.stage == CompileStage.INITIALIZING:
+                    # During INITIALIZING, check if we've seen library detection
+                    # If not, this is bootloader creation - ignore it
+                    if not self.libraries_detected:
+                        # Haven't seen library detection yet, this is bootloader - ignore
+                        pass
+                    else:
+                        # We've seen library detection but still in INITIALIZING?
+                        # This shouldn't happen, but if it does, don't transition yet
+                        pass
+                elif self.stage == CompileStage.COMPILING:
+                    # During COMPILING, wait for LINKING stage first
+                    # Don't transition to GENERATING from COMPILING
+                    pass
             
-            # Pattern 4: Final summary lines (memory usage, etc.) - already captured above
+            # Pattern 4: Final summary lines (memory usage, etc.) - mark as complete
             if "sketch uses" in line_lower or "global variables use" in line_lower:
-                self.stage = CompileStage.COMPLETE
+                # Transition to COMPLETE stage when we see summary
+                if self.stage != CompileStage.COMPLETE:
+                    self.stage = CompileStage.COMPLETE
                 self.current_file = ""
+                # Mark all libraries as compiled (compilation is done)
+                self.libraries_compiled.update(self.libraries_seen)
             
             # Pattern 5: Error detection
             elif "error" in line_lower or "fatal" in line_lower:
@@ -674,27 +760,71 @@ class ProgressMonitor: #>
                 #   35-50%: Compiling core (15% of compile range)
                 #   50-65%: Compiling sketch/files (15% of compile range)
                 
-                # Determine which sub-stage we're in
-                if self.compiling_libraries and not self.compiling_core and not self.compiling_sketch:
-                    # We're compiling libraries: 5-35%
-                    compile_range_start = 5.0
-                    compile_range_end = 35.0
-                    compile_range_size = 30.0
-                elif self.compiling_core and not self.compiling_sketch:
-                    # We're compiling core: 35-50%
-                    compile_range_start = 35.0
-                    compile_range_end = 50.0
-                    compile_range_size = 15.0
-                elif self.compiling_sketch or (not self.compiling_libraries and not self.compiling_core):
+                # Determine which sub-stage we're in (prioritize based on order)
+                # Libraries come first, then core, then sketch
+                if self.compiling_sketch:
                     # We're compiling sketch/files: 50-65%
                     compile_range_start = 50.0
                     compile_range_end = 65.0
                     compile_range_size = 15.0
-                else:
-                    # Mixed or unknown - use full range with file-based calculation
+                elif self.compiling_core:
+                    # We're compiling core: 35-50%
+                    compile_range_start = 35.0
+                    compile_range_end = 50.0
+                    compile_range_size = 15.0
+                elif self.compiling_libraries:
+                    # We're compiling libraries: 5-35%
                     compile_range_start = 5.0
-                    compile_range_end = 65.0
-                    compile_range_size = 60.0
+                    compile_range_end = 35.0
+                    compile_range_size = 30.0
+                else:
+                    # No sub-stage detected yet - use library-based or file-based estimate
+                    # If we have libraries, use library progress
+                    if self.total_libraries > 0 and len(self.libraries_compiled) >= 0:
+                        # Estimate based on library progress: 5-35% for libraries
+                        lib_progress = len(self.libraries_compiled) / max(self.total_libraries, 1)
+                        compile_range_start = 5.0
+                        compile_range_end = 35.0
+                        compile_range_size = 30.0
+                        # Use library progress to calculate percent
+                        percent = compile_range_start + (lib_progress * compile_range_size)
+                        # Cap at 35% until we move to next sub-stage
+                        if percent > 35.0:
+                            percent = 35.0
+                        self.last_percent = percent
+                        return (self.stage, self.current_file, percent)
+                    else:
+                        # Mixed or unknown - use full range with file-based calculation
+                        compile_range_start = 5.0
+                        compile_range_end = 65.0
+                        compile_range_size = 60.0
+                
+                # If we're compiling libraries and have library counts, use library-based progress
+                if self.compiling_libraries and self.total_libraries > 0:
+                    # Use library progress: 5-35%
+                    lib_progress = len(self.libraries_compiled) / max(self.total_libraries, 1)
+                    lib_based_percent = compile_range_start + (lib_progress * compile_range_size)
+                    
+                    # Also consider file progress within libraries
+                    if self.total_files > 0 and self.files_compiled >= 0:
+                        file_progress = min(self.files_compiled / max(self.total_files, 1), 1.0)
+                        file_based_percent = compile_range_start + (file_progress * compile_range_size)
+                        # Blend library and file progress (70% library, 30% file)
+                        percent = (lib_based_percent * 0.7) + (file_based_percent * 0.3)
+                    else:
+                        percent = lib_based_percent
+                    
+                    # Cap at compile_range_end
+                    if percent > compile_range_end:
+                        percent = compile_range_end
+                    # If progress jumped ahead before sub-stage was detected, reset to range start
+                    if self.last_percent > compile_range_end + 5.0:
+                        percent = compile_range_start
+                    # Ensure we don't go backwards
+                    if percent < self.last_percent - 1.0:
+                        percent = max(self.last_percent - 1.0, percent)
+                    self.last_percent = percent
+                    return (self.stage, self.current_file, percent)
                 
                 if self.total_files > 0 and self.files_compiled >= 0:
                     # Track when we first discovered total_files
@@ -707,8 +837,13 @@ class ProgressMonitor: #>
                     # Scale file progress to current sub-stage range
                     file_based_percent = compile_range_start + (file_progress * compile_range_size)
                     
-                    # Calculate time-based estimate as fallback within current range
-                    time_based_percent = min(compile_range_end, compile_range_start + (compile_elapsed * (compile_range_size / 30.0)))
+                    # If progress jumped ahead before sub-stage was detected, reset to range start
+                    if self.last_percent > compile_range_end + 5.0:
+                        percent = compile_range_start
+                        self.last_time_based_percent = percent
+                    else:
+                        # Calculate time-based estimate as fallback within current range
+                        time_based_percent = min(compile_range_end, compile_range_start + (compile_elapsed * (compile_range_size / 30.0)))
                     
                     # Smooth transition: blend time-based and file-based estimates
                     # Gradually transition over 5 seconds after discovering total_files
@@ -791,9 +926,11 @@ class ProgressMonitor: #>
                     gen_elapsed = 0
                 gen_progress = min(9.0, gen_elapsed * 3.0)  # 3% per second, max 9%
                 percent = 90.0 + gen_progress
-                if percent > 99.0:
-                    percent = 99.0
+                # Allow progress to reach 99.9% but not 100% until COMPLETE
+                if percent > 99.9:
+                    percent = 99.9
             elif self.stage == CompileStage.COMPLETE:
+                # Always return 100% when complete
                 percent = 100.0
             else:
                 percent = 0.0
@@ -815,15 +952,18 @@ class ProgressMonitor: #>
                 self.log_file.write(line)
                 self.log_file.flush()
     
-    def write_projection_results(self, overwrite_placeholder=False):
-        """Write projection calculation results before compilation output."""
+    def write_projection_results(self, overwrite_placeholder=False, is_final=False):
+        """Write projection calculation results before compilation output or at the end."""
         if not self.log_file:
             return
         
         with self.lock:
             # Write section header
             section = "\n" + "=" * 80 + "\n"
-            section += "PROJECTION CALCULATION RESULTS\n"
+            if is_final:
+                section += "FINAL PROJECTION CALCULATION RESULTS\n"
+            else:
+                section += "PROJECTION CALCULATION RESULTS\n"
             section += "=" * 80 + "\n\n"
             
             # Current counts
@@ -974,10 +1114,6 @@ DETECTION PATTERNS:
 - Stage transitions:      "Detecting libraries", "Generating prototypes", "Linking", "Creating ESP32"
 
 ================================================================================
-PROJECTION CALCULATION RESULTS:
-================================================================================
-
-================================================================================
 COMPILATION OUTPUT:
 ================================================================================
 
@@ -1039,7 +1175,7 @@ def cmd_progress(): #>
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            bufsize=1,
+            bufsize=1,  # Line buffered
             universal_newlines=True,
         )
     except FileNotFoundError:
@@ -1055,13 +1191,58 @@ def cmd_progress(): #>
         
         def read_output():
             """Read output from process and update monitor."""
-            for line in iter(process.stdout.readline, ''):
-                if line:
-                    all_output.append(line)
-                    # Log the line to file
-                    monitor.log_line(line)
-                    monitor.update_from_line(line)
-            process.stdout.close()
+            try:
+                # Read all output line by line until EOF
+                while True:
+                    line = process.stdout.readline()
+                    if not line:
+                        # EOF reached, break
+                        break
+                    if line:
+                        all_output.append(line)
+                        # Log the line to file
+                        monitor.log_line(line)
+                        monitor.update_from_line(line)
+            except Exception as e:
+                # Log any errors but continue
+                if log_file:
+                    try:
+                        log_file.write(f"\nError reading output: {e}\n")
+                        log_file.flush()
+                    except Exception:
+                        pass
+            finally:
+                # Read any remaining buffered output
+                try:
+                    # Try to read any remaining data
+                    import select
+                    import sys
+                    if hasattr(select, 'select'):
+                        # Unix-like: check if there's data available
+                        if select.select([process.stdout], [], [], 0.1)[0]:
+                            remaining = process.stdout.read()
+                            if remaining:
+                                for line in remaining.splitlines(True):
+                                    if line:
+                                        all_output.append(line)
+                                        monitor.log_line(line)
+                                        monitor.update_from_line(line)
+                    else:
+                        # Windows: try direct read
+                        remaining = process.stdout.read()
+                        if remaining:
+                            for line in remaining.splitlines(True):
+                                if line:
+                                    all_output.append(line)
+                                    monitor.log_line(line)
+                                    monitor.update_from_line(line)
+                except Exception:
+                    pass  # stdout might already be closed
+                finally:
+                    try:
+                        process.stdout.close()
+                    except Exception:
+                        pass  # Already closed
         
         # Start thread to read output
         output_thread = threading.Thread(target=read_output, daemon=True)
@@ -1184,31 +1365,47 @@ def cmd_progress(): #>
                         last_percent = 100
                 
                 # Also break if process is done and thread is finished
-                if process.poll() is not None and not output_thread.is_alive():
-                    # Fill remaining progress to 100%
-                    remaining = max(0, 100 - bar_calls_made)
-                    for _ in range(remaining):
-                        bar()
-                        bar_calls_made += 1
-                    last_percent = 100
-                    break
+                if process.poll() is not None:
+                    # Process is done, wait for thread to finish reading all output
+                    output_thread.join(timeout=2.0)  # Wait up to 2 seconds for thread to finish
+                    if not output_thread.is_alive():
+                        # Fill remaining progress to 100%
+                        remaining = max(0, 100 - bar_calls_made)
+                        for _ in range(remaining):
+                            bar()
+                            bar_calls_made += 1
+                        last_percent = 100
+                        break
                 
                 # Small sleep to avoid busy-waiting
                 time.sleep(0.1)
         
-        # Wait for process to complete
+        # Wait for process to complete (should already be done, but ensure)
         return_code = process.wait()
         
         # Wait for output thread to finish reading all output
-        output_thread.join(timeout=10)
+        # Give it enough time to read any remaining buffered output
+        output_thread.join(timeout=5.0)  # Wait up to 5 seconds for any remaining output
+        
+        # Force final progress update to 100% if not already there
+        with monitor.lock:
+            if monitor.stage != CompileStage.COMPLETE:
+                monitor.stage = CompileStage.COMPLETE
+            # Mark all libraries as compiled
+            monitor.libraries_compiled.update(monitor.libraries_seen)
+        
+        # Final flush of log file to ensure all output is written
+        if log_file:
+            log_file.flush()
         
         # Give a small additional delay to ensure all buffered output is captured
         time.sleep(0.5)
         
-        # Write final projection results showing completed calculations
-        monitor.write_projection_results()
-        
         print()  # New line after progress bar
+        
+        # Write final projection results showing completed calculations
+        # This should appear before the compilation summary in the log
+        monitor.write_projection_results(is_final=True)
         
         # Display original compilation summary with original colors
         # Always extract from all_output to ensure we get the complete summary
