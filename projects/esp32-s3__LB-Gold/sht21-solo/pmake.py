@@ -48,6 +48,7 @@ FQBN = "esp32:esp32:esp32s3"
 SKETCH_NAME = "sht21-solo.ino"
 PORT = "COM9"
 BAUDRATE = 115200
+CREATE_LOG = False
 
 def main():
     # Initialize Config
@@ -59,6 +60,7 @@ def main():
         sketch_name=SKETCH_NAME,
         port=PORT,
         baudrate=BAUDRATE,
+        create_log=CREATE_LOG,
         # Library path can be overridden if needed, defaulting to standard
     )
     
