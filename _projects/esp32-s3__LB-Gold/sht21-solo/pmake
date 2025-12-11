@@ -1619,6 +1619,7 @@ def cmd_upload_custom(): #>
         # Track current bar
         current_bar = None
         current_bar_cm = None 
+        flash_count = 0
         
         while True:
             line = process.stdout.readline()
@@ -1632,6 +1633,13 @@ def cmd_upload_custom(): #>
                 if "Hash of data verified" in line:
                     continue
                 
+                # Suppress "Compressed" lines ONLY after the first block
+                # User wants "everything before the first progress bar untouched"
+                # So we keep the first "Compressed..." line.
+                if "Compressed" in line and "bytes to" in line:
+                    if flash_count > 0:
+                        continue
+                
                 # Handle "Writing at" lines - Progress
                 if "Writing at" in line:
                     # Regex to capture address and percentage
@@ -1642,9 +1650,17 @@ def cmd_upload_custom(): #>
                         
                         # Start new bar if needed
                         if current_bar is None:
-                            # Use manual bar
-                            # Title: "Writing at 0x..." (initial)
-                            current_bar_cm = alive_bar(100, manual=True, title=f"Writing at {addr}", bar="smooth", spinner="dots")
+                            # Add blank line before EVERY bar to create active separation
+                            print() 
+                            
+                            flash_count += 1
+                            
+                            # Use manual bar with specific config:
+                            # manual=True: Custom percentage
+                            # monitor=False: Hide [xx/xx] count
+                            # stats=True: Show (rate)
+                            # receipt=False: Hide bar on exit (allows us to print summary line instead)
+                            current_bar_cm = alive_bar(manual=True, title=f"Writing at {addr}", bar="smooth", spinner="dots", monitor=False, stats=True, receipt=False)
                             current_bar = current_bar_cm.__enter__()
                         
                         # Update title to current writing address
@@ -1656,40 +1672,43 @@ def cmd_upload_custom(): #>
                 # Handle "Wrote" lines - Completion of a block
                 elif "Wrote" in line and "compressed" in line:
                     if current_bar:
-                        # Parse summary: "20224 bytes (13061 compressed) at 0x00000000"
-                        # From: "Wrote 20224 bytes (13061 compressed) at 0x00000000 in 0.5 seconds..."
-                        # Regex to capture everything between "Wrote " and " in"
-                        match = re.search(r'Wrote (.*?) in', line)
-                        if match:
-                            summary = match.group(1)
-                            # Add pipe separator and summary
-                            current_bar.text(f"| {summary}")
-                        else:
-                            current_bar.text(f"| {line_strip}")
-                        
-                        # Force final update to ensure text is rendered
-                        current_bar(1.0)
-                            
-                        # Close the bar (it persists on screen)
+                        # Close the bar without printing receipt (receipt=False)
+                        # alive_bar clears its line and leaves cursor at start of that line
                         current_bar_cm.__exit__(None, None, None)
                         current_bar = None
                         current_bar_cm = None
-                        continue
+                    
+                    # Move cursor UP one line to overwrite the blank line we added
+                    # \033[F moves cursor to beginning of previous line
+                    sys.stdout.write("\033[F")
+                    
+                    # Print the summary line to replace the blank line
+                    # Clear line content first just in case (though it was blank)
+                    # \033[K clears to end of line
+                    sys.stdout.write("\033[K")
+                    print(line_strip)
+                    continue
                 
-                # Handle "Connecting" or "Hard resetting" - Special single-line bars?
-                # Or just print? User example showed "Hard resetting..." as text
-                # But requested bars for initial blocks.
-                # Let's just print these normally if no bar is active.
-                
+                # Handle "Hard resetting"
+                if "Hard resetting" in line:
+                    print()
+                    print(line_strip)
+                    continue
+
                 if current_bar:
                     # If we have an active bar but see something else (like blank line), ignore
                     if not line_strip:
                         continue
-                    # Ideally we wouldn't see other output while writing
                 else:
                     # Print normal lines
-                    if line_strip:
-                        print(line_strip)
+                    if flash_count == 0:
+                        # Header phase: Print everything including blank lines to keep it "untouched"
+                        # rstrip() removes trailing newline (print adds one back)
+                        print(line.rstrip())
+                    else:
+                        # Body phase: Suppress blank lines to keep list compact
+                        if line_strip:
+                            print(line_strip)
                         
         # Wait for process to complete
         return_code = process.wait()
