@@ -67,7 +67,7 @@ const char* password = "YOUR_WIFI_PASSWORD";
 ### Using Arduino CLI
 
 ```powershell
-cd D:\_dev\_Projects\dev-boards\Arduino
+cd D:\_dev\projects\dev-boards\Arduino
 
 # Compile
 .\arduino-cli.exe compile --fqbn esp32:esp32:esp32s3 sketchbook\esp32-s3-led-http

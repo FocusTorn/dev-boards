@@ -54,11 +54,11 @@ from local_imports import (  # type: ignore
 
 # CONFIGURATION ------------->> 
 
-PROJECT_ROOT = Path("D:/_dev/_Projects/dev-boards")
+PROJECT_ROOT = Path("D:/_dev/_projects/dev-boards")
 FQBN = "esp32:esp32:esp32s3"
-SKETCH_DIR = PROJECT_ROOT / "_projects/esp32-s3__LB-Gold/sht21-solo"
+SKETCH_DIR = PROJECT_ROOT / "projects/esp32-s3__LB-Gold/sht21-solo"
 BUILD_PATH = SKETCH_DIR / "build"
-LIBRARY_PATH = PROJECT_ROOT / "_libs/esp32-s3"
+LIBRARY_PATH = PROJECT_ROOT / "lib/esp32-s3"
 ARDUINO_CLI = PROJECT_ROOT / "Arduino/arduino-cli.exe"
 PORT = "COM9"
 BAUDRATE = 115200
@@ -1588,9 +1588,10 @@ def cmd_upload_custom(): #>
         print()
         return 1
         
-    write_header_fat("Uploading (Custom)")
+    # write_header_fat("Uploading (Custom)")
+    
     print()
-    action(f"Uploading to ESP32-S3 on {PORT}...")
+    print(action(f"Uploading to ESP32-S3 on {PORT}..."))
     print()
     
     args = [

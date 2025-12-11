@@ -6,7 +6,7 @@ To use `git_py` from anywhere with `uv run python -m git_py`, you need to instal
 
 ### Option 1: Install from Workspace Root (Recommended)
 
-From the workspace root (`D:\_dev\_Projects\dev-boards`):
+From the workspace root (`D:\_dev\projects\dev-boards`):
 
 ```powershell
 # Sync workspace dependencies first
@@ -22,7 +22,7 @@ From the package directory (`bootstraps/git_py`):
 
 ```powershell
 # Make sure you're in the workspace virtual environment
-cd D:\_dev\_Projects\dev-boards
+cd D:\_dev\projects\dev-boards
 uv sync
 
 # Then install the package

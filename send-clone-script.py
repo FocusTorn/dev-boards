@@ -109,8 +109,8 @@ def find_clone_script() -> Path:
     
     # Try in dev-boards structure
     possible_paths = [
-        Path("d:/_dev/_Projects/dev-boards/___shared/.sync-manager/clone-sync-manager.py"),
-        Path("d:/_dev/projects/dev-boards/___shared/.sync-manager/clone-sync-manager.py"),
+        Path("d:/_dev/_projects/dev-boards/___shared/.sync-manager/clone-sync-manager.py"),
+        Path("d:/_dev/_projects/dev-boards/___shared/.sync-manager/clone-sync-manager.py"),
         Path.home() / "dev-boards" / "___shared" / ".sync-manager" / "clone-sync-manager.py",
     ]
     

@@ -72,7 +72,7 @@ BAUDRATE = 9600     # Change baud rate
 ## Library Path
 
 The `MQTT_RPi_Client` library is located at:
-`D:\_dev\_Projects\dev-boards\_libs\esp32-s3\MQTT_RPi_Client\`
+`D:\_dev\projects\dev-boards\lib\esp32-s3\MQTT_RPi_Client\`
 
 The Makefile automatically includes this path when compiling.
 

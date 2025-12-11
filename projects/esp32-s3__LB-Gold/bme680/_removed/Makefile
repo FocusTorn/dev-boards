@@ -14,10 +14,10 @@ BAUDRATE = 115200
 SKETCH_FILE = $(SKETCH).ino
 SKETCH_ACTIVE = bme680.ino
 
-PROJECT_ROOT = D:/_dev/_Projects/dev-boards/
+PROJECT_ROOT = D:/_dev/_projects/dev-boards/
 LIBRARY_PATH = $(PROJECT_ROOT)/_libs/esp32-s3
 ARDUINO_CLI = $(PROJECT_ROOT)/Arduino/arduino-cli.exe
-SKETCH_DIR = $(PROJECT_ROOT)/_projects/esp32-s3__LB-Gold/bme680
+SKETCH_DIR = $(PROJECT_ROOT)/projects/esp32-s3__LB-Gold/bme680
 BUILD_PATH = $(SKETCH_DIR)/build
 PYTHON_SCRIPT = $(SKETCH_DIR)/select_sketch.py
 

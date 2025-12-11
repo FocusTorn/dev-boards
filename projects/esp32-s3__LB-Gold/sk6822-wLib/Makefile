@@ -7,10 +7,10 @@ SKETCH = sk6822-wLib.ino
 PORT = COM9
 BAUDRATE = 115200
 
-PROJECT_ROOT = D:/_dev/_Projects/dev-boards/
+PROJECT_ROOT = D:/_dev/_projects/dev-boards/
 LIBRARY_PATH = $(PROJECT_ROOT)/_libs/esp32-s3
 ARDUINO_CLI = $(PROJECT_ROOT)/Arduino/arduino-cli.exe
-SKETCH_DIR = $(PROJECT_ROOT)/_projects/esp32-s3__LB-Gold/sk6822-wLib
+SKETCH_DIR = $(PROJECT_ROOT)/projects/esp32-s3__LB-Gold/sk6822-wLib
 BUILD_PATH = $(SKETCH_DIR)/build
 
 # Colors for output (Git Bash compatible)

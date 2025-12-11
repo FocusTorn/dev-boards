@@ -52,7 +52,7 @@ Install these libraries via Arduino Library Manager:
 4. **BME680_Custom** (Custom Library - Included)
    - Custom BME680 library based on official Bosch implementation
    - Includes baseline calibration and IAQ score calculation
-   - Located in: `D:\_dev\_Projects\dev-boards\Arduino\libraries\BME680_Custom\`
+   - Located in: `D:\_dev\projects\dev-boards\Arduino\libraries\BME680_Custom\`
    - No installation needed - Arduino IDE will find it automatically
 
 5. **ArduinoJson** by Benoit Blanchon
@@ -62,7 +62,7 @@ Install these libraries via Arduino Library Manager:
 ### Install All Libraries at Once
 
 ```powershell
-cd D:\_dev\_Projects\dev-boards\Arduino
+cd D:\_dev\projects\dev-boards\Arduino
 .\arduino-cli.exe lib install "PubSubClient" "Adafruit NeoPixel" "SparkFun HTU21D" "ArduinoJson"
 ```
 
@@ -91,7 +91,7 @@ const int mqtt_port = 1883;
 ### Using Arduino CLI
 
 ```powershell
-cd D:\_dev\_Projects\dev-boards\Arduino
+cd D:\_dev\projects\dev-boards\Arduino
 
 # Compile
 .\arduino-cli.exe compile --fqbn esp32:esp32:esp32s3 sketchbook\sht21-bme680-led-mqtt

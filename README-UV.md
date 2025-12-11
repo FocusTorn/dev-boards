@@ -21,7 +21,7 @@ pip install uv
 
 ### 2. Initialize Workspace Environment
 
-From the workspace root (`D:\_dev\_Projects\dev-boards`):
+From the workspace root (`D:\_dev\projects\dev-boards`):
 
 ```powershell
 # Create workspace-level virtual environment
@@ -95,7 +95,7 @@ Then run: `uv sync`
 
 If you see a warning about hardlinks failing, it's because:
 - UV cache is on `C:` drive (`C:\Users\...\AppData\Local\uv\cache`)
-- Workspace venv is on `D:` drive (`D:\_dev\_Projects\dev-boards\.venv`)
+- Workspace venv is on `D:` drive (`D:\_dev\projects\dev-boards\.venv`)
 
 Hardlinks only work within the same filesystem, so UV falls back to copying files. This is configured in `pyproject.toml` with `link-mode = "copy"` to suppress the warning. Performance impact is minimal.
 

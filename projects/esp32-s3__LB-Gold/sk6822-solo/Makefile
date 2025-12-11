@@ -1,16 +1,16 @@
-# Makefile for ESP32-S3 SHT21 Sensor
+# Makefile for ESP32-S3 SK6812 LED Controller
 # Usage: make [target]
 
 # Configuration
 FQBN = esp32:esp32:esp32s3
-SKETCH = sht21-solo.ino
+SKETCH = sk6822-solo.ino
 PORT = COM9
 BAUDRATE = 115200
 
-PROJECT_ROOT = D:/_dev/_Projects/dev-boards/
+PROJECT_ROOT = D:/_dev/_projects/dev-boards/
 LIBRARY_PATH = $(PROJECT_ROOT)/_libs/esp32-s3
 ARDUINO_CLI = $(PROJECT_ROOT)/Arduino/arduino-cli.exe
-SKETCH_DIR = $(PROJECT_ROOT)/_projects/esp32-s3__LB-Gold/sht21-solo
+SKETCH_DIR = $(PROJECT_ROOT)/projects/esp32-s3__LB-Gold/sk6822-solo
 BUILD_PATH = $(SKETCH_DIR)/build
 
 # Colors for output (Git Bash compatible)
@@ -23,7 +23,7 @@ NC = \033[0m
 
 # Default target
 help:
-	@echo -e "$(GREEN)ESP32-S3 SHT21 Sensor - Build Targets$(NC)"
+	@echo -e "$(GREEN)ESP32-S3 SK6812 LED Controller - Build Targets$(NC)"
 	@echo ""
 	@echo "  make build       - Compile the sketch (alias for compile)"
 	@echo "  make compile     - Compile the sketch (verbose output)"

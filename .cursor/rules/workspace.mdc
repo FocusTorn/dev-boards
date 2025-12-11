@@ -141,7 +141,7 @@ When an extensionless file is detected as a specific language:
 **✅ CORRECT - Example: Extensionless Python script**:
 
 ```
-File: D:\_dev\_Projects\dev-boards\___shared\.sync-manager\scripts\sync
+File: D:\_dev\projects\dev-boards\___shared\.sync-manager\scripts\sync
 Content: Python code
 ```
 

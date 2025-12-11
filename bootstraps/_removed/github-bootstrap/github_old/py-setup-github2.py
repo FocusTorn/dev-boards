@@ -19,8 +19,8 @@ def find_wizard_exe():
     
     # Possible locations
     locations = [
-        project_root / "_projects" / "iMenu" / "cmd" / "prompt-wizard" / "prompt-wizard.exe",
-        project_root / "_projects" / "iMenu" / "dist" / "bin" / "prompt-wizard.exe",
+        project_root / "projects" / "iMenu" / "cmd" / "prompt-wizard" / "prompt-wizard.exe",
+        project_root / "projects" / "iMenu" / "dist" / "bin" / "prompt-wizard.exe",
         script_dir.parent / "prompt-wizard.exe",
         script_dir / "prompt-wizard.exe",
     ]
@@ -103,8 +103,8 @@ def run_wizard(steps):
         script_dir = Path(__file__).parent
         project_root = script_dir.parent.parent
         locations = [
-            project_root / "_projects" / "iMenu" / "cmd" / "prompt-wizard" / "prompt-wizard.exe",
-            project_root / "_projects" / "iMenu" / "dist" / "bin" / "prompt-wizard.exe",
+            project_root / "projects" / "iMenu" / "cmd" / "prompt-wizard" / "prompt-wizard.exe",
+            project_root / "projects" / "iMenu" / "dist" / "bin" / "prompt-wizard.exe",
             script_dir.parent / "prompt-wizard.exe",
         ]
         for loc in locations:

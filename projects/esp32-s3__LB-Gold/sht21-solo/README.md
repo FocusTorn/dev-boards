@@ -44,7 +44,7 @@ Install these libraries via Arduino Library Manager:
 ### Install All Libraries at Once
 
 ```powershell
-cd D:\_dev\_Projects\dev-boards\Arduino
+cd D:\_dev\projects\dev-boards\Arduino
 .\arduino-cli.exe lib install "PubSubClient" "SparkFun HTU21D Humidity and Temperature Sensor Breakout" "ArduinoJson"
 ```
 
@@ -67,7 +67,7 @@ const int mqtt_port = 1883;
 ### Using Arduino CLI
 
 ```powershell
-cd D:\_dev\_Projects\dev-boards\_projects\esp32-s3(LB-Gold)\sht21-solo
+cd D:\_dev\projects\dev-boards\projects\esp32-s3(LB-Gold)\sht21-solo
 
 # Compile
 arduino-cli compile --fqbn esp32:esp32:esp32s3 .

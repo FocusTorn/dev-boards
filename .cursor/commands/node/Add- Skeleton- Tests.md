@@ -115,7 +115,7 @@ This command generates skeleton test files from natural language descriptions, s
 **STEP 1: PAE ALIAS COMPLIANCE**
 
 - [ ] **Alias Discovery**: Will I attempt `pae help` first to discover available aliases?
-- [ ] **Workspace Root**: When I need to return to the workspace root, will I use `cd D:/_dev/_Projects/_fux/_FocusedUX` ?
+- [ ] **Workspace Root**: When I need to return to the workspace root, will I use `cd D:/_dev/_projects/_fux/_FocusedUX` ?
 - [ ] **Alias Usage**: Will I use appropriate alias for the operation (e.g., `pae dc b` for dynamicons build)?
 - [ ] **Fallback Protocol**: Will I only use direct nx commands if no alias exists or alias fails?
 

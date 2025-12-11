@@ -25,8 +25,8 @@ Run the following command to initialize Arduino CLI with this directory as the u
 
 ```powershell
 .\arduino-cli.exe config init --overwrite
-.\arduino-cli.exe config set directories.user "D:\_dev\_Projects\dev-boards\Arduino\home"
-.\arduino-cli.exe config set directories.data "D:\_dev\_Projects\dev-boards\Arduino"
+.\arduino-cli.exe config set directories.user "D:\_dev\projects\dev-boards\Arduino\home"
+.\arduino-cli.exe config set directories.data "D:\_dev\projects\dev-boards\Arduino"
 ```
 
 ### 3. Install ESP32-S3 Board Support

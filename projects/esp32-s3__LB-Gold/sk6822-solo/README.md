@@ -47,7 +47,7 @@ Install via Arduino Library Manager:
    - Install: `arduino-cli lib install "PubSubClient"`
 
 **Included library (no installation needed):**
-- **MQTT_RPi_Client** - Located in `D:\_dev\_Projects\dev-boards\_libs\esp32-s3\MQTT_RPi_Client\`
+- **MQTT_RPi_Client** - Located in `D:\_dev\projects\dev-boards\lib\esp32-s3\MQTT_RPi_Client\`
 
 ## Configuration
 
@@ -75,7 +75,7 @@ const char* mqtt_client_id = "esp32-s3-led-controller";
 ### Using Arduino CLI
 
 ```powershell
-cd D:\_dev\_Projects\dev-boards\_projects\esp32-s3(LB-Gold)\sk6822-solo
+cd D:\_dev\projects\dev-boards\projects\esp32-s3(LB-Gold)\sk6822-solo
 
 # Compile
 arduino-cli compile --fqbn esp32:esp32:esp32s3 .
