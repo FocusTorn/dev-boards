@@ -51,3 +51,78 @@ ___shared/
 /*removed*/
 
 lib/esp32-s3
+
+
+
+
+
+# # Git Feature Branch Workflow Summary
+
+# ## Workflow Steps
+
+# 1. Ensure Working Branch is Clean
+#     - Checkout main/master branch: `git checkout main`
+#     - Fetch latest changes: `git fetch origin`
+#     - Sync with remote: `git pull origin main`
+#     - Verify clean state: `git status` (no uncommitted changes)
+
+# 2. Create Feature Branch
+#     - Create and switch to new branch: `git checkout -b feature/enhancement-name`
+#     - Use descriptive naming: `feature/add-new-feature` or `enhancement/improve-performance`
+
+# 3. Work on Enhancement
+#     - Make changes and commit as you work
+#     - Main branch remains unchanged and protected
+#     - Commit frequently: `git add .` then `git commit -m "Add enhancement: description"`
+
+# 4. Optional: Push Feature Branch to Remote
+#     - Push for backup/collaboration: `git push -u origin feature/enhancement-name`
+#     - Allows others to review or you to access from different machines
+
+# 5. Merge Enhancement Back When Complete
+#     - Switch to main: `git checkout main`
+#     - Merge feature branch: `git merge feature/enhancement-name`
+#     - Push merged changes: `git push origin main`
+
+# 6. Optional: Clean Up Feature Branch
+#     - Delete local branch: `git branch -d feature/enhancement-name`
+#     - Delete remote branch: `git push origin --delete feature/enhancement-name`
+
+# ---
+
+# ## Benefits
+
+# 1. Safe Development
+#     - Main branch stays stable and deployable
+#     - Working model remains untouched
+#     - Easy to abandon enhancement if needed (just delete branch)
+
+# 2. Collaboration Features
+#     - Easy comparison: `git diff main..feature/enhancement-name`
+#     - Can create Pull Requests for review
+#     - Multiple developers can work on different features simultaneously
+
+# 3. Flexibility
+#     - Switch between branches easily
+#     - Work on multiple enhancements in parallel
+#     - Keep enhancement work isolated from production code
+
+# ---
+
+# ## Quick Reference Commands
+
+# 1. Branch Management
+#     - List local branches: `git branch`
+#     - List all branches (including remote): `git branch -a`
+#     - Show current branch: `git branch --show-current`
+#     - Switch branches: `git checkout branch-name`
+
+# 2. Comparison and Status
+#     - See differences: `git diff main..feature/enhancement-name`
+#     - Check working tree status: `git status`
+#     - View commit history: `git log --oneline --graph --all`
+
+# 3. Branch Operations
+#     - Create new branch: `git checkout -b feature/new-name`
+#     - Delete local branch: `git branch -d branch-name`
+#     - Delete remote branch: `git push origin --delete branch-name`
