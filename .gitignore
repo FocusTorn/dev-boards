@@ -10,9 +10,10 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-!lib/pmake/
-lib64/
+
+D:\_dev\_Projects\dev-boards\lib\esp32-s3
+
+
 parts/
 sdist/
 var/
@@ -48,3 +49,5 @@ esp-idf
 # Shared resources (managed by sync-manager, each has its own Git repo)
 ___shared/
 /*removed*/
+
+lib/esp32-s3

@@ -1,0 +1,39 @@
+[project]
+name = "py-makefile"
+version = "2.0.0"
+description = "Optimized Python-based build system for Arduino/ESP32"
+requires-python = ">=3.8"
+dependencies = [
+    "pyprompt",
+    "outerm",
+    "alive-progress>=3.0.0",
+]
+
+
+[project.optional-dependencies]
+dev = [
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# Since pyproject.toml is inside the package directory, we need to tell setuptools
+# that the current directory contains the package modules directly
+# Map the package name (py_makefile) to the current directory
+package-dir = {"py_makefile" = "."}
+# Explicitly list all packages - these are relative to the package-dir mapping
+packages = [
+    "py_makefile",
+    "py_makefile.config",
+    "py_makefile.build",
+    "py_makefile.upload",
+    "py_makefile.core",
+    "py_makefile.cache",
+    "py_makefile.ui",
+]
+
+[tool.setuptools.package-data]
+"*" = ["py.typed", "install", "uninstall"]
+
