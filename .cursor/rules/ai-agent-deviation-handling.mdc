@@ -34,11 +34,14 @@ alwaysApply: true
 
 When the user provides a message starting with `Deviation:` followed by error information, the AI Agent MUST:
 
-1. **Immediately Stop**: Stop any current task or response
+1. **Immediately Stop**: Stop any current task or response - deviation handling protocol supersedes all normal task flow
 2. **Acknowledge Deviation**: Explicitly acknowledge that a deviation has been detected
 3. **Begin Root Cause Analysis**: Start the deviation analysis protocol (see section 2)
 4. **Do NOT Defend**: Do not explain why the deviation occurred until root cause analysis is complete
 5. **Do NOT Make Excuses**: Focus on identifying the systemic cause, not justifying actions
+6. **Do NOT Fix**: Do NOT proceed with any fixes, changes, or normal task processing until deviation analysis is complete and user approves remediation
+
+**CRITICAL ENFORCEMENT**: When ANY message contains `Deviation:` marker at the start, immediately STOP all current processing, acknowledge the deviation marker explicitly, and enter deviation handling protocol mode. Do NOT proceed with any fixes, changes, or normal task processing until deviation analysis is complete. The deviation handling protocol takes precedence over all other tasks and must be completed before returning to normal operation.
 
 **✅ CORRECT - Deviation marker format**:
 
@@ -51,9 +54,11 @@ Deviation: [Brief description of what was not followed]
 **❌ INCORRECT - Ignoring deviation markers**:
 
 - Continuing with current task after seeing `Deviation:`
+- Fixing issues immediately without following deviation protocol
 - Providing explanations before root cause analysis
 - Defending actions instead of analyzing systemic causes
 - Treating deviation as a one-time error rather than a systemic issue
+- Proceeding with normal task processing before completing deviation analysis
 
 ### **2. :: Root Cause Analysis Protocol**
 

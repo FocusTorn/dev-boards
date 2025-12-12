@@ -17,7 +17,7 @@ if str(_shared_python_dir) not in sys.path:
     sys.path.insert(0, str(_shared_python_dir))
 
 # Import from local_imports
-from local_imports import (  # type: ignore
+from local_imports import (  
     select,
     HAS_PROMPT_TOOLKIT,
     write_header,

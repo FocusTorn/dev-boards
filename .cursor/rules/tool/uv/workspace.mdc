@@ -229,6 +229,29 @@ echo "3.11" > .python-version
 
 ### **4. :: Environment Variable Configuration**
 
+**✅ CORRECT - UV Cache Directory Configuration**:
+
+Set `UV_CACHE_DIR` environment variable to enable hardlinks when cache and venv are on the same drive:
+
+**Workspace Settings** (`.vscode/settings.json` or `.cursor/settings.json`):
+```json
+{
+    "UV_CACHE_DIR": "D:\\_dev\\.AppData"
+}
+```
+
+**PowerShell Profile**:
+```powershell
+# Add to PowerShell profile ($PROFILE)
+$env:UV_CACHE_DIR = "D:\_dev\.AppData"
+```
+
+**System Environment Variable** (Windows):
+```powershell
+# Set permanently for user
+[System.Environment]::SetEnvironmentVariable("UV_CACHE_DIR", "D:\_dev\.AppData", "User")
+```
+
 **✅ CORRECT - PowerShell profile PATH reload**:
 
 ```powershell
@@ -247,6 +270,9 @@ Reload-EnvironmentPath
 # Verify UV is installed and in PATH
 uv --version
 
+# Verify cache directory
+uv cache dir
+
 # If not found, reload environment PATH
 # PowerShell: Reload-EnvironmentPath
 # Or restart shell
@@ -260,6 +286,24 @@ $env:Path = "C:\Users\username\.local\bin;$env:Path"
 
 # Correct: Use Reload-EnvironmentPath function
 # This ensures both user and machine PATH are loaded
+```
+
+**❌ INCORRECT - Not setting UV_CACHE_DIR when cache and venv are on different drives**:
+
+```toml
+# Wrong: Cache on C:, venv on D:, but not setting UV_CACHE_DIR
+# This causes hardlink warnings and falls back to copying files
+[tool.uv]
+link-mode = "copy"  # Suppresses warning but doesn't enable hardlinks
+```
+
+**✅ CORRECT - Setting UV_CACHE_DIR to same drive as venv**:
+
+```toml
+# Cache moved to D: via UV_CACHE_DIR, venv on D:
+# Both on same filesystem, hardlinks work (default behavior)
+[tool.uv]
+# link-mode = "hardlink"  # Default when cache and venv are on same filesystem
 ```
 
 ### **5. :: Git Integration**

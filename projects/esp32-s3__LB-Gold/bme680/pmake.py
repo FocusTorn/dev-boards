@@ -6,11 +6,10 @@ Passes project configuration to pmake2 package orchestrator.
 
 # Project-specific configuration
 FQBN = "esp32:esp32:esp32s3"
-SKETCH_NAME = "sht21-solo.ino"
+SKETCH_NAME = "bme680-simplified.ino"
 PORT = "COM9"
 BAUDRATE = 115200
 CREATE_LOG = False
-
 
 import sys
 from pathlib import Path

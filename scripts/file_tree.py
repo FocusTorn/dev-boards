@@ -20,8 +20,13 @@ if sys.platform == "win32":
     import io
     # Set stdout/stderr to UTF-8 encoding
     if hasattr(sys.stdout, 'reconfigure'):
-        sys.stdout.reconfigure(encoding='utf-8')
-        sys.stderr.reconfigure(encoding='utf-8')
+        # Type narrowing: use getattr after hasattr check
+        reconfigure_stdout = getattr(sys.stdout, 'reconfigure', None)
+        reconfigure_stderr = getattr(sys.stderr, 'reconfigure', None)
+        if reconfigure_stdout is not None:
+            reconfigure_stdout(encoding='utf-8')
+        if reconfigure_stderr is not None:
+            reconfigure_stderr(encoding='utf-8')
     else:
         # Fallback for older Python versions
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
@@ -46,11 +51,12 @@ def format_timestamp(mtime: float) -> str:
 
 def format_size(size_bytes: int) -> str:
     """Format file size in human-readable format."""
+    size: float = float(size_bytes)  # Convert to float for division
     for unit in ['B', 'KB', 'MB', 'GB']:
-        if size_bytes < 1024.0:
-            return f"{size_bytes:.1f} {unit}"
-        size_bytes /= 1024.0
-    return f"{size_bytes:.1f} TB"
+        if size < 1024.0:
+            return f"{size:.1f} {unit}"
+        size /= 1024.0
+    return f"{size:.1f} TB"
 
 
 def get_file_info(file_path: Path) -> tuple:

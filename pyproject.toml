@@ -4,16 +4,85 @@ version = "0.1.0"
 description = "Dev-boards workspace with shared dependencies"
 requires-python = ">=3.8"
 dependencies = [
-    "prompt-toolkit>=3.0.0",
+    # Workspace members installed as editable packages
+    "outerm",
+    "pyprompt",
+    "py-makefile",
 ]
 
 [tool.uv]
-# Use copy mode since cache (C:) and venv (D:) are on different drives
-# Hardlinks only work within the same filesystem
-link-mode = "copy"
+# Cache is on D: drive (D:\_dev\.AppData) via UV_CACHE_DIR environment variable
+# link-mode = "hardlink"  # Default when cache and venv are on same filesystem
+
+[tool.uv.sources]
+# Workspace members available as dependencies
+outerm = { workspace = true }
+pyprompt = { workspace = true }
+py-makefile = { workspace = true }
 
 [tool.uv.workspace]
 members = [
-    "bootstraps/git_py",
+    "___shared/shared-python/outerm",
+    "___shared/shared-python/pyprompt",
+    "lib/py_makefile",
 ]
 
+[tool.pyright]
+# CursorPyright uses BasedPyright under the hood
+# Configuration for type checking Python code in the workspace
+typeCheckingMode = "basic"
+reportMissingImports = "warning"
+reportMissingTypeStubs = false
+
+# Exclude directories from type checking (prevents initial scanning)
+exclude = [
+    "**/_removed/**",
+    "**/__removed/**",
+    "**/__removed/pmake/build.py",
+    # "**/locate-package",  # Exclude extensionless locate-package file (deleted, but Pyright may still track it)
+    "reference/**",
+    "esp-idf/**",
+    "**/.venv/**",
+    "**/site-packages/**",       # Python site-packages directories
+    "**/Lib/site-packages/**",  # Windows site-packages (Lib/site-packages)
+    "**/lib/python*/site-packages/**",  # Unix site-packages
+    "**/site-packages/_pytest/**",  # Explicitly exclude _pytest from site-packages
+    
+]
+
+
+
+
+
+# Ignore patterns (prevents checking even when files are imported)
+# This is different from exclude - ignore prevents type checking imported files
+ignore = [
+    "**/_removed/**",
+    "**/__removed/**",
+    "**/__removed/pmake/build.py",
+    # "**/locate-package",  # Ignore extensionless locate-package file (deleted, but Pyright may still track it)
+    "reference/**",
+    "esp-idf/**",
+    "**/.venv/**",
+    "**/site-packages/**",
+    "**/Lib/site-packages/**",
+    "**/lib/python*/site-packages/**",
+    "**/site-packages/_pytest/**",  # Explicitly ignore _pytest
+    
+]
+
+# Execution environments for runtime imports
+[[tool.pyright.executionEnvironments]]
+root = "lib/py_makefile"
+extraPaths = ["../___shared/shared-python"]
+pythonVersion = "3.11"
+
+[[tool.pyright.executionEnvironments]]
+root = "projects"
+extraPaths = ["../../lib", "../../___shared/shared-python"]
+pythonVersion = "3.11"
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.36.1",
+]
