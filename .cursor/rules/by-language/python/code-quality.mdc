@@ -258,7 +258,7 @@ reportMissingImports = "none"
 reportMissingTypeStubs = false
 ```
 
-**Note**: CursorPyright is native to Cursor and uses BasedPyright internally. It automatically reads `[tool.basedpyright]` or `[tool.pyright]` sections from `pyproject.toml`. The diagnostics will show "basedpyright" as the owner, which is expected since CursorPyright uses BasedPyright under the hood.
+**Note**: CursorPyright is native to Cursor and automatically reads `[tool.basedpyright]` or `[tool.pyright]` sections from `pyproject.toml`.
 
 **❌ INCORRECT - Missing linter configuration**:
 
@@ -294,8 +294,6 @@ After calling `read_lints`, if working with Python code, verify CursorPyright er
 3. Look for `reportMissingImports` errors from CursorPyright
 4. If CursorPyright errors are found, apply appropriate fixes (e.g., add `# type: ignore` to runtime imports)
 5. **Remediate ALL detected linting errors**, even if they were pre-existing before the current changes
-
-**Note**: CursorPyright is the native type checker in Cursor and uses BasedPyright internally. The diagnostics will show "basedpyright" as the owner, which is expected. Configuration uses `[tool.basedpyright]` or `[tool.pyright]` sections in `pyproject.toml`, with `[tool.basedpyright]` being preferred since CursorPyright uses BasedPyright under the hood.
 
 **✅ CORRECT - Remediate pre-existing linting errors**:
 
@@ -402,6 +400,58 @@ from lib.config import load_config
 # Wrong: Missing type: ignore - linter will show warnings
 from lib.config import load_config
 from pyprompt import select
+```
+
+#### **3.3. :: pyright: ignore Comments Are Prohibited**
+
+**✅ CORRECT - Do NOT use `# pyright: ignore` unless explicitly approved**:
+
+`# pyright: ignore` and `# pyright: ignore[...]` comments are **PROHIBITED** unless explicitly approved by the user or project maintainer. These comments suppress type checking errors and should only be used as a last resort when:
+
+1. The error is a false positive that cannot be resolved through proper type annotations
+2. The error is in third-party code that cannot be modified
+3. Explicit approval has been obtained from the user or project maintainer
+
+**✅ CORRECT - Use proper type narrowing instead of pyright: ignore**:
+
+```python
+# Correct: Use type narrowing to fix type errors
+from outerm import write_header as _write_header_import
+if _write_header_import is None:
+    raise ImportError("write_header must be available")
+write_header: Callable[..., Any] = cast(Callable[..., Any], _write_header_import)
+```
+
+**✅ CORRECT - Use type: ignore for runtime imports only**:
+
+```python
+# Correct: Use # type: ignore for runtime imports (allowed)
+from lib.config import load_config  # type: ignore
+```
+
+**❌ INCORRECT - Using pyright: ignore without approval**:
+
+```python
+# Wrong: Using pyright: ignore without explicit approval
+print(warning('', "Message"))  # pyright: ignore[reportOptionalCall]  # Don't do this
+
+# Wrong: Suppressing type errors instead of fixing them
+result = some_function()  # pyright: ignore  # Don't do this
+```
+
+**❌ INCORRECT - Using pyright: ignore instead of proper type narrowing**:
+
+```python
+# Wrong: Suppressing errors instead of using type narrowing
+from outerm import write_header
+print(write_header("Title"))  # pyright: ignore[reportOptionalCall]  # Don't do this
+
+# Correct: Use type narrowing
+from outerm import write_header as _write_header_import
+if _write_header_import is None:
+    raise ImportError("write_header must be available")
+write_header: Callable[..., Any] = cast(Callable[..., Any], _write_header_import)
+print(write_header("Title"))  # No suppression needed
 ```
 
 ### **4. :: Type Narrowing for Optional Imports**
@@ -1162,6 +1212,310 @@ error = getattr(_module, 'error', None)  # Type: Optional[Callable]
 error = getattr(_module, 'error')  # Type checker doesn't know it's callable
 ```
 
+### **18. :: Fallback Function Signatures**
+
+#### **18.1. :: Problem: Fallback Functions with Incorrect Signatures**
+
+**Problem**: When providing fallback functions in `except ImportError` blocks, the fallback function signatures must exactly match the actual function signatures from the imported module. Mismatched parameter names, types, or return types cause `reportAssignmentType` errors.
+
+**Example Problem**:
+
+```python
+try:
+    from outerm import action, success, error
+except ImportError:
+    def action(text): return text  # Wrong: parameter name should be 'colored_text'
+    def success(text): print(f"SUCCESS: {text}")  # Wrong: should return str, not None
+    def error(text): print(f"ERROR: {text}")  # Wrong: parameter name and return type
+```
+
+#### **18.2. :: Solution: Match Actual Function Signatures**
+
+**✅ CORRECT - Fallback functions match actual function signatures**:
+
+```python
+try:
+    from outerm import action, success, error
+except ImportError:
+    def action(colored_text: str, non_colored_text: str = '') -> str:
+        return colored_text + non_colored_text
+    def success(colored_text: str, non_colored_text: str = '') -> str:
+        result = f"SUCCESS: {colored_text}{non_colored_text}"
+        print(result)
+        return result
+    def error(colored_text: str, non_colored_text: str = '') -> str:
+        result = f"ERROR: {colored_text}{non_colored_text}"
+        print(result, file=sys.stderr)
+        return result
+```
+
+**✅ CORRECT - Context manager return types**:
+
+For functions that return context managers, use `Any` return type for fallback:
+
+```python
+try:
+    from outerm import write_header_fat
+except ImportError:
+    from typing import Any
+    def write_header_fat(title: str, width: Optional[int] = None, use_bold: bool = True, start_region: bool = True, footer: bool = False) -> Any:  # type: ignore[misc]
+        print(f"=== {title} ===")
+        return None
+
+# When calling, assign return value to _ if not using context manager
+_ = write_header_fat("Title")
+```
+
+**✅ CORRECT - Pattern explanation**:
+
+1. **Check actual function signatures**: Inspect the source module or type stubs to get exact signatures
+2. **Match parameter names**: Use exact parameter names (e.g., `colored_text`, not `text`)
+3. **Match parameter types**: Use exact parameter types and defaults
+4. **Match return types**: Use exact return types (e.g., `str`, not `None`)
+5. **Context managers**: Use `Any` return type for context manager functions in fallbacks
+
+**❌ INCORRECT - Mismatched parameter names**:
+
+```python
+# Wrong: Parameter name doesn't match actual function
+try:
+    from outerm import action
+except ImportError:
+    def action(text: str) -> str:  # Wrong: should be 'colored_text', not 'text'
+        return text
+```
+
+**❌ INCORRECT - Wrong return types**:
+
+```python
+# Wrong: Return type doesn't match actual function
+try:
+    from outerm import success
+except ImportError:
+    def success(colored_text: str, non_colored_text: str = '') -> None:  # Wrong: should return str
+        print(f"SUCCESS: {colored_text}{non_colored_text}")
+```
+
+**❌ INCORRECT - Missing parameters**:
+
+```python
+# Wrong: Missing optional parameters
+try:
+    from outerm import action
+except ImportError:
+    def action(colored_text: str) -> str:  # Wrong: missing 'non_colored_text' parameter
+        return colored_text
+```
+
+### **19. :: Type Narrowing for Direct Imports from -e Installed Packages**
+
+#### **19.1. :: Problem: Circular Type References**
+
+**Problem**: When importing directly from `-e` installed packages and then reassigning the same name for type narrowing, the type checker sees a circular reference error: "Type of 'function_name' could not be determined because it refers to itself."
+
+**Example Problem**:
+
+```python
+from outerm import write_header, error
+
+# Type narrowing attempt
+if write_header is None:
+    raise ImportError("write_header must be available")
+write_header: Callable[..., Any] = cast(Callable[..., Any], write_header)  # Error: circular reference
+```
+
+#### **19.2. :: Solution: Import with Aliases First**
+
+**✅ CORRECT - Import with aliases, then assign to final name**:
+
+```python
+# Import directly from installed packages with aliases
+from outerm import (
+    write_header as _write_header_import,
+    error as _error_import,
+    warning as _warning_import,
+)
+from pyprompt import select as _select_import
+
+# Type narrowing: ensure functions are available
+from typing import Callable, cast, Any
+
+if _write_header_import is None:
+    raise ImportError("write_header must be available")
+if _error_import is None:
+    raise ImportError("error must be available")
+if _warning_import is None:
+    raise ImportError("warning must be available")
+if _select_import is None:
+    raise ImportError("select must be available")
+
+# Create local aliases with type casting for type narrowing
+write_header: Callable[..., Any] = cast(Callable[..., Any], _write_header_import)
+error: Callable[..., Any] = cast(Callable[..., Any], _error_import)
+warning: Callable[..., Any] = cast(Callable[..., Any], _warning_import)
+select: Callable[..., Any] = cast(Callable[..., Any], _select_import)
+```
+
+**✅ CORRECT - Pattern explanation**:
+
+1. **Import with aliases**: Use `as _function_name_import` when importing
+2. **Check for None**: Check each imported function for None
+3. **Assign with cast**: Assign to final name with `cast()` for type narrowing
+4. **Avoid circular references**: Never reassign the same name that was imported
+
+**❌ INCORRECT - Importing and reassigning same name**:
+
+```python
+# Wrong: Creates circular reference
+from outerm import write_header
+
+if write_header is None:
+    raise ImportError("write_header must be available")
+write_header: Callable[..., Any] = cast(Callable[..., Any], write_header)  # Error: circular reference
+```
+
+**❌ INCORRECT - Missing None checks**:
+
+```python
+# Wrong: No None checks before type narrowing
+from outerm import write_header as _write_header_import
+write_header: Callable[..., Any] = cast(Callable[..., Any], _write_header_import)  # Missing None check
+```
+
+### **20. :: Prefer Direct Imports from Installed Packages Over local_imports**
+
+#### **20.1. :: Problem: Using local_imports When Packages Are Installed**
+
+**Problem**: When packages are installed with `-e` (editable install) or regular installation, using `local_imports` is unnecessary and causes type checking issues. The `local_imports` helper was designed for development scenarios where packages aren't installed, but once packages are properly installed, direct imports should be used instead.
+
+**Example Problem**:
+
+```python
+# Wrong: Using local_imports when packages are installed
+import sys
+from pathlib import Path
+
+_workspace_root = Path(os.environ.get('WORKSPACE_ROOT'))
+_shared_python_dir = _workspace_root / "___shared" / "shared-python"
+if str(_shared_python_dir) not in sys.path:
+    sys.path.insert(0, str(_shared_python_dir))
+
+from local_imports import error, warning, info, success  # type: ignore
+
+# Type checker reports: Object of type "None" cannot be called
+print(error('Error message', ''))  # Error: reportOptionalCall
+```
+
+#### **20.2. :: Solution: Use Direct Imports from Installed Packages**
+
+**✅ CORRECT - Direct imports from installed packages**:
+
+```python
+# Correct: Direct import from installed package (no sys.path manipulation needed)
+from outerm import error, warning, info, success
+
+# No type: ignore needed, no runtime checks needed
+# Type checker understands these are proper imports
+print(error('Error message', ''))  # No errors
+print(success('Success message', ''))  # No errors
+```
+
+**✅ CORRECT - Pattern explanation**:
+
+1. **Check if packages are installed**: Verify packages are installed with `-e` or regular installation before using direct imports
+2. **Remove sys.path manipulation**: No need to modify `sys.path` when packages are installed
+3. **Remove local_imports usage**: Replace `from local_imports import ...` with direct package imports
+4. **Remove type: ignore comments**: Direct imports from installed packages don't need `# type: ignore`
+5. **Remove runtime checks**: Direct imports don't need None checks or assertions (unless package itself has optional exports)
+
+**✅ CORRECT - Migration pattern**:
+
+```python
+# Before: Using local_imports
+_shared_python_dir = _workspace_root / "___shared" / "shared-python"
+if str(_shared_python_dir) not in sys.path:
+    sys.path.insert(0, str(_shared_python_dir))
+
+from local_imports import error, warning, info, success  # type: ignore
+
+# Verify imports are available (runtime check for type checker)
+if error is None or warning is None or info is None or success is None:
+    print("ERROR: Failed to import terminal output functions from local_imports.", file=sys.stderr)
+    sys.exit(1)
+
+# Type narrowing: assert functions are not None for type checker
+assert error is not None
+assert warning is not None
+assert info is not None
+assert success is not None
+
+# After: Direct imports from installed packages
+from outerm import error, warning, info, success
+
+# No sys.path manipulation, no type: ignore, no runtime checks, no assertions needed
+```
+
+**✅ CORRECT - When to use local_imports vs direct imports**:
+
+- **Use `local_imports`**: Only when packages are NOT installed and you need runtime path manipulation
+- **Use direct imports**: When packages are installed with `-e` (editable install) or regular installation
+- **Check installation**: Verify packages are in `pyproject.toml` dependencies and installed before using direct imports
+
+**❌ INCORRECT - Using local_imports when packages are installed**:
+
+```python
+# Wrong: Using local_imports when packages are installed with -e
+import sys
+from pathlib import Path
+
+_shared_python_dir = _workspace_root / "___shared" / "shared-python"
+if str(_shared_python_dir) not in sys.path:
+    sys.path.insert(0, str(_shared_python_dir))
+
+from local_imports import error, warning, info, success  # type: ignore
+
+# Should use: from outerm import error, warning, info, success
+```
+
+**❌ INCORRECT - Keeping sys.path manipulation when packages are installed**:
+
+```python
+# Wrong: Unnecessary sys.path manipulation when packages are installed
+_shared_python_dir = _workspace_root / "___shared" / "shared-python"
+if str(_shared_python_dir) not in sys.path:
+    sys.path.insert(0, str(_shared_python_dir))
+
+from outerm import error, warning, info, success
+
+# Should remove sys.path manipulation - packages are installed, Python can find them
+```
+
+**❌ INCORRECT - Adding type: ignore to direct imports from installed packages**:
+
+```python
+# Wrong: type: ignore not needed for installed packages
+from outerm import error, warning, info, success  # type: ignore  # Don't need this
+
+# Correct: Direct import without type: ignore
+from outerm import error, warning, info, success
+```
+
+**❌ INCORRECT - Adding runtime checks for direct imports from installed packages**:
+
+```python
+# Wrong: Runtime checks not needed for installed packages
+from outerm import error, warning, info, success
+
+if error is None or warning is None:  # Don't need this for installed packages
+    sys.exit(1)
+
+assert error is not None  # Don't need this for installed packages
+
+# Correct: Direct import and use
+from outerm import error, warning, info, success
+print(error('Error message', ''))  # Works without checks
+```
+
 ## **ANTI-PATTERNS**
 
 ### **❌ Error Investigation Violations**
@@ -1186,6 +1540,13 @@ error = getattr(_module, 'error')  # Type checker doesn't know it's callable
 - ❌ **Wrong Execution Environment** - Don't use wrong root in executionEnvironments
 - ❌ **Hardcoded Absolute Paths** - Prefer relative paths in config when possible (use absolute only if relative doesn't work)
 - ❌ **Ignoring Pre-Existing Errors** - Don't skip fixing linting errors because they existed before current changes
+
+### **❌ pyright: ignore Violations**
+
+- ❌ **Using pyright: ignore Without Approval** - Don't use `# pyright: ignore` or `# pyright: ignore[...]` unless explicitly approved by user or project maintainer
+- ❌ **Suppressing Instead of Fixing** - Don't use `# pyright: ignore` to suppress type errors - fix them with proper type narrowing or type annotations
+- ❌ **pyright: ignore on Function Calls** - Don't add `# pyright: ignore[reportOptionalCall]` on function calls - use type narrowing with `cast()` instead
+- ❌ **pyright: ignore as First Solution** - Don't use `# pyright: ignore` as the first solution to type errors - investigate root causes first
 
 ### **❌ Type Narrowing Violations**
 
@@ -1230,10 +1591,280 @@ error = getattr(_module, 'error')  # Type checker doesn't know it's callable
 - ❌ **Missing typing.cast** - Don't use `getattr` without `typing.cast` to properly type exported functions
 - ❌ **Setting Functions to None** - Don't set exported functions to `None` without type annotations (causes `reportOptionalCall` errors)
 - ❌ **Using getattr with None Default** - Don't use `getattr(module, 'func', None)` without `typing.cast` or type annotations
+
+### **❌ Direct Import Violations**
+
+- ❌ **Using local_imports When Packages Are Installed** - Don't use `local_imports` when packages are installed with `-e` or regular installation - use direct imports instead
+- ❌ **Unnecessary sys.path Manipulation** - Don't modify `sys.path` when packages are properly installed - Python can find them automatically
+- ❌ **Type Ignore on Direct Imports** - Don't add `# type: ignore` to direct imports from installed packages - they don't need it
+- ❌ **Runtime Checks for Installed Packages** - Don't add None checks or assertions for direct imports from installed packages - they're guaranteed to exist
+- ❌ **Keeping local_imports After Migration** - Don't keep `local_imports` usage after migrating to installed packages - remove it completely
 - ❌ **Incorrect Callable Signatures** - Don't define `Callable` types that don't match actual function signatures
 - ❌ **Missing Context Manager Types** - Don't forget to use `Optional[AbstractContextManager[None]]` for functions that return context managers
 - ❌ **Requiring Runtime Assertions** - Don't create helper modules that force consumers to add runtime assertions and `# type: ignore[reportOptionalCall]` comments
 - ❌ **Silent Failures** - Don't silently set functions to `None` when modules aren't available - raise `ImportError` instead
+
+### **❌ Modern Type Annotation Violations**
+
+- ❌ **Using Deprecated typing Module** - Don't use `List`, `Set`, `Dict`, `Tuple`, `Optional` from `typing` module - use built-in `list`, `set`, `dict`, `tuple`, and `| None` instead (Python 3.9+)
+- ❌ **Missing Generic Type Arguments** - Don't use bare `tuple`, `list`, `dict`, `set` without type arguments - always provide type arguments like `tuple[str, int]`, `list[str]`, `dict[str, int]`, `set[str]`
+- ❌ **Using Optional Instead of | None** - Don't use `Optional[T]` - use `T | None` instead (Python 3.10+)
+
+### **❌ argparse Type Handling Violations**
+
+- ❌ **Using args Attributes Directly** - Don't use `args.attribute` directly without `cast()` - argparse returns `Any` types
+- ❌ **Suppressing Without cast()** - Don't use `# type: ignore` on argparse attributes without using `cast()` to provide correct types
+- ❌ **Missing Type Annotations** - Don't access argparse attributes without explicit type annotations using `cast()`
+
+### **❌ Code Cleanup Violations**
+
+- ❌ **Keeping Unused Imports** - Don't leave unused imports in code - remove them to avoid `reportUnusedImport` warnings
+- ❌ **Ignoring Unused Return Values** - Don't ignore unused return value warnings - assign to `_` to suppress them
+- ❌ **Missing Return Type Annotations** - Don't omit `-> None` for functions that don't return values
+
+### **11. :: Modern Python Type Annotations (Python 3.9+)**
+
+#### **11.1. :: Use Built-in Generic Types**
+
+**✅ CORRECT - Use built-in generic types instead of typing module**:
+
+For Python 3.9+, use built-in generic types (`list`, `dict`, `set`, `tuple`) instead of importing from `typing` module (`List`, `Dict`, `Set`, `Tuple`). Use `| None` instead of `Optional`.
+
+```python
+# ✅ CORRECT - Python 3.9+ style
+from pathlib import Path
+from typing import cast  # Only import what's needed from typing
+
+def process_items(items: list[str], config: dict[str, int] | None = None) -> tuple[str, int]:
+    """Process items with optional config."""
+    if config is None:
+        config = {}
+    return ("result", len(items))
+```
+
+```python
+# ✅ CORRECT - Use | None instead of Optional
+def get_value(key: str) -> str | None:
+    """Get value or None."""
+    return data.get(key)
+```
+
+**❌ INCORRECT - Using deprecated typing module imports**:
+
+```python
+# ❌ WRONG - Deprecated in Python 3.9+
+from typing import List, Set, Optional, Dict, Tuple
+
+def process_items(items: List[str], config: Optional[Dict[str, int]] = None) -> Tuple[str, int]:
+    """Uses deprecated typing module types."""
+    pass
+```
+
+#### **11.2. :: Generic Type Arguments**
+
+**✅ CORRECT - Always provide type arguments for generic types**:
+
+Generic types like `tuple`, `list`, `dict`, `set` must include type arguments. Use `tuple[...]` instead of bare `tuple`.
+
+```python
+# ✅ CORRECT - Type arguments provided
+def get_file_info(file_path: Path) -> tuple[float | None, int, int]:
+    """Get file information: mtime, line count, size."""
+    stat = file_path.stat()
+    mtime: float = stat.st_mtime
+    size: int = stat.st_size
+    line_count: int = count_lines(file_path)
+    return mtime, line_count, size
+```
+
+```python
+# ✅ CORRECT - List and set with type arguments
+def process_data(items: list[str], exclude: set[str] | None = None) -> list[str]:
+    """Process items with optional exclusion set."""
+    if exclude is None:
+        exclude = set()
+    return [item for item in items if item not in exclude]
+```
+
+**❌ INCORRECT - Missing type arguments for generic types**:
+
+```python
+# ❌ WRONG - Missing type arguments
+def get_file_info(file_path: Path) -> tuple:  # Error: Expected type arguments
+    """Missing type arguments for tuple."""
+    return mtime, line_count, size
+
+def process_items(items: list) -> list:  # Error: Expected type arguments
+    """Missing type arguments for list."""
+    return items
+```
+
+### **12. :: Handling argparse Any Types**
+
+#### **12.1. :: Problem: argparse Returns Any Types**
+
+**Problem**: The `argparse` module's `parse_args()` method returns a `Namespace` object where all attributes are typed as `Any`. This causes `reportAny` warnings when accessing argument values.
+
+**Example Problem**:
+
+```python
+parser = argparse.ArgumentParser()
+parser.add_argument("directory", nargs="?", default=".")
+args = parser.parse_args()
+
+# Type checker sees args.directory as Any
+root_dir = Path(args.directory).resolve()  # Warning: Type of "directory" is Any
+```
+
+#### **12.2. :: Solution: Use cast() with Type Annotations**
+
+**✅ CORRECT - Use typing.cast() with explicit type annotations**:
+
+Use `typing.cast()` to tell the type checker the correct types, and add `# pyright: ignore[reportAny]` comments to suppress the unavoidable `Any` warnings from argparse.
+
+```python
+from typing import cast
+import argparse
+
+parser = argparse.ArgumentParser()
+_ = parser.add_argument("directory", nargs="?", default=".")
+args = parser.parse_args()
+
+# Use cast() to tell type checker the correct type
+# argparse types are Any, but we know the runtime types
+directory: str = cast(str, args.directory) if args.directory else "."  # pyright: ignore[reportAny]
+root_dir = Path(directory).resolve()
+```
+
+**✅ CORRECT - Handle optional arguments with getattr()**:
+
+For optional arguments that might not exist, use `getattr()` with a default value and cast:
+
+```python
+# Optional argument that might not be set
+exclude_patterns_str: str | None = cast(str | None, getattr(args, 'exclude_patterns', None))
+exclude_patterns: list[str] = []
+if exclude_patterns_str:
+    exclude_patterns = [p.strip() for p in exclude_patterns_str.split(',') if p.strip()]
+```
+
+**✅ CORRECT - Suppress unused return values**:
+
+Assign `parser.add_argument()` return values to `_` to suppress unused return value warnings:
+
+```python
+_ = parser.add_argument(
+    "directory",
+    nargs="?",
+    default=".",
+    help="Directory to display (default: current directory)"
+)
+```
+
+**❌ INCORRECT - Using args attributes directly without cast**:
+
+```python
+# ❌ WRONG - Type checker sees Any types
+args = parser.parse_args()
+root_dir = Path(args.directory).resolve()  # Warning: Type of "directory" is Any
+```
+
+**❌ INCORRECT - Using type: ignore without cast**:
+
+```python
+# ❌ WRONG - Suppressing without fixing the type
+args = parser.parse_args()
+root_dir = Path(args.directory).resolve()  # type: ignore  # Don't do this
+```
+
+### **13. :: Unused Imports and Return Values**
+
+#### **13.1. :: Remove Unused Imports**
+
+**✅ CORRECT - Remove unused imports**:
+
+Unused imports should be removed to keep code clean and avoid `reportUnusedImport` warnings.
+
+```python
+# ✅ CORRECT - Only import what's used
+import sys
+import argparse
+from pathlib import Path
+from datetime import datetime
+from typing import cast
+```
+
+**❌ INCORRECT - Keeping unused imports**:
+
+```python
+# ❌ WRONG - Unused import
+import sys
+import os  # Not used anywhere
+import argparse
+```
+
+#### **13.2. :: Suppress Unused Return Values**
+
+**✅ CORRECT - Assign unused return values to `_`**:
+
+When calling functions for their side effects (not their return values), assign the result to `_` to suppress unused return value warnings.
+
+```python
+# ✅ CORRECT - Suppress unused return value
+_ = parser.add_argument(
+    "directory",
+    nargs="?",
+    default=".",
+    help="Directory to display"
+)
+```
+
+**❌ INCORRECT - Ignoring unused return value warnings**:
+
+```python
+# ❌ WRONG - Unused return value warning
+parser.add_argument(
+    "directory",
+    nargs="?",
+    default=".",
+    help="Directory to display"
+)  # Warning: Result of call expression is not used
+```
+
+### **14. :: Missing Return Type Annotations**
+
+#### **14.1. :: Functions That Don't Return Values**
+
+**✅ CORRECT - Add `-> None` to functions that don't return values**:
+
+Functions that don't return a value should have an explicit `-> None` return type annotation.
+
+```python
+# ✅ CORRECT - Explicit None return type
+def print_tree(
+    root: Path,
+    prefix: str = "",
+    is_last: bool = True,
+    exclude_dirs: set[str] | None = None,
+    exclude_patterns: list[str] | None = None,
+    show_hidden: bool = False
+) -> None:
+    """Print directory tree with file information."""
+    # Function body...
+```
+
+**❌ INCORRECT - Missing return type annotation**:
+
+```python
+# ❌ WRONG - Missing return type
+def print_tree(
+    root: Path,
+    prefix: str = "",
+    is_last: bool = True
+):  # Missing -> None
+    """Print directory tree."""
+    # Function body...
+```
 
 ## **QUALITY GATES**
 
@@ -1242,6 +1873,7 @@ error = getattr(_module, 'error')  # Type checker doesn't know it's callable
 - [ ] **Source Fixes Applied**: Fixed type definitions in helper modules rather than adding local workarounds
 - [ ] **Rule Discovery**: Checked `.cursor/rules/by-language/python/code-quality.mdc` before starting task
 - [ ] **Type Ignore Comments**: All runtime imports have `# type: ignore` comments
+- [ ] **No pyright: ignore Without Approval**: No `# pyright: ignore` comments used unless explicitly approved
 - [ ] **Path Setup Before Imports**: sys.path modifications occur before importing local packages
 - [ ] **Linter Configuration**: pyrightconfig.json or pyproject.toml has executionEnvironments configured
 - [ ] **Correct Root**: executionEnvironments root matches the directory containing the script
@@ -1261,6 +1893,22 @@ error = getattr(_module, 'error')  # Type checker doesn't know it's callable
 - [ ] **Context Manager Types**: Functions returning context managers use `Optional[AbstractContextManager[None]]`
 - [ ] **No Optional Call Errors**: Helper modules don't require consumers to add `# type: ignore[reportOptionalCall]` comments
 - [ ] **Error Handling**: Helper modules raise `ImportError` instead of setting functions to `None` when modules aren't available
+- [ ] **Modern Type Annotations**: Using built-in generic types (`list`, `set`, `dict`, `tuple`) instead of `typing` module types
+- [ ] **Generic Type Arguments**: All generic types have type arguments (e.g., `tuple[str, int]` not `tuple`)
+- [ ] **Union Syntax**: Using `| None` instead of `Optional` (Python 3.10+)
+- [ ] **argparse Type Handling**: Using `cast()` with explicit type annotations for argparse attributes
+- [ ] **Unused Imports Removed**: All unused imports have been removed
+- [ ] **Unused Return Values Suppressed**: Unused return values assigned to `_`
+- [ ] **Return Type Annotations**: All functions have explicit return type annotations (including `-> None`)
+- [ ] **Windows Encoding Pattern**: Using `getattr()` pattern for `sys.stdout.reconfigure()` and `sys.stderr.reconfigure()` access
+- [ ] **Runtime Function Checks**: Runtime checks that exit early if imported functions from helper modules are None
+- [ ] **Type Narrowing Assertions**: Assertions after runtime checks to help type checker understand functions are not None
+- [ ] **List Type Annotations**: Explicit type annotations for lists used in `join()` operations
+- [ ] **None Value Filtering**: None values filtered from lists before using in `join()` operations
+- [ ] **Direct Imports for Installed Packages**: When packages are installed with `-e` or regular installation, use direct imports instead of `local_imports`
+- [ ] **No Unnecessary sys.path Manipulation**: Removed `sys.path` modifications when packages are properly installed
+- [ ] **No Type Ignore on Direct Imports**: Direct imports from installed packages don't have unnecessary `# type: ignore` comments
+- [ ] **No Runtime Checks for Installed Packages**: Direct imports from installed packages don't have unnecessary None checks or assertions
 
 ## **SUCCESS METRICS**
 
@@ -1284,6 +1932,19 @@ After implementing proper runtime import handling:
 - ✅ **Type Safety** - Type checker correctly infers function types from helper modules
 - ✅ **Proper Context Manager Types** - Context manager return types are correctly typed as `Optional[AbstractContextManager[None]]`
 - ✅ **Accurate Callable Signatures** - `Callable` type definitions match actual function signatures
+- ✅ **Modern Type Annotations** - Code uses Python 3.9+ built-in generic types instead of deprecated `typing` module types
+- ✅ **Complete Generic Types** - All generic types have proper type arguments (e.g., `tuple[str, int]` not `tuple`)
+- ✅ **argparse Types Handled** - argparse attributes are properly typed using `cast()` with explicit annotations
+- ✅ **Clean Imports** - No unused imports in code
+- ✅ **Suppressed Warnings** - Unused return values properly suppressed with `_`
+- ✅ **Complete Return Types** - All functions have explicit return type annotations
+- ✅ **Windows Encoding Fixed** - Windows console encoding uses safe `getattr()` pattern to avoid `reportAttributeAccessIssue` errors
+- ✅ **Runtime Function Safety** - Functions from helper modules checked at runtime before use, preventing `reportOptionalCall` errors
+- ✅ **Type Narrowing Applied** - Assertions after runtime checks help type checker understand functions are not None
+- ✅ **Safe List Operations** - Lists used in `join()` operations have explicit type annotations and None values filtered
+- ✅ **Fallback Functions Match Signatures** - Fallback functions in `except ImportError` blocks match actual function signatures exactly, preventing `reportAssignmentType` errors
+- ✅ **No Circular Type References** - Type narrowing for direct imports uses aliases to avoid circular reference errors
+- ✅ **Proper Import Aliases** - Direct imports from `-e` installed packages use aliases when type narrowing is needed
 
 ## **EXECUTION PRIORITY MATRIX**
 
@@ -1302,6 +1963,17 @@ After implementing proper runtime import handling:
 - **Helper module type annotations** - When creating helper modules that export functions, use `typing.cast` with proper `Callable` type annotations to tell the type checker the correct types
 - **Callable type definitions** - Define `Callable` types that match actual function signatures, including context manager return types
 - **Context manager return types** - Use `Optional[AbstractContextManager[None]]` for functions that return context managers
+- **Modern type annotations** - Use built-in generic types (`list`, `set`, `dict`, `tuple`) instead of `typing` module types (Python 3.9+)
+- **Generic type arguments** - Always provide type arguments for generic types (e.g., `tuple[str, int]` not `tuple`)
+- **argparse type handling** - Use `cast()` with explicit type annotations when accessing argparse attributes
+- **Remove unused imports** - Remove all unused imports to avoid `reportUnusedImport` warnings
+- **Suppress unused return values** - Assign unused return values to `_` to suppress warnings
+- **Return type annotations** - Add explicit return type annotations (including `-> None`) to all functions
+- **Windows console encoding** - Use `getattr()` pattern for `sys.stdout.reconfigure()` and `sys.stderr.reconfigure()` to avoid `reportAttributeAccessIssue` errors
+- **Runtime function checks** - Add runtime checks that exit early if imported functions from helper modules are None, followed by assertions for type narrowing
+- **List comprehensions with None** - Use explicit type annotations and filter None values from lists before using in `join()` operations
+- **Fallback Function Signatures** - When creating fallback functions in `except ImportError` blocks, match actual function signatures exactly (parameter names, types, return types)
+- **Import Aliases for Type Narrowing** - When importing directly from `-e` installed packages and needing type narrowing, use aliases (`as _name_import`) to avoid circular references
 
 ### **HIGH PRIORITY (Execute before proceeding)**
 
@@ -1313,6 +1985,290 @@ After implementing proper runtime import handling:
 
 - Document why type: ignore is needed in code comments
 - Keep linter configuration up to date as paths change
+
+### **15. :: Windows Console Encoding with sys.stdout.reconfigure**
+
+#### **15.1. :: Problem: reportAttributeAccessIssue for reconfigure**
+
+**Problem**: When fixing Windows console encoding using `sys.stdout.reconfigure()` and `sys.stderr.reconfigure()`, type checkers report `reportAttributeAccessIssue` errors because `reconfigure` is not recognized as an attribute of `TextIO` in older type stubs, even though it exists in Python 3.7+.
+
+**Example Problem**:
+
+```python
+# Fix Windows console encoding
+if sys.platform == "win32":
+    import io
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')  # Error: Attribute "reconfigure" is unknown
+        sys.stderr.reconfigure(encoding='utf-8')  # Error: Attribute "reconfigure" is unknown
+```
+
+#### **15.2. :: Solution: Use getattr() Pattern**
+
+**✅ CORRECT - Use getattr() to safely access reconfigure attribute**:
+
+```python
+# Fix Windows console encoding
+if sys.platform == "win32":
+    import io
+    # Type narrowing: use getattr after hasattr check
+    reconfigure_stdout = getattr(sys.stdout, 'reconfigure', None)  # type: ignore[attr-defined]
+    reconfigure_stderr = getattr(sys.stderr, 'reconfigure', None)  # type: ignore[attr-defined]
+    if reconfigure_stdout is not None:
+        reconfigure_stdout(encoding='utf-8')
+    if reconfigure_stderr is not None:
+        reconfigure_stderr(encoding='utf-8')
+    if reconfigure_stdout is None or reconfigure_stderr is None:
+        # Fallback for older Python versions
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+```
+
+**✅ CORRECT - Pattern explanation**:
+
+1. Use `getattr()` with `None` as default to safely access the `reconfigure` attribute
+2. Check if the result is not `None` before calling it
+3. Provide fallback using `io.TextIOWrapper` for older Python versions
+4. This pattern avoids `reportAttributeAccessIssue` errors while maintaining runtime safety
+
+**❌ INCORRECT - Direct attribute access**:
+
+```python
+# Wrong: Direct attribute access causes type checker errors
+if sys.platform == "win32":
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')  # Type error
+        sys.stderr.reconfigure(encoding='utf-8')  # Type error
+```
+
+**❌ INCORRECT - Using type: ignore on direct access**:
+
+```python
+# Wrong: Suppressing errors instead of using safe access pattern
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding='utf-8')  # type: ignore  # Don't do this
+```
+
+### **16. :: Runtime Checks for Imported Functions**
+
+#### **16.1. :: Problem: reportOptionalCall for Functions from Helper Modules**
+
+**Problem**: When importing functions from helper modules (like `local_imports`) that may set functions to `None` if modules fail to load, type checkers report `reportOptionalCall` errors on every function call, even if the functions are guaranteed to exist at runtime.
+
+**Example Problem**:
+
+```python
+from local_imports import (
+    error, warning, success, info, action, dim,
+    select, confirm, text,
+    HAS_PROMPT_TOOLKIT,
+)
+
+# Type checker thinks these functions might be None
+print(error('', "Error message"))  # Error: Object of type "None" cannot be called
+selected = select("Choose:", choices=choices)  # Error: Object of type "None" cannot be called
+```
+
+#### **16.2. :: Solution: Runtime Checks with Type Narrowing**
+
+**✅ CORRECT - Add runtime checks that exit early if functions are None**:
+
+```python
+from local_imports import (
+    error, warning, success, info, action, dim,
+    select, confirm, text,
+    write_header, write_header_double, write_boxed_header,
+    HAS_PROMPT_TOOLKIT,
+)
+
+# Check required dependencies first
+if not HAS_PROMPT_TOOLKIT:
+    print("Error: prompt_toolkit is required but not available", file=sys.stderr)
+    sys.exit(1)
+
+# Type guards: ensure functions are available (satisfies type checker)
+if select is None or confirm is None or text is None:
+    print("Error: Required prompt functions not available", file=sys.stderr)
+    sys.exit(1)
+
+if error is None or warning is None or success is None or info is None or action is None or dim is None:
+    print("Error: Required output functions not available", file=sys.stderr)
+    sys.exit(1)
+
+if write_header is None or write_header_double is None or write_boxed_header is None:
+    print("Error: Required header functions not available", file=sys.stderr)
+    sys.exit(1)
+
+# Type narrowing: use assertions to help type checker understand these are not None
+# These assertions are safe because we've verified the functions exist above
+assert select is not None
+assert confirm is not None
+assert text is not None
+assert error is not None
+assert warning is not None
+assert success is not None
+assert info is not None
+assert action is not None
+assert dim is not None
+assert write_header is not None
+assert write_header_double is not None
+assert write_boxed_header is not None
+
+# Now all function calls work without type errors
+print(error('', "Error message"))
+selected = select("Choose:", choices=choices)
+```
+
+**✅ CORRECT - Pattern explanation**:
+
+1. **Check dependencies first**: Check boolean flags like `HAS_PROMPT_TOOLKIT` first
+2. **Group related checks**: Group functions by category (prompt functions, output functions, header functions)
+3. **Exit early on failure**: Use `sys.exit(1)` if required functions are missing
+4. **Add assertions for type narrowing**: After runtime checks, add assertions to help the type checker understand functions are not None
+5. **Safe execution**: Code after these checks is guaranteed to have non-None functions at runtime
+
+**✅ CORRECT - Alternative: Configure basedpyright to suppress errors**:
+
+If runtime checks are in place and the code is safe, you can configure basedpyright to suppress these errors in `pyproject.toml`:
+
+```toml
+[tool.basedpyright]
+reportOptionalCall = "none"
+reportAttributeAccessIssue = "none"
+```
+
+However, runtime checks are preferred as they provide better safety guarantees.
+
+**❌ INCORRECT - Not checking functions before use**:
+
+```python
+# Wrong: No runtime checks, functions might be None
+from local_imports import error, select
+
+print(error('', "Error"))  # Runtime error if error is None
+selected = select("Choose:", choices=[])  # Runtime error if select is None
+```
+
+**❌ INCORRECT - Using type: ignore on every call**:
+
+```python
+# Wrong: Suppressing errors instead of checking at runtime
+print(error('', "Error"))  # type: ignore[reportOptionalCall]  # Don't do this
+selected = select("Choose:", choices=[])  # type: ignore[reportOptionalCall]  # Don't do this
+```
+
+### **17. :: List Comprehensions with Potentially None Values**
+
+#### **17.1. :: Problem: join() with list[Unknown | None]**
+
+**Problem**: When building lists for `str.join()`, if list comprehensions use `.get()` on dictionaries that might return `None`, type checkers report errors about `list[Unknown | None]` not being assignable to `Iterable[str]`.
+
+**Example Problem**:
+
+```python
+enabled_packages = [{"name": "package1"}, {"name": None}, {"name": "package2"}]
+
+# Error: Argument of type "list[Unknown | None]" cannot be assigned to parameter "iterable" of type "Iterable[str]"
+package_names_str = ', '.join([p.get('name') for p in enabled_packages])
+```
+
+#### **17.2. :: Solution: Explicit Type Annotations with None Filtering**
+
+**✅ CORRECT - Use explicit type annotation and filter None values**:
+
+```python
+enabled_packages = [{"name": "package1"}, {"name": None}, {"name": "package2"}]
+
+# Explicit type annotation and None filtering
+package_names: list[str] = []
+for p in enabled_packages:
+    name = p.get('name')
+    if name:
+        package_names.append(name)
+    else:
+        package_names.append('unknown')
+
+package_names_str = ', '.join(package_names)
+```
+
+**✅ CORRECT - Alternative: List comprehension with explicit filtering**:
+
+```python
+enabled_packages = [{"name": "package1"}, {"name": None}, {"name": "package2"}]
+
+# Filter None values and provide default
+package_names = [p.get('name', 'unknown') for p in enabled_packages if p.get('name')]
+package_names_str = ', '.join(package_names)
+```
+
+**✅ CORRECT - Pattern explanation**:
+
+1. **Explicit type annotation**: Use `list[str]` to tell type checker the list contains only strings
+2. **Check for None**: Use `if name:` or `if p.get('name')` to filter None values
+3. **Provide defaults**: Use `.get('name', 'unknown')` to provide default values for missing keys
+4. **Safe join**: After filtering, `join()` receives a `list[str]` instead of `list[str | None]`
+
+**❌ INCORRECT - List comprehension without None filtering**:
+
+```python
+# Wrong: May contain None values
+package_names = [p.get('name') for p in enabled_packages]  # Type: list[str | None]
+package_names_str = ', '.join(package_names)  # Type error
+```
+
+**❌ INCORRECT - Using type: ignore on join**:
+
+```python
+# Wrong: Suppressing errors instead of filtering None values
+package_names = [p.get('name') for p in enabled_packages]
+package_names_str = ', '.join(package_names)  # type: ignore  # Don't do this
+```
+
+**❌ INCORRECT - Missing type annotation**:
+
+```python
+# Wrong: Type checker can't infer correct type
+package_names = []  # Type: list[Unknown]
+for p in enabled_packages:
+    name = p.get('name')
+    if name:
+        package_names.append(name)
+```
+
+## **ANTI-PATTERNS**
+
+### **❌ Windows Console Encoding Violations**
+
+- ❌ **Direct Attribute Access** - Don't use `sys.stdout.reconfigure()` directly - use `getattr()` pattern instead
+- ❌ **Missing Fallback** - Don't skip fallback to `io.TextIOWrapper` for older Python versions
+- ❌ **Type Ignore on Direct Access** - Don't suppress errors with `# type: ignore` on direct attribute access
+
+### **❌ Runtime Function Check Violations**
+
+- ❌ **No Runtime Checks** - Don't use functions from helper modules without checking they're not None
+- ❌ **Missing Dependency Checks** - Don't skip checking boolean flags like `HAS_PROMPT_TOOLKIT` before using functions
+- ❌ **Type Ignore on Every Call** - Don't add `# type: ignore[reportOptionalCall]` on every function call - add runtime checks instead
+- ❌ **No Early Exit** - Don't continue execution if required functions are None - exit early with clear error messages
+- ❌ **Missing Assertions** - Don't skip assertions after runtime checks - they help type checker understand type narrowing
+
+### **❌ List Comprehension Violations**
+
+- ❌ **No None Filtering** - Don't use list comprehensions with `.get()` that might return None without filtering
+- ❌ **Missing Type Annotations** - Don't skip explicit type annotations for lists used in `join()`
+- ❌ **Type Ignore on Join** - Don't suppress errors on `join()` calls - filter None values properly
+- ❌ **No Default Values** - Don't skip providing default values for missing dictionary keys
+
+## **QUALITY GATES**
+
+- [ ] **Windows Encoding Pattern**: Using `getattr()` pattern for `sys.stdout.reconfigure()` and `sys.stderr.reconfigure()`
+- [ ] **Runtime Function Checks**: Runtime checks that exit early if imported functions are None
+- [ ] **Type Narrowing Assertions**: Assertions after runtime checks to help type checker understand functions are not None
+- [ ] **List Type Annotations**: Explicit type annotations for lists used in `join()` operations
+- [ ] **None Value Filtering**: None values filtered from lists before using in `join()`
+- [ ] **Default Values Provided**: Default values provided for missing dictionary keys in list comprehensions
+- [ ] **Fallback Function Signatures**: Fallback functions in `except ImportError` blocks match actual function signatures exactly
+- [ ] **Import Aliases for Type Narrowing**: Direct imports from `-e` installed packages use aliases (`as _name_import`) when type narrowing is needed
+- [ ] **No Circular Type References**: Type narrowing assignments use different names than imported names to avoid circular references
 
 ## **DYNAMIC MANAGEMENT NOTE**
 

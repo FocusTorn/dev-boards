@@ -9,11 +9,10 @@ Usage:
 """
 
 import sys
-import os
 import argparse
 from pathlib import Path
 from datetime import datetime
-from typing import List, Set, Optional
+from typing import cast
 
 # Fix Windows console encoding for Unicode box-drawing characters
 if sys.platform == "win32":
@@ -59,19 +58,19 @@ def format_size(size_bytes: int) -> str:
     return f"{size:.1f} TB"
 
 
-def get_file_info(file_path: Path) -> tuple:
+def get_file_info(file_path: Path) -> tuple[float | None, int, int]:
     """Get file information: mtime, line count, size."""
     try:
         stat = file_path.stat()
-        mtime = stat.st_mtime
-        size = stat.st_size
-        line_count = count_lines(file_path)
+        mtime: float = stat.st_mtime
+        size: int = stat.st_size
+        line_count: int = count_lines(file_path)
         return mtime, line_count, size
     except (OSError, PermissionError):
         return None, 0, 0
 
 
-def should_exclude(path: Path, exclude_dirs: Set[str], exclude_patterns: List[str]) -> bool:
+def should_exclude(path: Path, exclude_dirs: set[str], exclude_patterns: list[str]) -> bool:
     """Check if path should be excluded."""
     # Check if any parent directory is excluded
     for part in path.parts:
@@ -88,10 +87,10 @@ def print_tree(
     root: Path,
     prefix: str = "",
     is_last: bool = True,
-    exclude_dirs: Optional[Set[str]] = None,
-    exclude_patterns: Optional[List[str]] = None,
+    exclude_dirs: set[str] | None = None,
+    exclude_patterns: list[str] | None = None,
     show_hidden: bool = False
-):
+) -> None:
     """
     Print directory tree with file information.
     
@@ -139,7 +138,7 @@ def print_tree(
             items = sorted(root.iterdir(), key=lambda x: (x.is_file(), x.name.lower()))
             
             # Filter items
-            filtered_items = []
+            filtered_items: list[Path] = []
             for item in items:
                 if not show_hidden and item.name.startswith('.'):
                     continue
@@ -177,27 +176,27 @@ Examples:
         """
     )
     
-    parser.add_argument(
+    _ = parser.add_argument(
         "directory",
         nargs="?",
         default=".",
         help="Directory to display (default: current directory)"
     )
     
-    parser.add_argument(
+    _ = parser.add_argument(
         "--exclude-dirs",
         type=str,
         default=".git,__pycache__,node_modules,.venv,venv,env",
         help="Comma-separated list of directory names to exclude (default: .git,__pycache__,node_modules,.venv,venv,env)"
     )
     
-    parser.add_argument(
+    _ = parser.add_argument(
         "--exclude-patterns",
         type=str,
         help="Comma-separated list of patterns to exclude from directory names"
     )
     
-    parser.add_argument(
+    _ = parser.add_argument(
         "--show-hidden",
         action="store_true",
         help="Show hidden files and directories (starting with .)"
@@ -205,8 +204,10 @@ Examples:
     
     args = parser.parse_args()
     
-    # Parse directory path
-    root_dir = Path(args.directory).resolve()
+    # Parse directory path with explicit type annotation
+    # argparse types are Any, but we know the runtime types
+    directory: str = cast(str, args.directory) if args.directory else "."  # pyright: ignore[reportAny]
+    root_dir = Path(directory).resolve()
     
     if not root_dir.exists():
         print(f"Error: Directory '{root_dir}' does not exist.", file=sys.stderr)
@@ -216,26 +217,31 @@ Examples:
         print(f"Error: '{root_dir}' is not a directory.", file=sys.stderr)
         return 1
     
-    # Parse exclude directories
-    exclude_dirs = set(args.exclude_dirs.split(',')) if args.exclude_dirs else set()
+    # Parse exclude directories with explicit type annotations
+    # argparse types are Any, but we know the runtime types
+    exclude_dirs_str: str = cast(str, args.exclude_dirs) if args.exclude_dirs else ""  # pyright: ignore[reportAny]
+    exclude_dirs: set[str] = set(exclude_dirs_str.split(',')) if exclude_dirs_str else set()
     exclude_dirs = {d.strip() for d in exclude_dirs if d.strip()}
     
-    # Parse exclude patterns
-    exclude_patterns = []
-    if args.exclude_patterns:
-        exclude_patterns = [p.strip() for p in args.exclude_patterns.split(',') if p.strip()]
+    # Parse exclude patterns with explicit type annotations
+    # argparse types are Any, but we know the runtime types
+    exclude_patterns_str: str | None = cast(str | None, getattr(args, 'exclude_patterns', None))
+    exclude_patterns: list[str] = []
+    if exclude_patterns_str:
+        exclude_patterns = [p.strip() for p in exclude_patterns_str.split(',') if p.strip()]
     
     # Print header
     print(f"File Tree: {root_dir}")
     print("=" * 80)
     print()
     
-    # Print tree
+    # Print tree with explicit type annotation
+    show_hidden: bool = cast(bool, args.show_hidden)
     print_tree(
         root_dir,
         exclude_dirs=exclude_dirs,
         exclude_patterns=exclude_patterns,
-        show_hidden=args.show_hidden
+        show_hidden=show_hidden
     )
     
     return 0

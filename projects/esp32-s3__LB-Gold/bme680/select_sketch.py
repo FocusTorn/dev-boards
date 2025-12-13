@@ -9,22 +9,42 @@ Outputs the selected sketch name (without .ino extension) to stdout for use by M
 import sys
 from pathlib import Path
 
-# Add shared-python directory to sys.path
-_script_dir = Path(__file__).parent.resolve()
-_shared_python_dir = _script_dir.parent.parent.parent / "___shared" / "shared-python"
-
-if str(_shared_python_dir) not in sys.path:
-    sys.path.insert(0, str(_shared_python_dir))
-
-# Import from local_imports
-from local_imports import (  
-    select,
-    HAS_PROMPT_TOOLKIT,
-    write_header,
-    error,
-    warning,
-    info,
+# Import directly from installed packages
+from outerm import (
+    write_header as _write_header_import,
+    error as _error_import,
+    warning as _warning_import,
+    info as _info_import,
 )
+from pyprompt import select as _select_import
+
+# Type narrowing: ensure functions are available
+from typing import Callable, cast, Any
+
+if _write_header_import is None:
+    raise ImportError("write_header must be available")
+if _error_import is None:
+    raise ImportError("error must be available")
+if _warning_import is None:
+    raise ImportError("warning must be available")
+if _info_import is None:
+    raise ImportError("info must be available")
+if _select_import is None:
+    raise ImportError("select must be available")
+
+# Create local aliases with type casting for type narrowing
+write_header: Callable[..., Any] = cast(Callable[..., Any], _write_header_import)
+error: Callable[..., Any] = cast(Callable[..., Any], _error_import)
+warning: Callable[..., Any] = cast(Callable[..., Any], _warning_import)
+info: Callable[..., Any] = cast(Callable[..., Any], _info_import)
+select: Callable[..., Any] = cast(Callable[..., Any], _select_import)
+
+# Check if prompt_toolkit is available (pyprompt requires it)
+try:
+    import prompt_toolkit  # type: ignore
+    HAS_PROMPT_TOOLKIT = True
+except ImportError:
+    HAS_PROMPT_TOOLKIT = False
 
 # Sketch definitions
 SKETCHES = [

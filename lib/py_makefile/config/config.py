@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 from ..exceptions import PmakeConfigError
 from .paths import find_project_root
 
@@ -99,7 +99,7 @@ class PmakeConfig:
         sketch_name: str,
         port: str = "COM9",
         baudrate: int = 115200,
-        **kwargs
+        **kwargs: Any
     ) -> "PmakeConfig":
         """
         Create config from script path with automatic project root detection.

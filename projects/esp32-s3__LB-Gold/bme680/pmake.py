@@ -15,13 +15,8 @@ import sys
 from pathlib import Path
 
 # Import py_makefile package
-try:
-    from py_makefile import PmakeConfig, run
-    from py_makefile.exceptions import PmakeConfigError
-except ImportError as e:
-    print(f"Error: py-makefile not found. Install with: pip install -e lib/py_makefile")
-    print(f"Import error: {e}")
-    sys.exit(1)
+from py_makefile import PmakeConfig, run
+from py_makefile.exceptions import PmakeConfigError
 
 
 def main() -> int:

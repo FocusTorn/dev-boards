@@ -17,11 +17,18 @@ RE_WRITING_AT = re.compile(
 
 # Try to import UI helpers
 try:
-    from ..ui import action, success, error  # type: ignore
+    from ..ui import action, success, error  
 except ImportError:
-    def action(text): return text
-    def success(text): print(f"SUCCESS: {text}")
-    def error(text): print(f"ERROR: {text}")
+    def action(colored_text: str, non_colored_text: str = '') -> str:
+        return colored_text + non_colored_text
+    def success(colored_text: str, non_colored_text: str = '') -> str:
+        result = f"SUCCESS: {colored_text}{non_colored_text}"
+        print(result)
+        return result
+    def error(colored_text: str, non_colored_text: str = '') -> str:
+        result = f"ERROR: {colored_text}{non_colored_text}"
+        print(result, file=sys.stderr)
+        return result
 
 
 def upload_sketch(config: PmakeConfig, custom_output: bool = False) -> int:
@@ -39,11 +46,15 @@ def upload_sketch(config: PmakeConfig, custom_output: bool = False) -> int:
         return upload_sketch_custom(config)
     
     try:
-        from ..ui import write_header_fat  # type: ignore
+        from ..ui import write_header_fat  
     except ImportError:
-        def write_header_fat(text): print(f"=== {text} ===")
+        from typing import Any
+        def write_header_fat(title: str, width: Optional[int] = None, use_bold: bool = True, start_region: bool = True, footer: bool = False) -> Any:  # type: ignore[misc]
+            print(f"=== {title} ===")
+            return None
     
-    write_header_fat("Uploading")
+    # write_header_fat returns a context manager, but we're not using it here
+    _ = write_header_fat("Uploading")
     print()
     print(action(f"Uploading to ESP32-S3 on {config.port}..."))
     print()
@@ -82,7 +93,7 @@ def upload_sketch_custom(config: PmakeConfig) -> int:
         Exit code (0 for success, non-zero for failure)
     """
     try:
-        from alive_progress import alive_bar  # type: ignore
+        from alive_progress import alive_bar  
     except ImportError:
         error("alive_progress not available. Please install alive-progress.")
         return 1
@@ -218,9 +229,10 @@ def monitor_serial(config: PmakeConfig) -> None:
         config: PmakeConfig instance
     """
     try:
-        from ..ui import action  # type: ignore
+        from ..ui import action  
     except ImportError:
-        def action(text): return text
+        def action(colored_text: str, non_colored_text: str = '') -> str:
+            return colored_text + non_colored_text
     
     print(action(f"Opening serial monitor on {config.port} at {config.baudrate} baud..."))
     args = [

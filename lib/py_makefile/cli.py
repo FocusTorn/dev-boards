@@ -14,7 +14,7 @@ from .exceptions import PmakeConfigError, PmakeBuildError
 from outerm import error, success, info, warning
 
 
-def run(config: PmakeConfig, args: Optional[list] = None) -> int:
+def run(config: PmakeConfig, args: Optional[list[str]] = None) -> int:
     """
     Run py-makefile with given config and arguments.
     

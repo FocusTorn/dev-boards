@@ -10,30 +10,28 @@ dependencies = [
     "py-makefile",
 ]
 
-[tool.uv]
-# Cache is on D: drive (D:\_dev\.AppData) via UV_CACHE_DIR environment variable
+[tool.uv] #>
+# Cache is on D: drive (D:\_dev\.AppData\uv\cache) via UV_CACHE_DIR environment variable
+# Tools are on D: drive (D:\_dev\.AppData\uv\tools) via UV_TOOLS_DIR environment variable
 # link-mode = "hardlink"  # Default when cache and venv are on same filesystem
 
-[tool.uv.sources]
-# Workspace members available as dependencies
-outerm = { workspace = true }
-pyprompt = { workspace = true }
-py-makefile = { workspace = true }
+#<---------------------------------------------------------------------------------------
 
-[tool.uv.workspace]
-members = [
-    "___shared/shared-python/outerm",
-    "___shared/shared-python/pyprompt",
-    "lib/py_makefile",
-]
+[tool.uv.sources] #>
+outerm = { path = "___shared/shared-python/outerm", editable = true }
+pyprompt = { path = "___shared/shared-python/pyprompt", editable = true }
+py-makefile = { path = "lib/py_makefile", editable = true }
 
-[tool.basedpyright]
-# typeCheckingMode = "recommended"
-# reportMissingImports = "warning"
-# reportMissingTypeStubs = false
+#<---------------------------------------------------------------------------------------------------------
+[tool.basedpyright] #>
 
-# Exclude directories from type checking (prevents initial scanning)
-exclude = [
+typeCheckingMode = "basic"
+reportMissingImports = "warning"
+reportMissingTypeStubs = false
+
+venvPath = ".venv"
+
+exclude = [ #> prevents initial scanning
     "**/_removed/**",
     "**/__removed/**",
     "**/__removed/pmake/build.py",
@@ -45,20 +43,13 @@ exclude = [
     "**/Lib/site-packages/**",  # Windows site-packages (Lib/site-packages)
     "**/lib/python*/site-packages/**",  # Unix site-packages
     "**/site-packages/_pytest/**",  # Explicitly exclude _pytest from site-packages
+    "**/___shared/.sync-manager/**",
     
-]
-
-
-
-
-
-# Ignore patterns (prevents checking even when files are imported)
-# This is different from exclude - ignore prevents type checking imported files
-ignore = [
+] #<
+ignore = [ #> ignore prevents type checking imported files
     "**/_removed/**",
     "**/__removed/**",
     "**/__removed/pmake/build.py",
-    # "**/locate-package",  # Ignore extensionless locate-package file (deleted, but Pyright may still track it)
     "reference/**",
     "esp-idf/**",
     "**/.venv/**",
@@ -67,20 +58,34 @@ ignore = [
     "**/lib/python*/site-packages/**",
     "**/site-packages/_pytest/**",  # Explicitly ignore _pytest
     
-]
+] #<
 
-# Execution environments for runtime imports
-[[tool.basedpyright.executionEnvironments]]
-root = "lib/py_makefile"
-extraPaths = ["../___shared/shared-python"]
+#<---------------------------------------------------------------------------------------------------------
+[[tool.basedpyright.executionEnvironments]] #> Includes all workspace member packages (editable installs)
 pythonVersion = "3.11"
+root = "."
+extraPaths = [ #> extraPaths point to directories containing the packages (parent dirs)
+    "lib",
+    "___shared/shared-python",
+] #<
 
-[[tool.basedpyright.executionEnvironments]]
-root = "projects"
-extraPaths = ["../../lib", "../../___shared/shared-python"]
-pythonVersion = "3.11"
+#<---------------------------------------------------------------------------------------------------------
 
-[dependency-groups]
-dev = [
-    "basedpyright>=1.36.1",
-]
+
+
+
+
+# [tool.uv.workspace] #> Workspace member directories (must match package names in [tool.uv.sources])
+# members = [
+#     "___shared/shared-python/outerm",    # → package: "outerm"
+#     "___shared/shared-python/pyprompt",   # → package: "pyprompt"
+#     "lib/py_makefile",                    # → package: "py-makefile"
+# ]
+# #<--------------------------------------------------------------------------------------------------
+# [tool.uv.sources] #> Map package names to workspace sources (must match [tool.uv.workspace].members)
+# outerm = { workspace = true }
+# pyprompt = { workspace = true }
+# py-makefile = { workspace = true }
+
+# #<---------------------------------------------------------------------------------------------------
+

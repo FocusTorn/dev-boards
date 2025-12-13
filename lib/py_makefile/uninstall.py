@@ -15,12 +15,8 @@ if not root_path:
     raise RuntimeError("WORKSPACE_ROOT environment variable not set")
 _workspace_root = Path(root_path)
 
-# Import terminal output utilities from shared-python
-_shared_python_dir = _workspace_root / "___shared" / "shared-python"
-if str(_shared_python_dir) not in sys.path:
-    sys.path.insert(0, str(_shared_python_dir))
-
-from local_imports import error, warning, info, success  # type: ignore
+# Import terminal output utilities from outerm package
+from outerm import error, warning, info, success  
 
 
 def check_command(cmd: str) -> bool:
