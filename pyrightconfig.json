@@ -1,0 +1,62 @@
+{
+    "pythonVersion": "3.10",
+    "pythonPlatform": "Windows",
+
+    "typeCheckingMode": "basic",
+    "useLibraryCodeForTypes": true,
+
+    "reportMissingImports": "information",
+    "reportMissingTypeStubs": false,
+    "reportMissingModuleSource": "information",
+    "reportOptionalCall": "information",
+    
+    "include": [
+        "___shared"
+    ],
+    
+    "exclude": [ //> prevents initial scanning
+        "reference/**",
+        "esp-idf/**",
+        "**/site-packages/**",
+        "**/*removed/**",
+        
+        //  Exclude sync-manager from workspace scanning - it has its own pyrightconfig.json
+        //  When files in this directory are opened, basedpyright will discover the nested config
+        "**/___shared/**",
+        
+    ], //<
+    
+    "ignore": [ //> ignore prevents type checking imported files
+        "reference/**",
+        "esp-idf/**",
+        "**/site-packages/**",
+        "**/*removed/**",
+        
+        // Ignore sync-manager from workspace type checking - it uses its own pyrightconfig.json
+        // When files in this directory are opened, basedpyright will discover the nested config
+        "**/___shared/**",
+        
+    ], //<
+    
+    "executionEnvironments": [
+        
+        
+        {
+            "root": "bootstraps/_removed",
+            "extraPaths": [
+              "src/service_libs"
+            ],
+            "reportOptionalCall": "warning",
+        },
+    
+        {            
+            "root": "___shared",
+            "extraPaths": [
+              "src/service_libs"
+            ],
+            "reportMissingImports": "warning"
+          },
+           
+    ],
+
+}

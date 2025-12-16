@@ -22,70 +22,62 @@ outerm = { path = "___shared/shared-python/outerm", editable = true }
 pyprompt = { path = "___shared/shared-python/pyprompt", editable = true }
 py-makefile = { path = "lib/py_makefile", editable = true }
 
+
 #<---------------------------------------------------------------------------------------------------------
-[tool.basedpyright] #>
 
-typeCheckingMode = "basic"
-reportMissingImports = "warning"
-reportMissingTypeStubs = false
 
-venvPath = ".venv"
 
-exclude = [ #> prevents initial scanning
-    "**/_removed/**",
-    "**/__removed/**",
-    "**/__removed/pmake/build.py",
-    # "**/locate-package",  # Exclude extensionless locate-package file (deleted, but Pyright may still track it)
-    "reference/**",
-    "esp-idf/**",
-    "**/.venv/**",
-    "**/site-packages/**",       # Python site-packages directories
-    "**/Lib/site-packages/**",  # Windows site-packages (Lib/site-packages)
-    "**/lib/python*/site-packages/**",  # Unix site-packages
-    "**/site-packages/_pytest/**",  # Explicitly exclude _pytest from site-packages
-    "**/___shared/.sync-manager/**",
+
+
+
+
+# Moved to json config
+# [tool.basedpyright] #>
+
+# typeCheckingMode = "basic"
+# reportMissingImports = false
+# reportMissingModuleSource = "information"
+# reportMissingTypeStubs = false
+
+
+# These settings are discouraged in basedpyright.
+# https://docs.basedpyright.com/latest/benefits-over-pyright/better-defaults/#default-value-for-pythonpath
+# venv = "" 
+# venvPath = ""
+
+# exclude = [ #> prevents initial scanning
+#     "reference/**",
+#     "esp-idf/**",
+#     "**/site-packages/**",
+#     "**/*removed/**",
     
-] #<
-ignore = [ #> ignore prevents type checking imported files
-    "**/_removed/**",
-    "**/__removed/**",
-    "**/__removed/pmake/build.py",
-    "reference/**",
-    "esp-idf/**",
-    "**/.venv/**",
-    "**/site-packages/**",
-    "**/Lib/site-packages/**",
-    "**/lib/python*/site-packages/**",
-    "**/site-packages/_pytest/**",  # Explicitly ignore _pytest
+#     # Exclude sync-manager from workspace scanning - it has its own pyrightconfig.json
+#     # When files in this directory are opened, basedpyright will discover the nested config
+#     "**/___shared/**",
     
-] #<
+# ] #<
+# ignore = [ #> ignore prevents type checking imported files
+#     "reference/**",
+#     "esp-idf/**",
+#     "**/site-packages/**",
+#     "**/*removed/**",
+    
+#     # Ignore sync-manager from workspace type checking - it uses its own pyrightconfig.json
+#     # When files in this directory are opened, basedpyright will discover the nested config
+#     "**/___shared/**",
+    
+# ] #<
 
 #<---------------------------------------------------------------------------------------------------------
-[[tool.basedpyright.executionEnvironments]] #> Includes all workspace member packages (editable installs)
-pythonVersion = "3.11"
-root = "."
-extraPaths = [ #> extraPaths point to directories containing the packages (parent dirs)
-    "lib",
-    "___shared/shared-python",
-] #<
-
-#<---------------------------------------------------------------------------------------------------------
-
-
-
-
-
-# [tool.uv.workspace] #> Workspace member directories (must match package names in [tool.uv.sources])
-# members = [
-#     "___shared/shared-python/outerm",    # → package: "outerm"
-#     "___shared/shared-python/pyprompt",   # → package: "pyprompt"
-#     "lib/py_makefile",                    # → package: "py-makefile"
+# [[tool.basedpyright.executionEnvironments]] #> Includes all workspace member packages (editable installs)
+# pythonVersion = "3.11"
+# root = "."
+# extraPaths = [ # extraPaths point to directories containing the packages (parent dirs)
+#     "lib",
+#     "___shared/shared-python",
 # ]
-# #<--------------------------------------------------------------------------------------------------
-# [tool.uv.sources] #> Map package names to workspace sources (must match [tool.uv.workspace].members)
-# outerm = { workspace = true }
-# pyprompt = { workspace = true }
-# py-makefile = { workspace = true }
 
-# #<---------------------------------------------------------------------------------------------------
+#<---------------------------------------------------------------------------------------------------------
+
+
 

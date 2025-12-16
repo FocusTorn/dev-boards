@@ -6,20 +6,59 @@ The purpose of this command is to extract key learning patterns, solutions, insi
 
 ### 1.1. :: Initial Execution <!-- Start Fold -->
 
-1. **Clear existing file**: Delete `.cursor/ADHOC/_Extracted-Lessons.md` file
+1. **CRITICAL - Review ALL Rule Files**: The AI Agent MUST review **EVERY** rule file inside **EVERY** `.cursor/rules/` directory in **ALL** directories across the entire workspace. This includes:
+   - Root-level `.cursor/rules/` directory
+   - Package-level `.cursor/rules/` directories (e.g., `packages/[package-name]/.cursor/rules/`)
+   - Any nested `.cursor/rules/` directories in subdirectories
+   - All subdirectories within rule directories (e.g., `by-language/`, `tool/`, `formatting/`, etc.)
+   - Use `glob_file_search` to find all `**/.cursor/rules/**/*.mdc` files
+   - Read and analyze the content of each rule file to understand existing rule coverage
 2. **Extract lessons**: Review entire conversation for patterns and discoveries
-3. **Format lessons**: Use the template format for each lesson
-4. **Evaluate for AI Agent Rules**: For EACH lesson, determine if an AI Agent rule is needed to prevent the pitfall from recurring. Add AI Agent rules to recommendations where applicable.
-5. **Save to file**: Write to `.cursor/ADHOC/_Extracted-Lessons.md`
-6. **Display summary**: Show formatted lessons in markdown code block as explained in `### Final Display Format`
+3. **Compare lessons to existing rules**: For EACH lesson extracted, compare it against ALL reviewed rule files to determine:
+   - If the lesson is **NOT covered** by any existing rule → Place in "New Lessons Learned" section
+   - If the lesson **IS covered** by an existing rule but needs enhancement/modification/strengthening → Place in "Deviations" section
+4. **Format lessons**: Use the template format for each lesson, categorized into appropriate section
+5. **Evaluate for AI Agent Rules**: For EACH lesson, determine if an AI Agent rule is needed to prevent the pitfall from recurring. Add AI Agent rules to recommendations where applicable.
+6. **Conditional file save**: Only save to `.cursor/ADHOC/_Extracted-Lessons.md` if explicitly requested by the user. If not requested, skip file creation.
+7. **Display summary**: ALWAYS show formatted lessons in markdown code block as explained in `### Final Display Format`
+
+### 1.2. :: Rule File Review Protocol <!-- Start Fold -->
+
+**CRITICAL REQUIREMENT**: Before categorizing lessons, the AI Agent MUST:
+
+1. **Discover All Rule Files**: Use `glob_file_search` with pattern `**/.cursor/rules/**/*.mdc` to find ALL rule files across the entire workspace
+2. **Read All Rule Files**: Read and analyze the content of EVERY discovered rule file to understand:
+   - What patterns are already covered
+   - What requirements are already enforced
+   - What anti-patterns are already documented
+   - What quality gates are already in place
+3. **Create Rule Coverage Map**: Document which rules cover which patterns/requirements/anti-patterns
+4. **Compare Lessons to Rules**: For each extracted lesson, determine:
+   - **New Lesson**: Lesson describes a pattern/requirement/anti-pattern NOT covered by any existing rule
+   - **Deviation**: Lesson describes a pattern/requirement/anti-pattern that IS covered by an existing rule but:
+     - The existing rule is insufficient or unclear
+     - The existing rule needs enhancement or strengthening
+     - The existing rule needs modification to prevent the pitfall
+     - The existing rule was not followed (indicating it needs better enforcement)
+
+**Rule Comparison Criteria**:
+- If a lesson's Pattern matches an existing rule's pattern → **Deviation** (rule may need enhancement)
+- If a lesson's Mistake/Assumption is already covered by an anti-pattern → **Deviation** (anti-pattern may need strengthening)
+- If a lesson's requirement is already documented in a rule → **Deviation** (rule may need modification)
+- If a lesson describes something completely new → **New Lesson**
+
+<!-- Close Fold -->
 
 ### 1.3. :: Validation Before Saving <!-- Start Fold -->
 
-Before saving the file, verify:
+Before saving the file (if file save is requested), verify:
+- ALL rule files in the workspace have been reviewed and compared against lessons
+- Each lesson has been correctly categorized as "New Lesson" or "Deviation"
 - Each lesson has been evaluated for AI Agent rule necessity
 - All applicable lessons have AI Agent rules as the first item in their Recommendation section
 - AI Agent rules are formatted correctly with exact, enforceable language using imperative terms (ALWAYS, NEVER, MUST)
 - AI Agent rules are specific and actionable
+- Deviations include reference to the existing rule file that needs modification/enhancement
 
 <!-- Close Fold -->
 
@@ -33,7 +72,7 @@ Before saving the file, verify:
 
 <!-- Close Fold -->
 
-### 1.2. :: Processing Responses <!-- Start Fold -->
+### 1.4. :: Processing Responses <!-- Start Fold -->
 
 When you receive the output from this command, the **Response** lines indicate how you should interact with each lesson. The AI Agent will use these exact icons and descriptions:
 
@@ -165,14 +204,17 @@ If an AI Agent rule is needed, it MUST be the FIRST item in the Recommendation s
 
 **Rule File Path and Action Guidelines**:
 - **Determine Action Type**: Evaluate whether the rule fits an existing file (ADD/MODIFY) or needs a new file (CREATE)
-- **Identify Rule File**: **CRITICAL** - The AI Agent MUST scan the entire workspace for all instances of `.cursor/` directories to locate existing rule files, not just rely on rule files the agent is aware of at the time of execution. Search all `.cursor/rules/` directories and subdirectories across the entire workspace to find the best match.
+- **Identify Rule File**: **CRITICAL** - The AI Agent MUST scan the entire workspace for all instances of `.cursor/rules/` directories to locate existing rule files, not just rely on rule files the agent is aware of at the time of execution. Search all `.cursor/rules/` directories and subdirectories across the entire workspace to find the best match. This review MUST be completed before categorizing lessons as "New" or "Deviation".
 - **Specify Section**: If ADD/MODIFY, identify the specific section where the rule belongs
 - **Provide Full Path**: Always provide the relative path from workspace root
 - **Include Rule Text**: Provide the exact rule text that should be added/modified
+- **For Deviations**: MUST reference the existing rule file that needs modification/enhancement/strengthening
 
 <!-- Close Fold -->
 
 ## **Format Template**
+
+### **New Lessons Learned Format**
 
 ```markdown
 ## [Lesson Category Name]
@@ -202,11 +244,45 @@ Benefit: [Why this approach is better]
 ---
 ```
 
+### **Deviations Format**
+
+```markdown
+## [Lesson Category Name]
+
+Learning: [What was discovered]
+Pattern: [The specific technique or approach]
+Implementation: [Concise text summary without code blocks or detailed implementation specifics]
+
+Benefit: [Why this approach is better]
+
+**Not Documented**: [What gaps exist in current documentation]
+
+**Mistake/Assumption**: [What was wrong or incorrectly assumed]
+**Correction**: [How it was fixed] (if mistake/assumption exists)
+
+**Existing Rule Reference**: [Reference to the existing rule file that covers this pattern but needs enhancement/modification/strengthening]
+- **Rule File**: [Relative path to existing rule file, e.g., `.cursor/rules/formatting/terminal-output.mdc`]
+- **Rule Section**: [Specific section in the rule file that needs modification]
+- **Current Rule Coverage**: [Brief description of how the existing rule currently covers this pattern]
+- **Gap/Issue**: [What is missing, insufficient, or unclear in the existing rule that allowed this pitfall to occur]
+
+- **Recommendation**:
+    - **AI Agent Rule**: [This MUST be the first item for deviations]
+        - **Action**: [MODIFY existing rule file | STRENGTHEN existing rule file | ENHANCE existing rule file]
+        - **Rule File Path**: [Relative path to existing rule file that needs modification]
+        - **Rule Text**: "[Exact rule text that should be added/modified/strengthened in the existing rule]"
+        - **Section**: [Specific section in the rule file that needs modification]
+        - **Rationale**: [Explanation of why the existing rule needs enhancement and how the modification prevents the pitfall from recurring]
+    - [Other recommended actions to be taken to prevent this issue in the future]
+
+- **Response**: ✏️❓❌⚠️✅ No action required
+
+---
+```
+
 ## Final Display Format
 
-After saving to file, display the lessons in a markdown code block.
-
-**CRITICAL OUTPUT REQUIREMENT**: The AI must wrap the entire summary output in markdown code block tags so it can be copy-pasted directly. The output should start with ` ```markdown` and end with ` ``` `  with the content formatted as:
+**CRITICAL OUTPUT REQUIREMENT**: The AI must ALWAYS display the lessons in a markdown code block, regardless of whether the file is saved. The output should start with ` ```markdown` and end with ` ``` `  with the content formatted as:
 
 ```markdown
 
@@ -242,7 +318,11 @@ You will understand that _add to trouble_ means to do the following:
 
 <!-- Close Fold -->
 
-## 2.0 :: [Lesson Category Name] <!-- Start Fold -->
+## 2. :: New Lessons Learned <!-- Start Fold -->
+
+_This section contains lessons that are NOT covered by any existing rule in the workspace._
+
+## 2.1. :: [Lesson Category Name] <!-- Start Fold -->
 
 - Learning: [What was discovered]
 - Pattern: [The specific technique or approach]
@@ -270,7 +350,7 @@ You will understand that _add to trouble_ means to do the following:
 
 <!-- Close Fold -->
 
-## 2.0 :: [Next Lesson Category Name] <!-- Start Fold -->
+## 2.2. :: [Next Lesson Category Name] <!-- Start Fold -->
 
 - Learning: [What was discovered]
 - Pattern: [The specific technique or approach]
@@ -292,6 +372,76 @@ You will understand that _add to trouble_ means to do the following:
 
 - **Response**: ✏️❓❌⚠️✅ No action required
 
+
+---
+
+<!-- Close Fold -->
+
+## 3. :: Deviations <!-- Start Fold -->
+
+_This section contains lessons that ARE covered by existing rules but need enhancement, modification, or strengthening._
+
+## 3.1. :: [Lesson Category Name] <!-- Start Fold -->
+
+- Learning: [What was discovered]
+- Pattern: [The specific technique or approach]
+- Implementation: [Concise text summary without code blocks or detailed implementation specifics] (if applicable)
+- Benefit: [Why this approach is better]
+
+- **Not documented**: [What gaps exist in current documentation]
+
+- **Mistake/Assumption**: [What was wrong or incorrectly assumed]
+- **Correction**: [How it was fixed] _Note: Only if Mistake/Assumption is displayed_
+
+- **Existing Rule Reference**:
+    - **Rule File**: [Relative path to existing rule file, e.g., `.cursor/rules/formatting/terminal-output.mdc`]
+    - **Rule Section**: [Specific section in the rule file that needs modification]
+    - **Current Rule Coverage**: [Brief description of how the existing rule currently covers this pattern]
+    - **Gap/Issue**: [What is missing, insufficient, or unclear in the existing rule that allowed this pitfall to occur]
+
+- **Recommendation**:
+    - **AI Agent Rule**: [This MUST be the first item for deviations]
+        - **Action**: [MODIFY existing rule file | STRENGTHEN existing rule file | ENHANCE existing rule file]
+        - **Rule File Path**: [Relative path to existing rule file that needs modification]
+        - **Rule Text**: "[Exact rule text that should be added/modified/strengthened in the existing rule]"
+        - **Section**: [Specific section in the rule file that needs modification]
+        - **Rationale**: [Explanation of why the existing rule needs enhancement and how the modification prevents the pitfall from recurring]
+    - [AI Agent provides specific remediation recommendations to prevent this pitfall in the future]
+
+- **Response**: ✏️❓❌⚠️✅ No action required
+
+
+---
+
+<!-- Close Fold -->
+
+## 3.2. :: [Next Lesson Category Name] <!-- Start Fold -->
+
+- Learning: [What was discovered]
+- Pattern: [The specific technique or approach]
+- Implementation: [Concise text summary without code blocks or detailed implementation specifics] (if applicable)
+- Benefit: [Why this approach is better]
+- **Not documented**: [What gaps exist in current documentation]
+
+- **Mistake/Assumption**: [What was wrong or incorrectly assumed]
+- **Correction**: [How it was fixed] _Note: Only if Mistake/Assumption is displayed_
+
+- **Existing Rule Reference**:
+    - **Rule File**: [Relative path to existing rule file]
+    - **Rule Section**: [Specific section in the rule file that needs modification]
+    - **Current Rule Coverage**: [Brief description of how the existing rule currently covers this pattern]
+    - **Gap/Issue**: [What is missing, insufficient, or unclear in the existing rule that allowed this pitfall to occur]
+
+- **Recommendation**:
+    - **AI Agent Rule**: [This MUST be the first item for deviations]
+        - **Action**: [MODIFY existing rule file | STRENGTHEN existing rule file | ENHANCE existing rule file]
+        - **Rule File Path**: [Relative path to existing rule file that needs modification]
+        - **Rule Text**: "[Exact rule text that should be added/modified/strengthened in the existing rule]"
+        - **Section**: [Specific section in the rule file that needs modification]
+        - **Rationale**: [Explanation of why the existing rule needs enhancement and how the modification prevents the pitfall from recurring]
+    - [AI Agent provides specific remediation recommendations to prevent this pitfall in the future]
+
+- **Response**: ✏️❓❌⚠️✅ No action required
 
 
 ---
@@ -300,7 +450,12 @@ You will understand that _add to trouble_ means to do the following:
 
 ```
 
-**Note**: The response lines with icons are only for the summary display block, NOT for the saved markdown file. The saved file should contain only the lesson content without response lines.
+**Note**: The response lines with icons are only for the summary display block, NOT for the saved markdown file (if file is saved). The saved file should contain only the lesson content without response lines.
 
 **CRITICAL**: The **Response** line MUST be EXACTLY `- **Response**: ✏️❓❌⚠️✅ No action required`
+
+**File Save Behavior**:
+- **Default**: Do NOT save to `.cursor/ADHOC/_Extracted-Lessons.md` unless explicitly requested by the user
+- **Always Display**: ALWAYS show the executive summary in a markdown code block, regardless of file save status
+- **If File Save Requested**: Save the lessons to `.cursor/ADHOC/_Extracted-Lessons.md` without response lines, maintaining the same structure (New Lessons Learned and Deviations sections)
 

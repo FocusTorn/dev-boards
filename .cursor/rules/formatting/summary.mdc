@@ -4,6 +4,18 @@ alwaysApply: true
 
 # Summary Formatting Rules
 
+## **CRITICAL EXECUTION DIRECTIVE**
+
+**AI Agent Directive**: Follow summary formatting rules exactly for ALL summary requests and structured information responses.
+
+**MANDATORY EXECUTION PROTOCOL**:
+
+1. **NO DEVIATION**: All summary formatting rules must be followed exactly as written
+2. **NO SKIPPING**: No steps may be skipped, abbreviated, or modified
+3. **NO SELECTIVE COMPLIANCE**: All rules apply to ALL summary responses
+4. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
+5. **AUTOMATIC DETECTION**: Apply format automatically when summary triggers are detected (see section 1.3, 1.4, 1.5, 1.6)
+
 ## 1. :: Summary Structure Template
 
 ### 1.1. :: Required Summary Format <!-- Start Fold -->
@@ -88,17 +100,26 @@ alwaysApply: true
 
 ### 1.3. :: Summary Trigger Phrases <!-- Start Fold -->
 
-**When user requests any of these phrases, use the summary format**:
+**✅ CORRECT - MANDATORY: When user requests any of these phrases, use the summary format**:
 
-- "show a summary of..."
-- "summarize..."
-- "give me a summary..."
-- "create a summary..."
-- "provide a summary..."
-- "write a summary..."
-- "generate a summary..."
+- "show a summary of..." → **MUST** apply summary format
+- "summarize..." → **MUST** apply summary format
+- "give me a summary..." → **MUST** apply summary format
+- "create a summary..." → **MUST** apply summary format
+- "provide a summary..." → **MUST** apply summary format
+- "write a summary..." → **MUST** apply summary format
+- "generate a summary..." → **MUST** apply summary format
+- "show me a summary" → **MUST** apply summary format
+- "what's the summary" → **MUST** apply summary format
+- Any phrase containing "summary" → **MUST** apply summary format
 
-**Implementation**: Always wrap the summary in a markdown code block:
+**❌ INCORRECT - Don't ignore trigger phrases**:
+
+- Providing plain text response when user asks for "summary"
+- Using different formatting when summary is requested
+- Skipping the markdown code block wrapper
+
+**MANDATORY Implementation**: Always wrap the summary in a markdown code block:
 
 ````markdown
 ```markdown
@@ -132,24 +153,30 @@ alwaysApply: true
 
 ### 1.4. :: Automatic High-Level Summary Detection <!-- Start Fold -->
 
-**CRITICAL ENFORCEMENT**: Apply summary format when providing ANY of these content types:
+**✅ CORRECT - MANDATORY ENFORCEMENT**: Apply summary format when providing ANY of these content types:
 
-- **Analysis Results**: When presenting findings from analysis tasks
-- **Issue Lists**: When listing problems, issues, or inconsistencies found
-- **Overview Content**: When giving high-level explanations of complex topics
-- **Findings Reports**: When reporting on investigations or audits
-- **Multi-Point Responses**: When providing structured information across multiple categories
-- **Comprehensive Reviews**: When reviewing documents, code, or systems
+- **Analysis Results**: When presenting findings from analysis tasks → **MUST** use summary format
+- **Issue Lists**: When listing problems, issues, or inconsistencies found → **MUST** use summary format
+- **Overview Content**: When giving high-level explanations of complex topics → **MUST** use summary format
+- **Findings Reports**: When reporting on investigations or audits → **MUST** use summary format
+- **Multi-Point Responses**: When providing structured information across multiple categories → **MUST** use summary format
+- **Comprehensive Reviews**: When reviewing documents, code, or systems → **MUST** use summary format
 
-**Detection Triggers**:
+**✅ CORRECT - Detection Triggers (AUTOMATIC APPLICATION REQUIRED)**:
 
-- Presenting multiple categories of information
-- Using phrases like "issues found," "problems identified," "analysis shows"
-- Providing structured lists across different topics
-- Giving overviews of complex subjects
-- Reporting findings from investigations
+- Presenting multiple categories of information → **AUTOMATICALLY** apply summary format
+- Using phrases like "issues found," "problems identified," "analysis shows" → **AUTOMATICALLY** apply summary format
+- Providing structured lists across different topics → **AUTOMATICALLY** apply summary format
+- Giving overviews of complex subjects → **AUTOMATICALLY** apply summary format
+- Reporting findings from investigations → **AUTOMATICALLY** apply summary format
 
-**Implementation**: Automatically wrap in summary format template when these patterns are detected.
+**❌ INCORRECT - Don't skip format application**:
+
+- Providing plain text when analysis results are presented
+- Using different formatting for findings reports
+- Ignoring detection triggers
+
+**MANDATORY Implementation**: Automatically wrap in summary format template when these patterns are detected. **NO EXCEPTIONS**.
 
 <!-- Close Fold: Automatic High-Level Summary Detection -->
 
@@ -168,15 +195,21 @@ alwaysApply: true
 
 ### 1.6. :: Content Structure Auto-Formatting <!-- Start Fold -->
 
-**CRITICAL**: If my response contains:
+**✅ CORRECT - MANDATORY AUTO-FORMATTING**: If my response contains:
 
-- Multiple numbered/bulleted sections
-- Categorized information (issues, problems, findings)
-- Structured analysis results
-- Multi-topic explanations
-- Comprehensive reviews
+- Multiple numbered/bulleted sections → **AUTOMATICALLY** apply summary format
+- Categorized information (issues, problems, findings) → **AUTOMATICALLY** apply summary format
+- Structured analysis results → **AUTOMATICALLY** apply summary format
+- Multi-topic explanations → **AUTOMATICALLY** apply summary format
+- Comprehensive reviews → **AUTOMATICALLY** apply summary format
 
-**THEN**: Automatically apply summary format template without user request.
+**THEN**: **MUST** automatically apply summary format template without user request. **NO EXCEPTIONS**.
+
+**❌ INCORRECT - Don't skip auto-formatting**:
+
+- Providing plain text when response contains multiple sections
+- Using different formatting for categorized information
+- Ignoring structure detection
 
 **Rationale**: Structured, multi-category responses benefit from consistent summary formatting for readability and organization.
 
@@ -329,15 +362,47 @@ Host RPi-Clean
 
 ### 1.9. :: Additional Guidelines <!-- Start Fold -->
 
-- **Always wrap in code block**: Use triple backticks with `markdown` language identifier
+**✅ CORRECT - MANDATORY REQUIREMENTS**:
+
+- **Always wrap in code block**: **MUST** use triple backticks with `markdown` language identifier
 - **Maintain placeholder format**: Keep brackets for all placeholder text
 - **Preserve structure**: Don't modify the template structure
-- **Consistent spacing**: Maintain exact spacing and indentation
+- **Consistent spacing**: Maintain exact spacing and indentation (3 spaces for detail bullets)
 - **Section limits**: Use 2-3 sections maximum for readability
 - **Bullet limits**: Use 2-3 bullets per section maximum
 - **Detail limits**: Use 2-3 details per bullet maximum
 - **Nested code blocks**: Use 4 backticks with language type (see section 1.7)
 - **Plain text format**: Use ASCII box drawing for retro style (see section 1.8)
+
+**❌ INCORRECT - Formatting violations**:
+
+- Missing markdown code block wrapper
+- Wrong indentation (not 3 spaces for detail bullets)
+- Using asterisks (*) instead of numbered lists
+- Missing section separators (`---`)
+- Skipping the format entirely
+
+## **ANTI-PATTERNS**
+
+### **❌ Summary Formatting Violations**
+
+- ❌ **Ignoring Trigger Phrases** - Don't skip format when user requests "summary"
+- ❌ **Missing Code Block Wrapper** - Don't provide plain text without markdown code block
+- ❌ **Wrong Indentation** - Don't use 2 spaces or 4 spaces (must be 3 spaces for detail bullets)
+- ❌ **Using Asterisks** - Don't use `*` for numbered lists (must use `1.`, `2.`, etc.)
+- ❌ **Missing Section Separators** - Don't skip `---` between major sections
+- ❌ **Skipping Auto-Detection** - Don't ignore automatic format triggers (analysis, findings, etc.)
+- ❌ **Inconsistent Formatting** - Don't mix formats within the same summary
+
+## **QUALITY GATES**
+
+- [ ] **Trigger Detection**: Summary format applied when user requests summary
+- [ ] **Code Block Wrapper**: Summary wrapped in triple backticks with `markdown` identifier
+- [ ] **Numbered Lists**: Top-level items use numbered lists (1., 2., etc.)
+- [ ] **Dash Bullets**: Detail items use dash bullets (-) with 3-space indentation
+- [ ] **Section Separators**: Major sections separated by `---`
+- [ ] **Auto-Detection**: Format automatically applied for analysis, findings, reviews
+- [ ] **Consistent Structure**: All summaries follow the same template structure
 
 <!-- Close Fold: Additional Guidelines -->
 

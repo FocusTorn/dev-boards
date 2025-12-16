@@ -41,7 +41,7 @@ select: Callable[..., Any] = cast(Callable[..., Any], _select_import)
 
 # Check if prompt_toolkit is available (pyprompt requires it)
 try:
-    import prompt_toolkit  # type: ignore
+    import prompt_toolkit  
     HAS_PROMPT_TOOLKIT = True
 except ImportError:
     HAS_PROMPT_TOOLKIT = False

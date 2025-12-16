@@ -5,6 +5,18 @@ alwaysApply: true
 
 # Summary Formatting Rules
 
+## **CRITICAL EXECUTION DIRECTIVE**
+
+**AI Agent Directive**: Follow summary formatting rules exactly for ALL summary requests and structured information responses.
+
+**MANDATORY EXECUTION PROTOCOL**:
+
+1. **NO DEVIATION**: All summary formatting rules must be followed exactly as written
+2. **NO SKIPPING**: No steps may be skipped, abbreviated, or modified
+3. **NO SELECTIVE COMPLIANCE**: All rules apply to ALL summary responses
+4. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
+5. **AUTOMATIC DETECTION**: Apply format automatically when summary triggers are detected (see section 1.3, 1.4, 1.5, 1.6)
+
 ## 1. :: Summary Structure Template
 
 ### 1.1. :: Required Summary Format <!-- Start Fold -->

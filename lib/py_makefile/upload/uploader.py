@@ -49,7 +49,7 @@ def upload_sketch(config: PmakeConfig, custom_output: bool = False) -> int:
         from ..ui import write_header_fat  
     except ImportError:
         from typing import Any
-        def write_header_fat(title: str, width: Optional[int] = None, use_bold: bool = True, start_region: bool = True, footer: bool = False) -> Any:  # type: ignore[misc]
+        def write_header_fat(title: str, width: Optional[int] = None, use_bold: bool = True, start_region: bool = True, footer: bool = False) -> Any:  
             print(f"=== {title} ===")
             return None
     

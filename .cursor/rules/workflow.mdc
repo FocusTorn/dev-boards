@@ -22,23 +22,49 @@ p
 
 ### **1. :: Mandatory Pre-Task Rule Discovery**
 
-**✅ CORRECT - Check relevant rules before starting task**:
+**CRITICAL ENFORCEMENT - MANDATORY FIRST ACTION**: Rule discovery is NOT optional. It is the FIRST action that MUST be executed before ANY code changes, file edits, or task execution. The AI agent MUST explicitly perform and document rule discovery as the first step of every task.
 
-1. **Identify Task Category**: Determine what type of task you're working on:
+**✅ CORRECT - Mandatory rule discovery protocol (MUST execute in this order)**:
+
+**STEP 1 - Identify Task Category** (MANDATORY FIRST STEP):
+   - Determine what type of task you're working on
    - Language-specific (Python, JavaScript, etc.) → Check `.cursor/rules/by-language/[language]/`
-   - **Python tasks**: MUST check `.cursor/rules/by-language/python/code-quality.mdc` before starting
+   - **Python tasks**: MUST check `.cursor/rules/by-language/python/code-quality/` directory (all category files)
    - Tool-specific (UV, etc.) → Check `.cursor/rules/tool/[tool]/`
    - Formatting (markdown, terminal output, etc.) → Check `.cursor/rules/formatting/`
-   - Code quality/linter → Check `.cursor/rules/by-language/[language]/code-quality.mdc`
+   - Code quality/linter → Check `.cursor/rules/by-language/[language]/code-quality/` directory
    - Code maintenance/refactoring → Already loaded (universal rule)
    - Documentation → Check `.cursor/rules/documentation.mdc` (universal rule)
    - Project-specific → Check `.cursor/rules/dev-boards/` or other project directories
 
-2. **List Relevant Rule Files**: Search for and list all rule files that might apply to your task
+**STEP 2 - Discover and List Rule Files** (MANDATORY SECOND STEP):
+   - Use `glob_file_search` or `list_dir` to search for and list ALL rule files that might apply
+   - For Python tasks: MUST list all files in `.cursor/rules/by-language/python/` directory
+   - Document the discovered rule files explicitly in your response
+   - **VERIFICATION**: You must be able to list the rule files you found before proceeding
 
-3. **Read Rule Files**: Read all relevant rule files BEFORE making any changes
+**STEP 3 - Read Rule Files** (MANDATORY THIRD STEP):
+   - Read ALL relevant rule files BEFORE making any changes
+   - Use `read_file` tool to read each discovered rule file
+   - **VERIFICATION**: You must have read the rule files before proceeding to step 4
 
-4. **Apply Rules**: Apply rules from the start, not after errors appear
+**STEP 4 - Document Rule Discovery** (MANDATORY FOURTH STEP):
+   - Explicitly state which rule files were discovered and read
+   - List the key rules that apply to the current task
+   - **VERIFICATION**: Document rule discovery in your response before proceeding
+
+**STEP 5 - Apply Rules** (ONLY AFTER STEPS 1-4 COMPLETE):
+   - Apply rules from the start, not after errors appear
+   - Reference specific rules when making decisions
+   - **VERIFICATION**: Rules must be applied proactively, not reactively
+
+**MANDATORY VERIFICATION CHECKPOINT**: Before making ANY code changes, the AI agent MUST be able to answer:
+- "What rule files did I discover for this task?"
+- "Which rule files did I read?"
+- "What are the key rules that apply to this task?"
+- "How will I apply these rules?"
+
+If these questions cannot be answered, rule discovery is INCOMPLETE and the task MUST NOT proceed.
 
 **❌ INCORRECT - Starting task without rule discovery**:
 
@@ -46,22 +72,50 @@ p
 2. Only check rules after errors appear
 3. Assume rules don't exist or aren't relevant
 4. Skip rule discovery step
+5. **CRITICAL VIOLATION**: Proceeding to code changes without explicitly performing and documenting rule discovery steps 1-4 above
+
+**NATURAL STOP - Rule Discovery Verification**:
+
+Before proceeding with ANY code changes, the AI agent MUST encounter a natural stop that requires explicit rule discovery verification. This natural stop is triggered by:
+
+- **File Edit Attempt**: Any attempt to edit a file MUST be preceded by documented rule discovery
+- **Code Change Request**: Any request to change code MUST be preceded by documented rule discovery
+- **Task Execution**: Any task execution MUST be preceded by documented rule discovery
+
+**VERIFICATION PROTOCOL**: The AI agent MUST explicitly state in the response:
+1. "I have discovered the following rule files: [list]"
+2. "I have read the following rule files: [list]"
+3. "The key rules that apply to this task are: [list]"
+4. "I will apply these rules by: [explanation]"
+
+Only after this verification is explicitly stated can the task proceed.
 
 ### **2. :: Rule Discovery Checklist**
 
-**REQUIRED PRE-TASK CHECKLIST**:
+**REQUIRED PRE-TASK CHECKLIST** (MUST be completed and verified before ANY code changes):
 
 - [ ] **Task Category Identified**: Determined what type of task this is (language, tool, formatting, etc.)
-- [ ] **Rule Files Located**: Found all relevant rule files in `.cursor/rules/` directory structure
-- [ ] **Code Quality Rules Checked**: For Python tasks, checked `.cursor/rules/by-language/python/code-quality.mdc` before starting
-- [ ] **Rule Files Read**: Read and understood all relevant rule files before starting
+- [ ] **Rule Files Discovered**: Used `glob_file_search` or `list_dir` to discover ALL relevant rule files
+- [ ] **Rule Files Listed**: Explicitly listed discovered rule files in response
+- [ ] **Rule Files Read**: Used `read_file` to read ALL relevant rule files before starting
+- [ ] **Rule Discovery Documented**: Explicitly stated which rules were discovered and read
+- [ ] **Key Rules Identified**: Listed the key rules that apply to the current task
+- [ ] **Code Quality Rules Checked**: For Python tasks, checked `.cursor/rules/by-language/python/code-quality/` directory (all category files)
 - [ ] **Rules Applied**: Applied rules from the start, not reactively after errors
+- [ ] **Verification Complete**: Can answer "What rules did I discover?" and "What rules did I read?" before proceeding
+
+**MANDATORY VERIFICATION**: The checklist above MUST be completed and explicitly verified in the AI agent's response before making ANY code changes. Skipping this verification constitutes a CRITICAL PROTOCOL VIOLATION.
 
 ### **3. :: Rule File Locations**
 
 **Language-Specific Rules**:
 - `.cursor/rules/by-language/[language]/` - Check for relevant rule files based on file type
-- Example: `.cursor/rules/by-language/python/code-quality.mdc` for Python code quality tasks
+- **Python tasks**: MUST check `.cursor/rules/by-language/python/` directory structure:
+  - `.cursor/rules/by-language/python/code-quality/` (all category files: index.mdc, error-investigation.mdc, imports-and-type-checking.mdc, type-annotations.mdc, code-cleanup.mdc)
+  - `.cursor/rules/by-language/python/code-organization.mdc`
+  - `.cursor/rules/by-language/python/code-structure.mdc`
+  - `.cursor/rules/by-language/python/script-to-package.mdc`
+- Example: For Python code quality tasks, check ALL files in `.cursor/rules/by-language/python/code-quality/` directory
 
 **Tool-Specific Rules**:
 - `.cursor/rules/tool/[tool]/` - Check for tool-specific rules
@@ -84,18 +138,27 @@ p
 
 ### **❌ Workflow Violations**
 
-- ❌ **Missing Rule Discovery** - Don't start tasks without checking for relevant rule files
+- ❌ **Missing Rule Discovery** - Don't start tasks without checking for relevant rule files - this is a CRITICAL PROTOCOL VIOLATION
+- ❌ **Skipping Rule Discovery Steps** - Don't skip steps 1-4 of the mandatory rule discovery protocol
+- ❌ **No Rule Discovery Documentation** - Don't proceed without explicitly documenting which rules were discovered and read
+- ❌ **No Verification Before Code Changes** - Don't make code changes without completing rule discovery verification checkpoint
 - ❌ **Reactive Rule Application** - Don't apply rules only after errors appear
 - ❌ **Assuming No Rules** - Don't assume rule files don't exist or aren't relevant
 - ❌ **Skipping Rule Discovery** - Don't skip the mandatory rule discovery step
 - ❌ **Selective Rule Compliance** - Don't pick and choose which rules to follow
+- ❌ **Proceeding Without Verification** - Don't proceed with tasks without being able to answer "What rules did I discover?" and "What rules did I read?"
 
 ## **QUALITY GATES**
 
+- [ ] **Rule Discovery Executed First**: Rule discovery was the FIRST action taken, before any code changes
+- [ ] **Rule Discovery Documented**: Explicitly stated which rule files were discovered and read in the response
 - [ ] **Rule Discovery Completed**: Checked for and located all relevant rule files before starting task
-- [ ] **Rule Files Read**: Read and understood all relevant rule files before making changes
+- [ ] **Rule Files Listed**: Used tools (`glob_file_search`, `list_dir`) to discover and list rule files
+- [ ] **Rule Files Read**: Used `read_file` to read all relevant rule files before making changes
+- [ ] **Verification Checkpoint Passed**: Can answer "What rules did I discover?" and "What rules did I read?" before proceeding
 - [ ] **Rules Applied Proactively**: Applied rules from the start, not after errors appear
 - [ ] **No Reactive Rule Application**: Rules were not applied only after errors or warnings
+- [ ] **No Code Changes Before Verification**: No code changes were made before completing rule discovery verification
 
 ## **SUCCESS METRICS**
 
@@ -108,11 +171,17 @@ After implementing proper workflow:
 
 ## **EXECUTION PRIORITY MATRIX**
 
-### **CRITICAL PRIORITY (Execute immediately)**
+### **CRITICAL PRIORITY (Execute immediately - BEFORE ANY OTHER ACTION)**
 
-- **Rule Discovery**: Check for relevant rule files in `.cursor/rules/` before starting ANY task
-- **Read Rule Files**: Read all relevant rule files before making changes
+- **Rule Discovery (STEP 1)**: Identify task category and determine which rule directories apply
+- **Rule Discovery (STEP 2)**: Use `glob_file_search` or `list_dir` to discover and list ALL relevant rule files
+- **Rule Discovery (STEP 3)**: Use `read_file` to read ALL discovered rule files
+- **Rule Discovery (STEP 4)**: Document which rules were discovered and read in the response
+- **Verification Checkpoint**: Verify rule discovery is complete by answering "What rules did I discover?" and "What rules did I read?"
+- **Read Rule Files**: Read all relevant rule files before making changes (if not already done in STEP 3)
 - **Apply Rules Proactively**: Apply rules from the start, not after errors
+
+**MANDATORY**: Steps 1-4 and verification checkpoint MUST be completed before ANY code changes, file edits, or task execution.
 
 ### **HIGH PRIORITY (Execute before proceeding)**
 
@@ -123,4 +192,58 @@ After implementing proper workflow:
 ### **MEDIUM PRIORITY (Execute during normal operation)**
 
 - Maintain awareness of new rule files as they're added
-- Update rule discovery process as directory structure evolves
+- Update rule discovery process as category structure evolves
+
+## **SELF-CORRECTION PROTOCOL**
+
+### **When Rule Discovery Was Missed**
+
+**If the AI agent realizes rule discovery was not completed before starting a task**:
+
+1. **IMMEDIATELY STOP**: Stop all current task execution
+2. **ACKNOWLEDGE OVERSIGHT**: Explicitly acknowledge that rule discovery was missed
+3. **COMPLETE RULE DISCOVERY NOW**: Execute steps 1-4 of the rule discovery protocol immediately
+4. **REVIEW WORK DONE**: Review any work already completed against the discovered rules
+5. **CORRECT VIOLATIONS**: Fix any violations of rules that were discovered
+6. **DOCUMENT CORRECTION**: Explicitly state that rule discovery was completed and any corrections made
+
+**✅ CORRECT - Self-correction example**:
+
+```
+"I realize I did not complete rule discovery before starting this task. 
+I will now:
+1. Identify task category: Python code quality task
+2. Discover rule files: Checking .cursor/rules/by-language/python/code-quality/ directory
+3. Read rule files: Reading error-investigation.mdc, imports-and-type-checking.mdc, etc.
+4. Document discovery: [list discovered rules]
+5. Review work done: Checking if my changes comply with discovered rules
+6. Correct violations: [fix any violations found]"
+```
+
+**❌ INCORRECT - Continuing without self-correction**:
+
+```
+# Wrong: Continuing task after realizing rule discovery was missed
+# "I'll finish this task and check rules later"
+# This is a CRITICAL PROTOCOL VIOLATION
+```
+
+## **NATURAL STOPS FOR RULE DISCOVERY**
+
+**MANDATORY PAUSE POINTS**: The AI agent MUST pause and verify rule discovery at these natural stops:
+
+1. **Before First File Edit**: Before making ANY file edit, verify rule discovery is complete
+2. **Before First Code Change**: Before making ANY code change, verify rule discovery is complete
+3. **Before First Tool Call**: Before calling tools that modify code, verify rule discovery is complete
+4. **When User Asks "Did you check the rules?"**: This is an explicit verification request - stop and verify
+
+**VERIFICATION REQUIRED**: At each natural stop, the AI agent MUST be able to explicitly state:
+- Which rule files were discovered
+- Which rule files were read
+- How the rules will be applied
+
+If this cannot be stated, rule discovery is INCOMPLETE and the task MUST NOT proceed.
+
+## **DYNAMIC MANAGEMENT NOTE**
+
+This document is optimized for AI agent internal processing and may be updated dynamically based on operational needs and pattern recognition. The structure prioritizes AI agent compliance and effectiveness over traditional documentation practices.
