@@ -21,7 +21,7 @@ _script_dir = Path(__file__).parent.resolve()
 # parent.parent.parent = .../dev-boards (Root)
 
 PROJECT_ROOT = _script_dir.parent.parent.parent
-SHARED_PYTHON_DIR = PROJECT_ROOT / "___shared" / "shared-python"
+SHARED_PYTHON_DIR = PROJECT_ROOT / "_shared-resources" / "shared-python"
 LIBS_DIR = PROJECT_ROOT / "lib"
 
 if str(SHARED_PYTHON_DIR) not in sys.path:

@@ -11,7 +11,7 @@
     "reportOptionalCall": "information",
     
     "include": [
-        "___shared"
+        "_shared-resources"
     ],
     
     "exclude": [ //> prevents initial scanning
@@ -22,7 +22,7 @@
         
         //  Exclude sync-manager from workspace scanning - it has its own pyrightconfig.json
         //  When files in this directory are opened, basedpyright will discover the nested config
-        "**/___shared/**",
+        "**/_shared-resources/**",
         
     ], //<
     
@@ -34,7 +34,7 @@
         
         // Ignore sync-manager from workspace type checking - it uses its own pyrightconfig.json
         // When files in this directory are opened, basedpyright will discover the nested config
-        "**/___shared/**",
+        "**/_shared-resources/**",
         
     ], //<
     
@@ -50,7 +50,7 @@
         },
     
         {            
-            "root": "___shared",
+            "root": "_shared-resources",
             "extraPaths": [
               "src/service_libs"
             ],

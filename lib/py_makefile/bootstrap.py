@@ -39,7 +39,7 @@ def setup_paths(script_path: Path) -> Tuple[Path, Path]:
     
     project_root = current
     
-    shared_python_dir = project_root / "___shared" / "shared-python"
+    shared_python_dir = project_root / "_shared-resources" / "shared-python"
     libs_dir = project_root / "lib"
     
     # Add to sys.path if not already present

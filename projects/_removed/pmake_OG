@@ -30,7 +30,7 @@ from enum import Enum
 
 # Add shared-python directory to sys.path
 _script_dir = Path(__file__).parent.resolve()
-_shared_python_dir = _script_dir.parent.parent.parent / "___shared" / "shared-python"
+_shared_python_dir = _script_dir.parent.parent.parent / "_shared-resources" / "shared-python"
 
 if str(_shared_python_dir) not in sys.path:
     sys.path.insert(0, str(_shared_python_dir))

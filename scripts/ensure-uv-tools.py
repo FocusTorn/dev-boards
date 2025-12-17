@@ -50,7 +50,7 @@
 
 # # Import terminal output utilities from outerm
 # _script_dir = Path(__file__).resolve().parent.parent
-# _shared_python = _script_dir / "___shared" / "shared-python"
+# _shared_python = _script_dir / "_shared-resources" / "shared-python"
 # if str(_shared_python) not in sys.path:
 #     sys.path.insert(0, str(_shared_python))
 

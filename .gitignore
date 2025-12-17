@@ -47,7 +47,7 @@ Thumbs.db
 esp-idf
 
 # Shared resources (managed by sync-manager, each has its own Git repo)
-___shared/
+_shared-resources/
 /*removed*/
 
 lib/esp32-s3
