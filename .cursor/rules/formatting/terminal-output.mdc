@@ -15,359 +15,378 @@ alwaysApply: true
 3. **NO SELECTIVE COMPLIANCE**: All rules apply to all terminal output
 4. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
 
-## **COLORATION AND ICONS FOR MESSAGES**
+## **PLATFORM-SPECIFIC IMPLEMENTATION**
 
-### **Status Message Colors and Icons**
+### **Decision Matrix**
 
-#### **1. :: Color Constants**
+| Platform | Implementation |
+|----------|---------------|
+| Python | Use `outerm` package (preferred) |
+| Non-Python | Use ANSI codes matching `outerm` output |
 
-**✅ CORRECT - Use ANSI 256-color codes for status messages**:
+---
 
-```python
-# Status message colors (ANSI 256-color codes)
-COLOR_ERROR = "\x1B[38;5;196m"      # Bright red (#ff0000) - Code 196
-COLOR_WARNING = "\x1B[38;5;226m"   # Bright yellow (#ffff00) - Code 226
-COLOR_INFO = "\x1B[38;5;39m"       # Bright blue (#00afff) - Code 39
-COLOR_SUCCESS = "\x1B[38;5;46m"    # Bright green (#00ff00) - Code 46
-COLOR_HIGHLIGHT = "\x1B[38;5;179m" # Gold (#d7af5f) - Code 179
-COLOR_DIM = "\x1B[2m\x1B[38;5;244m" # Dim gray (#808080) - Code 244
-COLOR_BOLD = "\x1B[1m"              # Bold text
-COLOR_RESET = "\x1B[0m"             # Reset all formatting
+## **PYTHON IMPLEMENTATION (outerm Package)**
 
-# Icons
-ICON_ERROR = "✗"                    # Error icon (U+2717)
-ICON_WARNING = "⚠"                  # Warning icon (U+26A0)
-ICON_INFO = "ｉ"                    # Info icon (full-width i, U+FF49)
-ICON_SUCCESS = "✔"                  # Success icon (heavy checkmark, U+2714)
-```
+### **1. :: Installation and Import**
 
-**✅ CORRECT - Always reset color after colored text**:
+**✅ CORRECT - Import from outerm**:
 
 ```python
-print(f"{COLOR_SUCCESS}{ICON_SUCCESS}{COLOR_RESET} SSH: Available and usable")
+from outerm import (
+    # Status message functions
+    error,
+    warning,
+    info,
+    success,
+    action,
+    highlight,
+    dim,
+    
+    # Header functions
+    write_header,
+    write_header_fat,
+    write_header_double,
+    write_boxed_header,
+    
+    # Region management
+    start_region,
+    end_region,
+    get_region_indent,
+    
+    # Palette for direct color access
+    Palette,
+)
 ```
 
-**❌ INCORRECT - Don't use hardcoded color codes**:
+**❌ INCORRECT - Don't use raw ANSI codes in Python**:
 
 ```python
-print("\x1B[32m✓ SSH: Available")  # Use COLOR_SUCCESS constant instead
+# Wrong: Using raw ANSI codes when outerm is available
+print("\x1B[38;5;196m✗\x1B[0m Error message")
+
+# Wrong: Using legacy constants
+COLOR_ERROR = "\x1B[38;5;196m"
+print(f"{COLOR_ERROR}✗ Error{COLOR_RESET}")
 ```
 
-**❌ INCORRECT - Don't forget to reset color**:
+### **2. :: Status Message Functions**
+
+**✅ CORRECT - Use outerm status functions**:
 
 ```python
-print(f"{COLOR_SUCCESS}{ICON_SUCCESS} SSH: Available")  # Missing COLOR_RESET
+from outerm import error, warning, info, success, action, highlight, dim
+
+# Error message (red ✗)
+print(error("ERROR: Something went wrong"))
+print(error("ERROR", "Something went wrong"))  # Colored prefix, white suffix
+
+# Warning message (yellow ⚠) - caller must add blank line above
+print()
+print(warning("WARNING: Check this"))
+
+# Info message (blue ｉ, bold icon, no space after icon)
+print(info("INFO: For your information"))
+
+# Success message (green ✔)
+print(success("SUCCESS: Operation completed"))
+
+# Action message (teal ⮻)
+print(action("ACTION: Doing something"))
+
+# Highlight (gold text, no icon)
+print(highlight("Important value"))
+
+# Dim (gray text, no icon)
+print(dim("Secondary information"))
 ```
 
-#### **2. :: Icon Usage and Formatting**
-
-**✅ CORRECT - Success messages use green with ✔ icon and space after icon**:
+**Function Signatures**:
 
 ```python
-print(f"{COLOR_SUCCESS}{ICON_SUCCESS}{COLOR_RESET} GitHub CLI: Installed and authenticated")
-print(f"{COLOR_SUCCESS}{ICON_SUCCESS}{COLOR_RESET} SSH: Available and usable")
-print(f"{COLOR_SUCCESS}{ICON_SUCCESS}{COLOR_RESET} Git Config: Name='{name}', Email='{email}'")
+def error(colored_text: str, non_colored_text: str = '') -> str: ...
+def warning(colored_text: str, non_colored_text: str = '') -> str: ...
+def info(colored_text: str, non_colored_text: str = '') -> str: ...
+def success(colored_text: str, non_colored_text: str = '') -> str: ...
+def action(colored_text: str, non_colored_text: str = '') -> str: ...
+def highlight(colored_text: str, non_colored_text: str = '') -> str: ...
+def dim(colored_text: str, non_colored_text: str = '') -> str: ...
 ```
 
-**✅ CORRECT - Warning messages use yellow with ⚠ icon, space after icon, and blank line above**:
+### **3. :: Header Functions**
+
+**✅ CORRECT - Use outerm header functions with context managers**:
 
 ```python
-# Warning messages MUST have blank line above and entire line colored yellow
-print()  # Blank line above warning
-print(f"{COLOR_WARNING}{ICON_WARNING} GitHub CLI: Installed but not authenticated{COLOR_RESET}")
-print(f"{COLOR_WARNING}{ICON_WARNING} SSH: Keys exist but connection failed{COLOR_RESET}")
-print(f"{COLOR_WARNING}{ICON_WARNING} Git-Crypt: Installed but not configured{COLOR_RESET}")
+from outerm import write_header, write_header_fat, write_header_double, write_boxed_header
+
+# Standard header (┌─) with automatic indentation
+with write_header("Step 1: Configuration"):
+    print("This content is automatically indented")
+    print(success("Configuration complete"))
+
+# Fat header (┏━) for main sections
+with write_header_fat("Main Section"):
+    print("Content under main section")
+    with write_header("Nested Section"):
+        print("Nested content")
+
+# Double-line header (╔═) for prominent sections
+with write_header_double("Important Section"):
+    print("Content here")
+
+# Boxed header for titles
+write_boxed_header("Application Title", width=80)
 ```
 
-**❌ INCORRECT - Don't color only the warning icon**:
+**Header Width Auto-Adjustment**:
+
+- Base width: 75 characters
+- Reduces by 10 characters per nesting level (75 → 65 → 55 → ...)
+- Minimum width: 35 characters
+
+**Header Styles**:
+
+| Function | Box Chars | Color | Use Case |
+|----------|-----------|-------|----------|
+| `write_header()` | `┌─` / `└─` | Beige (code 27) | Standard sections |
+| `write_header_fat()` | `┏━` / `┗━` | Warm gray (code 27) | Main sections |
+| `write_header_double()` | `╔═` / `╚═` | Beige (code 27) | Prominent sections |
+| `write_boxed_header()` | `┏┓┃┗┛` | Cyan (code 144) | Top-level titles |
+
+### **4. :: Region Management**
+
+**✅ CORRECT - Use regions for automatic indentation**:
 
 ```python
-# Wrong: Only icon is yellow, text is default color
-print(f"{COLOR_WARNING}{ICON_WARNING}{COLOR_RESET} GitHub CLI: Installed but not authenticated")
+from outerm import start_region, get_region_indent, get_nesting_level
 
-# Wrong: Missing blank line above warning
-print(f"{COLOR_WARNING}{ICON_WARNING} Warning message{COLOR_RESET}")
+# Context manager for regions
+with start_region("Processing"):
+    print("Indented by 2 spaces")
+    with start_region("Sub-process"):
+        print("Indented by 4 spaces")
+
+# Get current indentation string
+indent = get_region_indent()
+
+# Get nesting level (number of active regions)
+level = get_nesting_level()
 ```
 
-**✅ CORRECT - Error messages use red with ✗ icon and space after icon**:
+### **5. :: Direct Palette Access**
+
+**✅ CORRECT - Access colors directly from Palette**:
 
 ```python
-print(f"{COLOR_ERROR}{ICON_ERROR}{COLOR_RESET} GitHub CLI: Not installed")
-print(f"{COLOR_ERROR}{ICON_ERROR}{COLOR_RESET} SSH: Not available")
-print(f"{COLOR_ERROR}{ICON_ERROR}{COLOR_RESET} Git Config: Not configured")
+from outerm import Palette
+
+# Access ANSI color codes
+error_color = Palette.ERROR['ansi']
+success_icon = Palette.SUCCESS['iChar']
+reset = Palette.RESET
+
+# Build custom formatted output
+print(f"{error_color}Custom error text{reset}")
 ```
 
-**✅ CORRECT - Info messages use blue with ｉ icon (icon is BOLD, text is normal, NO SPACE after icon)**:
+**Palette Structure**:
 
 ```python
-# Info icon (ｉ) is BOLD, rest of text is normal weight
-# CRITICAL: Info icon has NO SPACE after it (unlike other icons)
-info_icon = f"{COLOR_BOLD}{COLOR_INFO}{ICON_INFO}{COLOR_RESET}"
-info_text = f"{COLOR_INFO}INFO: This is an info message{COLOR_RESET}"
-print(f"  {info_icon}{info_text}")
-
-# Or as a single formatted string:
-print(f"  {COLOR_BOLD}{COLOR_INFO}{ICON_INFO}{COLOR_RESET}{COLOR_INFO}INFO: This is an info message{COLOR_RESET}")
-
-# Example output: ｉINFO: This is an info message
-#                  ^ bold blue (no space)  ^ normal blue
+Palette.ERROR = {
+    'code': 196,           # ANSI 256-color code
+    'ansi': '\x1B[38;5;196m',  # Generated ANSI escape
+    'rgb': (255, 0, 0),
+    'hex': '#ff0000',
+    'iChar': '✗',          # Icon character (U+2717)
+    'iBold': False,        # Icon is not bold
+    'iSpacing': ' ',       # Space after icon
+}
 ```
 
-**❌ INCORRECT - Don't use wrong icons or formatting**:
+---
 
-```python
-# Wrong: Using regular checkmark instead of heavy checkmark
-print(f"{COLOR_SUCCESS}✓{COLOR_RESET} ...")  # Use ICON_SUCCESS (✔) not ✓
+## **NON-PYTHON IMPLEMENTATION (ANSI Codes)**
 
-# Wrong: Info icon not bold
-print(f"{COLOR_INFO}{ICON_INFO}INFO: message{COLOR_RESET}")  # Icon must be bold
+For non-Python CLI tools, use these ANSI codes to match `outerm` output exactly.
 
-# Wrong: Entire info message bold
-print(f"{COLOR_BOLD}{COLOR_INFO}{ICON_INFO}INFO: message{COLOR_RESET}")  # Only icon should be bold
+### **1. :: Color Constants**
 
-# Wrong: Adding space after info icon
-print(f"{COLOR_BOLD}{COLOR_INFO}{ICON_INFO} {COLOR_RESET}{COLOR_INFO}INFO: message{COLOR_RESET}")  # Info icon has NO SPACE
+**Status Message Colors (ANSI 256-color)**:
+
+| Type | Code | ANSI Escape | Hex | RGB |
+|------|------|-------------|-----|-----|
+| ERROR | 196 | `\x1B[38;5;196m` | #ff0000 | (255, 0, 0) |
+| WARNING | 220 | `\x1B[38;5;220m` | #ffd700 | (255, 215, 0) |
+| INFO | 39 | `\x1B[38;5;39m` | #0099ff | (0, 153, 255) |
+| SUCCESS | 46 | `\x1B[38;5;46m` | #00ff00 | (0, 255, 0) |
+| ACTION | 66 | `\x1B[38;5;66m` | - | - |
+| HIGHLIGHT | 179 | `\x1B[38;5;179m` | #d7af5f | (215, 175, 95) |
+| DIM | 240 | `\x1B[38;5;240m` | - | - |
+
+**Header Colors**:
+
+| Type | Code | ANSI Escape | Use Case |
+|------|------|-------------|----------|
+| MAIN_TITLE | 144 | `\x1B[38;5;144m` | Top-level boxed headers |
+| HEADER_FAT | 27 | `\x1B[38;5;27m` | Main section headers |
+| HEADER_MINOR | 27 | `\x1B[38;5;27m` | Standard section headers |
+
+**Control Codes**:
+
+| Code | ANSI Escape | Purpose |
+|------|-------------|---------|
+| RESET | `\x1B[0m` | Reset all formatting |
+| BOLD | `\x1B[1m` | Bold text |
+| DIM | `\x1B[2m` | Dim/faded text |
+
+### **2. :: Icon Specifications**
+
+| Type | Icon | Unicode | Bold | Spacing After |
+|------|------|---------|------|---------------|
+| ERROR | ✗ | U+2717 | No | Space |
+| WARNING | ⚠ | U+26A0 | No | Space |
+| INFO | ｉ | U+FF49 (full-width) | **Yes** | **No space** |
+| SUCCESS | ✔ | U+2714 (heavy) | No | Space |
+| ACTION | ⮻ | U+2BBB | No | Space |
+
+### **3. :: Message Format Patterns**
+
+**Error Message**:
+
+```
+\x1B[38;5;196m✗\x1B[0m {text}
 ```
 
-#### **3. :: Icon Spacing Rules**
+**Warning Message** (requires blank line above):
 
-**✅ CORRECT - Icon spacing specifications**:
-
-- **ERROR icon (✗)**: Space after icon - `{ICON_ERROR} {text}`
-- **WARNING icon (⚠)**: Space after icon - `{ICON_WARNING} {text}`
-- **SUCCESS icon (✔)**: Space after icon - `{ICON_SUCCESS} {text}`
-- **INFO icon (ｉ)**: NO SPACE after icon - `{ICON_INFO}{text}` (icon directly adjacent to text)
-
-**✅ CORRECT - Info icon spacing example**:
-
-```python
-# Correct: Info icon with no space
-info_icon = f"{COLOR_BOLD}{COLOR_INFO}{ICON_INFO}{COLOR_RESET}"
-info_text = f"{COLOR_INFO}INFO: Message{COLOR_RESET}"
-print(f"  {info_icon}{info_text}")  # No space between icon and text
-
-# Wrong: Info icon with space
-print(f"  {COLOR_BOLD}{COLOR_INFO}{ICON_INFO} {COLOR_RESET}{COLOR_INFO}INFO: Message{COLOR_RESET}")  # Has space - incorrect
+```
+[blank line]
+\x1B[38;5;220m⚠ {text}\x1B[0m
 ```
 
-**❌ INCORRECT - Wrong icon spacing**:
+Note: Warning colors the entire line (icon + text), not just the icon.
 
-```python
-# Wrong: Info icon with space (like other icons)
-print(f"{COLOR_INFO}{ICON_INFO} {COLOR_RESET}INFO: Message")  # Info icon should have NO SPACE
+**Info Message** (bold icon, no space):
 
-# Wrong: Other icons without space
-print(f"{COLOR_SUCCESS}{ICON_SUCCESS}{COLOR_RESET}Message")  # Success icon should have SPACE
+```
+\x1B[1m\x1B[38;5;39mｉ\x1B[0m\x1B[38;5;39m{text}\x1B[0m
 ```
 
-#### **4. :: Message Type Color Mapping**
+**Success Message**:
 
-**✅ CORRECT - Success messages use green with ✔ icon**:
-
-```python
-# Fully working/configured items
-print(f"{COLOR_SUCCESS}{ICON_SUCCESS}{COLOR_RESET} SSH: Available and usable")
-print(f"{COLOR_SUCCESS}{ICON_SUCCESS}{COLOR_RESET} GitHub CLI: Installed and authenticated")
-print(f"{COLOR_SUCCESS}{ICON_SUCCESS}{COLOR_RESET} Git Config: Name='{name}', Email='{email}'")
+```
+\x1B[38;5;46m✔\x1B[0m {text}
 ```
 
-**✅ CORRECT - Warning messages use yellow with ⚠ icon**:
+### **4. :: Header Format Patterns**
 
-```python
-# Partially configured or needs attention
-print()  # Blank line above warning
-print(f"{COLOR_WARNING}{ICON_WARNING} GitHub CLI: Installed but not authenticated{COLOR_RESET}")
-print(f"{COLOR_WARNING}{ICON_WARNING} SSH: Keys exist but connection failed{COLOR_RESET}")
-print(f"{COLOR_WARNING}{ICON_WARNING} Git-Crypt: Installed but not configured{COLOR_RESET}")
+**Standard Header (write_header)**:
+
+```
+\x1B[38;5;27m┌─ {title} ─────────────────────────────────────────────────────────\x1B[0m
 ```
 
-**✅ CORRECT - Error messages use red with ✗ icon**:
+Width: 75 chars at base, reduces by 10 per nesting level.
 
-```python
-# Not installed or needs setup
-print(f"{COLOR_ERROR}{ICON_ERROR}{COLOR_RESET} GitHub CLI: Not installed")
-print(f"{COLOR_ERROR}{ICON_ERROR}{COLOR_RESET} SSH: Not available")
-print(f"{COLOR_ERROR}{ICON_ERROR}{COLOR_RESET} Git Config: Not configured")
+**Fat Header (write_header_fat)**:
+
+```
+\x1B[1m\x1B[38;5;27m┏━ {title} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1B[0m
 ```
 
-**✅ CORRECT - Info messages use blue with ｉ icon (bold icon, normal text, no space)**:
+**Boxed Header (write_boxed_header)**:
 
-```python
-# Informational messages - icon is bold, text is normal, NO SPACE after icon
-info_icon = f"{COLOR_BOLD}{COLOR_INFO}{ICON_INFO}{COLOR_RESET}"
-info_text = f"{COLOR_INFO}INFO: This is an info message{COLOR_RESET}"
-print(f"  {info_icon}{info_text}")
-
-# Example output: ｉINFO: This is an info message
-#                  ^ bold blue (no space)  ^ normal blue
+```
+\x1B[38;5;144m┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\x1B[0m
+\x1B[38;5;144m┃                                  {title}                                  ┃\x1B[0m
+\x1B[38;5;144m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\x1B[0m
 ```
 
-**✅ CORRECT - Highlight messages use gold color**:
+---
 
-```python
-print(f"{COLOR_HIGHLIGHT}Highlight: Important information{COLOR_RESET}")
-```
+## **FORMATTING RULES**
 
-**✅ CORRECT - Dim text for secondary information**:
+### **1. :: Warning Message Requirements**
 
-```python
-print(f"{COLOR_DIM}Dim text: Secondary or less important information{COLOR_RESET}")
-```
+- **MUST** have blank line above
+- **MUST** color entire line (icon + text), not just icon
+- Use warning for "partially configured" or "needs attention" states
 
-**❌ INCORRECT - Don't mix colors and icons**:
+### **2. :: Info Message Requirements**
 
-```python
-print(f"{COLOR_SUCCESS}{ICON_ERROR}{COLOR_RESET} ...")  # Wrong: green with error icon
-print(f"{COLOR_ERROR}{ICON_SUCCESS}{COLOR_RESET} ...")  # Wrong: red with success icon
-print(f"{COLOR_INFO}{ICON_WARNING}{COLOR_RESET} ...")    # Wrong: blue with warning icon
-```
+- Icon **MUST** be bold
+- **NO SPACE** after icon (unlike other message types)
+- Rest of text is normal weight
 
-### **Header and Banner Colors**
+### **3. :: Color Reset Requirements**
 
-#### **1. :: Header Color Styles**
+- **ALWAYS** reset color after colored text
+- Use `\x1B[0m` (or `Palette.RESET` in Python)
+- Missing reset will bleed color into subsequent output
 
-**✅ CORRECT - Header colors use ANSI 256-color codes**:
+### **4. :: Region Indentation**
 
-```python
-# Header colors (ANSI 256-color codes)
-MAIN_TITLE_COLOR = "\x1B[38;5;51m"      # Bright cyan (#00ffff) - Code 51 - Super Vibrant
-SUB_HEADER_COLOR = "\x1B[38;5;33m"     # Bright blue (#0087ff) - Code 33 - Vibrant
-HEADER_FAT_COLOR = "\x1B[38;5;144m"    # Warm gray (#afaf87) - Code 144 - For main sub section headers
-HEADER_MINOR_COLOR = "\x1B[38;5;187m" # Beige (#d7d7af) - Code 187 - For minor sub section headers
-HIGHLIGHT_COLOR = "\x1B[38;5;179m"     # Gold (#d7af5f) - Code 179
-DIM_TEXT_COLOR = "\x1B[2m\x1B[38;5;244m" # Dim gray (#808080) - Code 244
-```
+- 2 spaces per nesting level
+- Headers auto-adjust width based on nesting
+- Content within regions is automatically indented
 
-#### **2. :: Header Specifications**
-
-**✅ CORRECT - Standard header format (most common)**:
-
-```python
-# Standard header: Minor Sub Section Header
-# Format: ┌─ {title} ────────────────────────────────────
-# Width: 75 total characters
-# Color: Beige (#d7d7af, code 187)
-# Usage: Default header format for most sections
-# Note: Header creation is generally handled by the indenter package
-```
-
-**✅ CORRECT - Main Sub Section Header (for nested sections)**:
-
-```python
-# Main Sub Section Header: Used when multiple sections need to be nested under a primary header
-# Format: ┏━ {title} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Width: 75 total characters
-# Color: Warm gray (#afaf87, code 144)
-# Usage: Primary header when nesting multiple minor sections underneath
-```
-
-**✅ CORRECT - Nested header structure**:
-
-```python
-# When multiple sections need nesting:
-# 1. Main Sub Section Header (┏━) with 75 width - Warm gray
-# 2. Minor Sub Section Headers (┌─) with 65 width - Beige (nested under main)
-# 3. Additional Minor Sub Section Headers (┌─) with 65 width - Beige
-
-# Example structure:
-# ┏━ Main Sub Section Header ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ (75 width, warm gray)
-# ┌─ Minor Sub Section Header ──────────────────────────────────── (65 width, beige)
-# ┌─ Minor Sub Section Header ──────────────────────────────────── (65 width, beige)
-```
-
-**✅ CORRECT - Header creation note**:
-
-```python
-# Header creation is generally handled by the indenter package
-# Only specify header format manually when indenter package is not being used
-# or when custom header formatting is explicitly required
-```
-
-**❌ INCORRECT - Don't use wrong header colors**:
-
-```python
-# Wrong: Using error color for headers
-write_header_fat("Header", color=COLOR_ERROR)  # Don't use message colors for headers
-
-# Wrong: Using header colors for status messages
-print(f"{HEADER_FAT_COLOR}Error message{COLOR_RESET}")  # Use COLOR_ERROR instead
-```
-
-#### **3. :: Header Color Specifications**
-
-**Header Color Reference**:
-
-- **MAIN_TITLE**: Bright cyan (#00ffff, ANSI code 51) - Super vibrant, for top-level banners
-- **SUB_HEADER**: Bright blue (#0087ff, ANSI code 33) - Vibrant, for secondary headers
-- **HEADER_FAT**: Warm gray (#afaf87, ANSI code 144) - Neutral, readable, for main sub section headers (75 width)
-- **HEADER_MINOR**: Beige (#d7d7af, ANSI code 187) - Light neutral, for minor sub section headers (75 width standard, 65 width when nested)
-- **HIGHLIGHT**: Gold (#d7af5f, ANSI code 179) - Warm accent, for important information
-- **DIM_TEXT**: Dim gray (#808080, ANSI code 244) - Reduced intensity, for secondary information
-
-**Color Selection Rationale**:
-
-- Header colors are distinct from message colors (error/warning/info/success) to avoid confusion
-- Warm gray and beige provide neutral, readable options that don't compete with status messages
-- Header colors maintain visual hierarchy: cyan (brightest) → blue → warm gray → beige (most subtle)
-
-## **FORMATTING PATTERNS**
-
-### **1. :: Status Report Format**
-
-**✅ CORRECT - Status reports use colored icons**:
-
-```python
-if ssh_status.get("usable", False):
-    print(f"  {COLOR_SUCCESS}{ICON_SUCCESS}{COLOR_RESET} SSH: Available and usable")
-elif ssh_status.get("available", False):
-    print(f"  {COLOR_WARNING}{ICON_WARNING}{COLOR_RESET} SSH: Available but not usable")
-else:
-    print(f"  {COLOR_ERROR}{ICON_ERROR}{COLOR_RESET} SSH: Not available")
-```
-
-**✅ CORRECT - Info message with correct spacing**:
-
-```python
-# Info icon has NO SPACE after it
-info_icon = f"{COLOR_BOLD}{COLOR_INFO}{ICON_INFO}{COLOR_RESET}"
-info_text = f"{COLOR_INFO}INFO: Connection established{COLOR_RESET}"
-print(f"  {info_icon}{info_text}")
-```
+---
 
 ## **ANTI-PATTERNS**
 
-### **❌ Color and Icon Violations**
+### **❌ Python Anti-Patterns**
 
-- ❌ **Missing Color Reset** - Always reset color after colored text
-- ❌ **Wrong Icon Colors** - Don't use green with error icons or red with success icons
-- ❌ **Hardcoded Colors** - Use color constants, not hardcoded ANSI codes
-- ❌ **Wrong Info Icon Formatting** - Info icon (ｉ) must be bold, text must be normal weight
-- ❌ **Wrong Icon Characters** - Use ✔ (U+2714) not ✓, use ｉ (U+FF49) not i
-- ❌ **Info Icon Spacing** - Info icon (ｉ) must have NO SPACE after it (unlike other icons)
-- ❌ **Warning Without Blank Line** - Always add blank line (`print()`) above warning messages
-- ❌ **Warning Icon Only Colored** - Apply COLOR_WARNING to entire warning line (icon + text), not just icon
+- ❌ **Raw ANSI Codes** - Don't use raw ANSI codes when `outerm` is available
+- ❌ **Legacy Constants** - Don't define `COLOR_*` constants, use `outerm`
+- ❌ **Manual Formatting** - Don't manually format status messages
+- ❌ **Manual Indentation** - Don't manually indent, use regions
 
-### **❌ Header Color Violations**
+### **❌ General Anti-Patterns**
 
-- ❌ **Wrong Header Colors** - Don't use message colors (error/warning/info/success) for headers
-- ❌ **Wrong Message Colors** - Don't use header colors for status messages
+- ❌ **Missing Color Reset** - Always reset after colored text
+- ❌ **Wrong Icon** - Use correct Unicode characters (✔ not ✓)
+- ❌ **Info Icon Spacing** - Info has NO space after icon
+- ❌ **Warning Without Blank Line** - Always add blank line above warnings
+- ❌ **Partial Warning Coloring** - Color entire warning line, not just icon
+- ❌ **Wrong Color Codes** - Use exact codes from this specification
+- ❌ **Mixing Colors and Icons** - Don't use error color with success icon
+
+---
 
 ## **QUALITY GATES**
 
-- [ ] **Color Consistency**: All status messages use correct color/icon combinations
-- [ ] **Color Reset**: All colored text is followed by COLOR_RESET
-- [ ] **Icon Usage**: Success uses ICON_SUCCESS (✔), warnings use ICON_WARNING (⚠), errors use ICON_ERROR (✗), info uses ICON_INFO (ｉ)
-- [ ] **Info Icon Formatting**: Info icon (ｉ) is bold, info text is normal weight
-- [ ] **Info Icon Spacing**: Info icon (ｉ) has NO SPACE after it (unlike other icons which have space)
-- [ ] **Warning Formatting**: Warnings have blank line above and entire line colored yellow
-- [ ] **Header Colors**: Headers use correct colors (warm gray for main, beige for minor)
-- [ ] **Header Widths**: Standard header is 75 width, nested minor headers are 65 width
+### **Python Implementation**
+
+- [ ] Uses `outerm` package for all terminal output
+- [ ] No raw ANSI codes in Python files
+- [ ] Headers use context managers for automatic indentation
+- [ ] Regions used for nested content indentation
+
+### **Non-Python Implementation**
+
+- [ ] ANSI codes match `outerm` specifications exactly
+- [ ] Icons match Unicode characters specified
+- [ ] Info icon is bold with no space after
+- [ ] Warning has blank line above and full-line coloring
+- [ ] All colored text is reset properly
+
+### **General**
+
+- [ ] Color-coded status messages distinguish success/warning/error/info
+- [ ] Consistent icon spacing (space after, except info)
+- [ ] Header widths follow nesting rules
+- [ ] Professional, readable terminal output
+
+---
 
 ## **SUCCESS METRICS**
 
 After implementing proper terminal output formatting:
 
-- ✅ **Color-Coded Status** - Success/warning/error clearly distinguished
+- ✅ **Consistent Cross-Platform** - Python and non-Python output looks identical
+- ✅ **Clear Status Indication** - Success/warning/error/info clearly distinguished
 - ✅ **Professional Appearance** - Clean, readable terminal output
-- ✅ **Consistent Icon Spacing** - Info icon has no space, other icons have space
-- ✅ **Correct Header Formatting** - Headers use appropriate colors and widths
+- ✅ **Correct Icon Formatting** - All icons use correct spacing and styling
+- ✅ **Proper Indentation** - Regions and headers create clear visual hierarchy
+- ✅ **No Color Bleeding** - All colors properly reset

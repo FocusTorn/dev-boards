@@ -19,7 +19,7 @@
 
 ### **Output File References**
 
-- **STAGING_FILE**: `.cursor/command-phases/dd-ta-phases/testing-analysis-staging.md`
+- **STAGING_FILE**: `.cursor/command-phases/dd-ta-phases-fux/testing-analysis-staging.md`
 - **FINAL_OUTPUT**: `.cursor/ADHOC/DD Testing Analysis: {package-name}.md`
 
 ### **Phase Command References**
