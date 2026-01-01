@@ -22,7 +22,7 @@
         
         //  Exclude sync-manager from workspace scanning - it has its own pyrightconfig.json
         //  When files in this directory are opened, basedpyright will discover the nested config
-        "**/_shared-resources/**",
+        // "**/_shared-resources/**",
         
     ], //<
     
@@ -34,7 +34,7 @@
         
         // Ignore sync-manager from workspace type checking - it uses its own pyrightconfig.json
         // When files in this directory are opened, basedpyright will discover the nested config
-        "**/_shared-resources/**",
+        // "**/_shared-resources/**",
         
     ], //<
     

@@ -126,3 +126,8 @@ lib/esp32-s3
 #     - Create new branch: `git checkout -b feature/new-name`
 #     - Delete local branch: `git branch -d branch-name`
 #     - Delete remote branch: `git push origin --delete branch-name`
+
+
+projects/dev-console/target/
+
+**/.cursor/

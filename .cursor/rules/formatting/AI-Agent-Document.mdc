@@ -4,7 +4,7 @@ alwaysApply: true
 
 # AI Agent Document Formatting Rules
 
-## **CRITICAL EXECUTION DIRECTIVE**
+## CRITICAL EXECUTION DIRECTIVE
 
 **AI Agent Directive**: Follow this formatting protocol exactly for all AI agent documentation.
 
@@ -15,22 +15,22 @@ alwaysApply: true
 3. **NO SELECTIVE COMPLIANCE**: All rules apply to all AI agent documents
 4. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
 
-## **AI AGENT DOCUMENT STRUCTURE**
+## AI AGENT DOCUMENT STRUCTURE
 
-### **Required Document Header**
+### Required Document Header
 
 ```markdown
 # [Document Title]
 
-## **REFERENCE FILES**
+## REFERENCE FILES
 
-### **Documentation References**
+### Documentation References
 
 - **SOP_DOCS**: `docs/_SOP.md`
 - **ARCHITECTURE_DOCS**: `docs/_Architecture.md`
 - **PACKAGE_ARCHETYPES**: `docs/_Package-Archetypes.md`
 
-### **AI Testing Documentation References**
+### AI Testing Documentation References
 
 - **AI_TESTING_BASE**: `docs/testing/(AI) _Strategy- Base- Testing.md`
 - **AI_MOCKING_BASE**: `docs/testing/(AI) _Strategy- Base- Mocking.md`
@@ -38,7 +38,7 @@ alwaysApply: true
 
 ---
 
-## **CRITICAL EXECUTION DIRECTIVE**
+## CRITICAL EXECUTION DIRECTIVE
 
 **AI Agent Directive**: [Specific directive for document purpose]
 
@@ -50,90 +50,119 @@ alwaysApply: true
 4. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
 ```
 
-### **Section Structure Requirements**
+### Section Structure Requirements
 
-#### **Primary Sections (##)**
+#### Header Formatting Rule
 
-- Use **BOLD HEADERS** for all primary sections
-- Format: `## **SECTION NAME**`
+**CRITICAL**: Headers (`#`, `##`, `###`, `####`, etc.) must NEVER be bolded in the source markdown.
+
+**✅ CORRECT - Plain text headers**:
+
+```markdown
+## Section Name
+
+### 1. :: Subsection Name
+
+#### 1.1. :: Sub-subsection Name
+```
+
+**❌ INCORRECT - Bolded headers**:
+
+```markdown
+## **Section Name**
+
+### **1. :: Subsection Name**
+
+#### **1.1. :: Sub-subsection Name**
+```
+
+**Rationale**: 
+- Markdown headers are already bold when rendered
+- Adding bold formatting (`**`) creates visual redundancy and clutters the source
+- Plain text headers are cleaner, more readable, and follow standard markdown conventions
+
+#### Primary Sections (##)
+
+- **DO NOT BOLD HEADERS** - Headers are already bold when rendered
+- Format: `## SECTION NAME` (no bold formatting)
 - No numbering in primary sections
 - Each section must contain complete, self-contained information
 
-#### **Subsections (###)**
+#### Subsections (###)
 
-- Use **BOLD HEADERS** for all subsections
-- Format: `### **SUBSECTION NAME**`
-- Can use numbering for logical grouping: `### **1. :: Subsection Name**`
+- **DO NOT BOLD HEADERS** - Headers are already bold when rendered
+- Format: `### SUBSECTION NAME` (no bold formatting)
+- Can use numbering for logical grouping: `### 1. :: Subsection Name`
 
-#### **Sub-subsections (####)**
+#### Sub-subsections (####)
 
-- Use **BOLD HEADERS** for all sub-subsections
-- Format: `#### **SUB-SUBSECTION NAME**`
-- Can use numbering for logical grouping: `#### **1.1. :: Sub-subsection Name**`
+- **DO NOT BOLD HEADERS** - Headers are already bold when rendered
+- Format: `#### SUB-SUBSECTION NAME` (no bold formatting)
+- Can use numbering for logical grouping: `#### 1.1. :: Sub-subsection Name`
 
-## **CONTENT FORMATTING RULES**
+## CONTENT FORMATTING RULES
 
-### **Decision Criteria Format**
+### Decision Criteria Format
 
 - Use ✅ for correct/required actions
 - Use ❌ for incorrect/prohibited actions
 - Use **BOLD** for emphasis on critical points
 - Use bullet points for lists of criteria
 
-### **Code Examples Format**
+### Code Examples Format
 
 - Use triple backticks with language specification
 - Include complete, executable examples
 - Add comments explaining critical points
 - Use `//>` and `//<` folding markers for test code
 
-### **Anti-Pattern Format**
+### Anti-Pattern Format
 
 - Use ❌ **BOLD DESCRIPTION** - Explanation format
 - Group by category (Architecture, Build, Testing, etc.)
 - Include specific violation examples
 - Provide correct alternatives
 
-### **Quality Gates Format**
+### Quality Gates Format
 
 - Use checkbox format: `- [ ] **Checkpoint Name**`
 - Group by priority level
 - Include validation criteria
 - Provide success metrics
 
-## **AI AGENT OPTIMIZATION RULES**
+## AI AGENT OPTIMIZATION RULES
 
-### **Self-Contained Information**
+### Self-Contained Information
 
 - **NO REFERENCES**: All critical information must be included in the document
 - **COMPLETE EXAMPLES**: Provide full code examples, not fragments
 - **COMPREHENSIVE RULES**: Every rule must include full context and rationale
 - **DETAILED CHECKLISTS**: Complete validation criteria without external dependencies
 
-### **Decision Tree Structure**
+### Decision Tree Structure
 
 - Use hierarchical numbering for decision paths
 - Provide clear branching logic
 - Include fallback scenarios
 - Add validation checkpoints at each decision point
 
-### **Violation Prevention**
+### Violation Prevention
 
 - Include **Natural Stops** sections with mandatory violation detection
 - Provide **Pattern Recognition** triggers for AI agent responses
 - Add **Execution Priority Matrix** for decision-making order
 - Include **Quality Gates** for compliance validation
 
-### **Success Metrics**
+### Success Metrics
 
 - Define measurable outcomes for AI agent performance
 - Include validation criteria for each section
 - Provide compliance checkpoints
 - Add performance indicators
 
-## **MANDATORY SECTIONS FOR AI AGENT DOCUMENTS**
+## MANDATORY SECTIONS FOR AI AGENT DOCUMENTS
 
-### **Required Sections**
+### Required Sections
 
 1. **REFERENCE FILES** - Minimal context only
 2. **CRITICAL EXECUTION DIRECTIVE** - Mandatory protocol
@@ -147,16 +176,76 @@ alwaysApply: true
 10. **EXECUTION PRIORITY MATRIX** - Decision-making hierarchy
 11. **DYNAMIC MANAGEMENT NOTE** - Document evolution statement
 
-### **Section Content Requirements**
+### Section Content Requirements
 
 - **Complete Information**: No external references for critical content
 - **Actionable Directives**: Every section must drive specific AI actions
 - **Compliance Enforcement**: Built-in violation detection and prevention
 - **Measurable Outcomes**: Clear success criteria for AI agent performance
 
-## **FORMATTING ANTI-PATTERNS**
+### File Path Reference Requirements
 
-### **❌ PROHIBITED FORMATTING**
+**MANDATORY**: Any document that references file paths (output files, staging files, command files, etc.) MUST include a "Reference Files" section formatted exactly as shown below.
+
+**✅ CORRECT - Reference Files section format**:
+
+```markdown
+## 1. :: Reference Files <!-- Start Fold -->
+
+### 1.1. :: Output File References
+
+- **STAGING_FILE**: `actual/path/to/file.md`
+- **FINAL_OUTPUT**: `actual/path/to/final/file.md`
+
+### 1.2. :: Phase Command References
+
+- **PHASE_1_CMD**: `@referenced-file-name.md`
+- **PHASE_2_CMD**: `@referenced-file-name.md`
+
+---
+
+<!-- Close Fold -->
+```
+
+**Formatting Rules**:
+
+- **Section Number**: Use `## 1. :: Reference Files` as the first numbered section
+- **Folding Markers**: Include `<!-- Start Fold -->` after section header and `<!-- Close Fold -->` before section end
+- **Subsections**: Use numbered subsections (`### 1.1. ::`, `### 1.2. ::`) to categorize reference types
+- **List Format**: Use bold labels (`**LABEL**`) followed by colon and backtick-wrapped file path
+- **Section Separator**: Include `---` before closing fold marker
+- **No Bold Headers**: Headers must NOT be bolded (follow header formatting rules)
+
+**Reference Types**:
+
+- **Output File References**: Files that will be created or written to (staging files, final outputs, etc.)
+- **Phase Command References**: Command files referenced with `@` prefix
+- **Input File References**: Source files or input files used by the document
+- **Other Categories**: Add additional subsections as needed for other reference types
+
+**❌ INCORRECT - Missing Reference Files section**:
+
+```markdown
+# Document Title
+
+## 1. :: EXECUTION PROTOCOL
+
+**STAGING_FILE**: `path/to/file.md`  <!-- Wrong: File path referenced without Reference Files section -->
+```
+
+**❌ INCORRECT - Wrong format**:
+
+```markdown
+## **1. :: Reference Files**  <!-- Wrong: Header is bolded -->
+
+## 1.1. :: Output File References  <!-- Wrong: Should be ### not ## -->
+
+- STAGING_FILE: path/to/file.md  <!-- Wrong: Missing bold and backticks -->
+```
+
+## FORMATTING ANTI-PATTERNS
+
+### ❌ PROHIBITED FORMATTING
 
 - ❌ **External References** - No links to other documents for critical information
 - ❌ **Incomplete Examples** - No code fragments without full context
@@ -164,18 +253,20 @@ alwaysApply: true
 - ❌ **Missing Context** - No rules without rationale and examples
 - ❌ **Inconsistent Structure** - No deviation from required section order
 - ❌ **Passive Voice** - No indirect or unclear action requirements
+- ❌ **Bolded Headers** - Don't use bold formatting (`**`) on headers - headers are already bold when rendered
 
-### **❌ CONTENT ANTI-PATTERNS**
+### ❌ CONTENT ANTI-PATTERNS
 
 - ❌ **Human-Focused Language** - No explanations for human readers
 - ❌ **Historical Context** - No "why we did this" explanations
 - ❌ **Opinion-Based Content** - No subjective or preference-based guidance
 - ❌ **Incomplete Coverage** - No gaps in rule coverage
 - ❌ **Circular References** - No cross-references between AI documents
+- ❌ **Missing Reference Files Section** - Don't reference file paths without including a properly formatted "Reference Files" section
 
-## **AI AGENT DOCUMENT QUALITY GATES**
+## AI AGENT DOCUMENT QUALITY GATES
 
-### **Quality Gates Checklist**
+### Quality Gates Checklist
 
 - [ ] **Complete Information**: All critical content is self-contained
 - [ ] **Clear Directives**: Every rule has unambiguous action requirements
@@ -186,7 +277,7 @@ alwaysApply: true
 - [ ] **AI Optimization**: Content is structured for AI agent consumption
 - [ ] **No External Dependencies**: Critical information is not referenced externally
 
-### **Quality Gates**
+### Quality Gates
 
 - [ ] All sections follow required formatting structure
 - [ ] No anti-patterns detected in content or formatting
@@ -195,7 +286,7 @@ alwaysApply: true
 - [ ] Comprehensive examples and implementation patterns
 - [ ] Built-in violation prevention and compliance validation
 
-## **AI AGENT DOCUMENT SUCCESS METRICS**
+## AI AGENT DOCUMENT SUCCESS METRICS
 
 After implementing proper AI agent document formatting:
 
@@ -206,9 +297,9 @@ After implementing proper AI agent document formatting:
 - ✅ **Automatic Enforcement** - Self-enforcing compliance without human intervention
 - ✅ **Measurable Performance** - Clear metrics for AI agent effectiveness
 
-## **AI AGENT DOCUMENT VIOLATION PREVENTION**
+## AI AGENT DOCUMENT VIOLATION PREVENTION
 
-### **Natural Stops**
+### Natural Stops
 
 - **MANDATORY**: External references in critical sections → "Include complete information"
 - **MANDATORY**: Incomplete examples → "Provide full, executable examples"
@@ -217,7 +308,7 @@ After implementing proper AI agent document formatting:
 - **MANDATORY**: Inconsistent structure → "Follow required section order"
 - **MANDATORY**: Human-focused language → "Use AI agent optimization language"
 
-### **Pattern Recognition**
+### Pattern Recognition
 
 - Document structure → Determines formatting compliance
 - Content completeness → Determines information coverage
@@ -226,9 +317,9 @@ After implementing proper AI agent document formatting:
 - Violation prevention → Determines compliance enforcement
 - Success metrics → Determines performance measurement
 
-## **EXECUTION PRIORITY MATRIX**
+## EXECUTION PRIORITY MATRIX
 
-### **CRITICAL PRIORITY (Execute immediately)**
+### CRITICAL PRIORITY (Execute immediately)
 
 - Document structure compliance verification
 - Complete information inclusion validation
@@ -236,25 +327,25 @@ After implementing proper AI agent document formatting:
 - Anti-pattern violation detection
 - Quality gate compliance verification
 
-### **HIGH PRIORITY (Execute before proceeding)**
+### HIGH PRIORITY (Execute before proceeding)
 
 - Content completeness validation
 - Example quality verification
 - Violation prevention mechanism validation
 - Success metric definition verification
 
-### **MEDIUM PRIORITY (Execute during normal operation)**
+### MEDIUM PRIORITY (Execute during normal operation)
 
 - AI agent optimization validation
 - Performance measurement verification
 - Compliance enforcement validation
 
-### **LOW PRIORITY (Execute when time permits)**
+### LOW PRIORITY (Execute when time permits)
 
 - Document evolution planning
 - Performance optimization
 - Future enhancement planning
 
-## **DYNAMIC MANAGEMENT NOTE**
+## DYNAMIC MANAGEMENT NOTE
 
 This document is optimized for AI agent internal processing and may be updated dynamically based on operational needs and pattern recognition. The structure prioritizes AI agent compliance and effectiveness over traditional documentation practices.

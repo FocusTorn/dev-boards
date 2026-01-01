@@ -1,0 +1,86 @@
+# Dev Console Configuration
+# Configuration file for the ESP32-S3 Dev Console application
+
+application:
+    title: "ESP32-S3 Dev Console"
+
+    min_width: 80
+    min_height: 21
+
+    # Global keyboard bindings
+    bindings:
+        - key: "[q]"
+          description: "Quit"
+
+    # Status bar configuration
+    status_bar:
+        default_text: "Status: Ready | [q] Quit"
+
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃                                          TAB BARS COMPONENT CONFIGURATION                                          ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+tab_bars:
+    # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+    # │                            Main Content Tab Bar (MainContentTabBar)                            │
+    # └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+    main_content_tab_bar:
+        hwnd: "hwndMainContentTabBar"
+        anchor: "hwndMainContentBox"
+
+        alignment:
+            vertical: "top"
+            horizontal: "center"
+            offset_x: 0
+            offset_y: 0
+
+        style: "tabbed"
+        color: "cyan"
+
+        min_tab_width: 8
+        tab_tooltips: true
+
+        navigation:
+            left: ["Left"]
+            right: ["Right"]
+
+        tabs:
+            - id: "dashboard"
+              name: "Dashboard"
+              default: "active"
+              content:
+                  type: "text"
+                  value: "ESP32-S3 Development Settings"
+        
+            - id: "settings"
+              name: "Settings"
+              content:
+                  type: "text"
+                  value: "ESP32-S3 Development Settings"
+
+
+
+
+
+
+
+
+
+
+
+
+tab_content:
+    - tab_id: "settings"
+      bindings:
+        - key: "[Enter]"
+          description: "Confirm/Edit field"
+        - key: "[Tab]"
+          description: "Next field"
+        - key: "[Shift+Tab]"
+          description: "Previous field"
+    
+    
+    
+    
+

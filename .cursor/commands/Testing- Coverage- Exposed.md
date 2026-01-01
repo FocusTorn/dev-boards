@@ -4,6 +4,8 @@
 
 Analyze all exposed (public) functionality in a package/module and its dependencies, comparing with test coverage to identify gaps. Output results in summary format per `.cursor/rules/formatting/summary.mdc`.
 
+**Coverage Goal**: The target is **100% direct coverage** for all exposed (public) functionality. All public functions and classes must have dedicated test cases that directly exercise their behavior.
+
 ## Usage
 
 ```
@@ -178,8 +180,9 @@ Analyze all exposed (public) functionality in a package/module and its dependenc
    - {recommendation}
 
 3. Coverage Goals
-   - Target: {percentage}% direct coverage for public API
+   - Target: **100% direct coverage** for all exposed (public) functionality
    - Current: {percentage}%
+   - Gap: {count} functions need direct test coverage
 ```
 
 ---
@@ -207,8 +210,10 @@ Analyze all exposed (public) functionality in a package/module and its dependenc
 
 ## Notes
 
+- **Coverage Goal**: 100% direct coverage for all exposed (public) functionality is the target
 - Private functions (underscore prefix) are lower priority but should be noted
-- Functions tested indirectly are still "covered" but may benefit from direct tests
+- Functions tested indirectly are still "covered" but do not meet the 100% direct coverage goal
+- All public functions must have dedicated test cases that directly exercise their behavior
 - Include dependency analysis for comprehensive coverage view
 - Adapt to different package structures (lib/, src/, flat)
 - If no tests directory found, report that explicitly

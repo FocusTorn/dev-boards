@@ -43,6 +43,8 @@ When the user provides a message starting with `Deviation:` followed by error in
 
 **CRITICAL ENFORCEMENT**: When ANY message contains `Deviation:` marker at the start, immediately STOP all current processing, acknowledge the deviation marker explicitly, and enter deviation handling protocol mode. Do NOT proceed with any fixes, changes, or normal task processing until deviation analysis is complete. The deviation handling protocol takes precedence over all other tasks and must be completed before returning to normal operation.
 
+**CRITICAL ENFORCEMENT - MANDATORY PAUSE**: After a deviation is detected and acknowledged, the AI agent MUST explicitly pause and verify completion of ALL deviation protocol steps before taking ANY other actions. The agent MUST NOT proceed with new feature requests, bug fixes, or any other task until: (1) Root cause analysis is complete, (2) Executive summary is generated, (3) User has reviewed and approved remediation. If a new request arrives during deviation analysis, the agent MUST explicitly state: "Deviation analysis in progress - completing protocol before proceeding with new request."
+
 **✅ CORRECT - Deviation marker format**:
 
 ```

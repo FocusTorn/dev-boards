@@ -5,7 +5,7 @@ alwaysApply: false
 
 # Rule Files Structure and Format Rules
 
-## **CRITICAL EXECUTION DIRECTIVE**
+## CRITICAL EXECUTION DIRECTIVE
 
 **AI Agent Directive**: Follow rule files structure and format rules exactly for all rule file creation, organization, and maintenance tasks.
 
@@ -16,9 +16,9 @@ alwaysApply: false
 3. **NO SELECTIVE COMPLIANCE**: All rules apply to all rule file activities
 4. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
 
-## **RULES DIRECTORY STRUCTURE**
+## RULES DIRECTORY STRUCTURE
 
-### **1. :: Directory Organization**
+### 1. :: Directory Organization
 
 **✅ CORRECT - Rules directory structure**:
 
@@ -100,7 +100,7 @@ alwaysApply: false
 .cursor/rules/dev-boards-workspace.mdc
 ```
 
-### **2. :: Universal vs Project-Level Rules**
+### 2. :: Universal vs Project-Level Rules
 
 **✅ CORRECT - Universal rules characteristics**:
 
@@ -122,7 +122,7 @@ alwaysApply: false
 
 ```markdown
 # code-maintenance.mdc (universal)
-## **BACKWARD COMPATIBILITY REMOVAL**
+## BACKWARD COMPATIBILITY REMOVAL
 
 **✅ CORRECT - Remove all backward compatibility code immediately**:
 
@@ -137,7 +137,7 @@ proceed = confirm("Proceed?", default=True, indent="")
 
 ```markdown
 # dev-boards/project-level-workspace.mdc (project-specific)
-## **PACKAGE MANAGER PREFERENCE**
+## PACKAGE MANAGER PREFERENCE
 
 **✅ CORRECT - UV is the preferred Python package manager for dev-boards projects**:
 
@@ -157,13 +157,13 @@ from bootstraps.git_py.core.prompts import confirm
 
 # Wrong: Project-level rule with generic patterns that should be universal
 # dev-boards/project-level-workspace.mdc
-## **UV WORKSPACE CONFIGURATION**
+## UV WORKSPACE CONFIGURATION
 # This should be in tool/uv/workspace.mdc (universal)
 ```
 
-## **RULE FILE FORMAT**
+## RULE FILE FORMAT
 
-### **1. :: File Header Structure**
+### 1. :: File Header Structure
 
 **✅ CORRECT - Standard rule file header**:
 
@@ -175,7 +175,7 @@ alwaysApply: false
 
 # [Rule Category] Rules
 
-## **CRITICAL EXECUTION DIRECTIVE**
+## CRITICAL EXECUTION DIRECTIVE
 
 **AI Agent Directive**: Follow [rule category] rules exactly for all [activity description] tasks.
 
@@ -236,16 +236,20 @@ alwaysApply: true  # Should be false for language-specific
 ---
 ```
 
-### **2. :: Section Structure**
+### 2. :: Section Structure
 
-**✅ CORRECT - Standard section hierarchy**:
+#### Header Formatting Rule
+
+**CRITICAL**: Headers (`#`, `##`, `###`, `####`, etc.) must NEVER be bolded in the source markdown.
+
+**✅ CORRECT - Plain text headers**:
 
 ```markdown
-## **PRIMARY SECTION**
+## PRIMARY SECTION
 
-### **1. :: Subsection with Numbering**
+### 1. :: Subsection with Numbering
 
-#### **Sub-subsection (if needed)**
+#### Sub-subsection (if needed)
 
 **✅ CORRECT - Correct pattern**:
 
@@ -259,19 +263,19 @@ alwaysApply: true  # Should be false for language-specific
 **✅ CORRECT - Required sections**:
 
 ```markdown
-## **CRITICAL EXECUTION DIRECTIVE**
+## CRITICAL EXECUTION DIRECTIVE
 [Directive and protocol]
 
-## **[TOPIC] RULES**
+## [TOPIC] RULES
 [Main rule content with subsections]
 
-## **ANTI-PATTERNS**
+## ANTI-PATTERNS
 [Violations and incorrect patterns]
 
-## **QUALITY GATES**
+## QUALITY GATES
 [Checklist items]
 
-## **SUCCESS METRICS**
+## SUCCESS METRICS
 [Success criteria]
 ```
 
@@ -279,18 +283,18 @@ alwaysApply: true  # Should be false for language-specific
 
 ```markdown
 # Wrong: Missing CRITICAL EXECUTION DIRECTIVE
-## **RULES**
+## RULES
 
 # Wrong: Missing ANTI-PATTERNS
-## **RULES**
-## **QUALITY GATES**
+## RULES
+## QUALITY GATES
 
 # Wrong: Missing SUCCESS METRICS
-## **RULES**
-## **ANTI-PATTERNS**
+## RULES
+## ANTI-PATTERNS
 ```
 
-### **3. :: Content Formatting**
+### 3. :: Content Formatting
 
 **✅ CORRECT - Code example format**:
 
@@ -315,9 +319,9 @@ def bad_example():
 **✅ CORRECT - Anti-pattern format**:
 
 ```markdown
-## **ANTI-PATTERNS**
+## ANTI-PATTERNS
 
-### **❌ [Category] Violations**
+### ❌ [Category] Violations
 
 - ❌ **Violation Name** - Description of violation
 - ❌ **Another Violation** - Description of another violation
@@ -326,7 +330,7 @@ def bad_example():
 **✅ CORRECT - Quality gates format**:
 
 ```markdown
-## **QUALITY GATES**
+## QUALITY GATES
 
 - [ ] **Checkpoint Name**: Description of checkpoint
 - [ ] **Another Checkpoint**: Description of another checkpoint
@@ -335,7 +339,7 @@ def bad_example():
 **✅ CORRECT - Success metrics format**:
 
 ```markdown
-## **SUCCESS METRICS**
+## SUCCESS METRICS
 
 After implementing proper [topic]:
 
@@ -347,21 +351,24 @@ After implementing proper [topic]:
 
 ```markdown
 # Wrong: Missing checkmarks in success metrics
-## **SUCCESS METRICS**
+## SUCCESS METRICS
 - Metric Name - Description
 
 # Wrong: Missing checkboxes in quality gates
-## **QUALITY GATES**
+## QUALITY GATES
 - Checkpoint Name
 
 # Wrong: Missing ❌ in anti-patterns
-## **ANTI-PATTERNS**
+## ANTI-PATTERNS
 - Violation Name - Description
+
+# Wrong: Bolded headers
+## **SUCCESS METRICS**  <!-- Headers should not be bolded -->
 ```
 
-## **STYLE AND TONE**
+## STYLE AND TONE
 
-### **1. :: Writing Style**
+### 1. :: Writing Style
 
 **✅ CORRECT - Directive and authoritative tone**:
 
@@ -399,7 +406,7 @@ After implementing proper [topic]:
 **✅ CORRECT - Maybe remove compatibility code**:
 ```
 
-### **2. :: Example Quality**
+### 2. :: Example Quality
 
 **✅ CORRECT - Complete, executable examples**:
 
@@ -463,7 +470,7 @@ from bootstraps.git_py.core import something
 ```
 ```
 
-### **3. :: Consistency Requirements**
+### 3. :: Consistency Requirements
 
 **✅ CORRECT - Consistent terminology**:
 
@@ -478,8 +485,8 @@ from bootstraps.git_py.core import something
 
 ```markdown
 # Use consistent markdown formatting
-## **SECTION NAME**  # Always bold section headers
-### **1. :: Subsection**  # Always bold, numbered subsections
+## SECTION NAME  # Headers are NOT bolded - they're already bold when rendered
+### 1. :: Subsection  # Headers are NOT bolded, numbered subsections
 **✅ CORRECT**  # Always bold correct examples
 **❌ INCORRECT**  # Always bold incorrect examples
 ```
@@ -493,14 +500,14 @@ from bootstraps.git_py.core import something
 - "module" in yet another place
 
 # Wrong: Inconsistent formatting
-## Section Name  # Not bold
-### Subsection  # Not bold, not numbered
-✅ CORRECT  # Not bold
+## **Section Name**  # Wrong: Headers should NOT be bolded
+### **Subsection**  # Wrong: Headers should NOT be bolded
+✅ CORRECT  # Wrong: Should be bolded
 ```
 
-## **FILE NAMING CONVENTIONS**
+## FILE NAMING CONVENTIONS
 
-### **1. :: Naming Patterns**
+### 1. :: Naming Patterns
 
 **✅ CORRECT - Descriptive, kebab-case names**:
 
@@ -551,9 +558,9 @@ CodeOrganization.mdc          # Should be kebab-case
 code_organization.mdc         # Should use hyphens, not underscores
 ```
 
-## **CONFIGURATION OPTIONS**
+## CONFIGURATION OPTIONS
 
-### **1. :: Glob Patterns**
+### 1. :: Glob Patterns
 
 **✅ CORRECT - Language-specific globs**:
 
@@ -597,7 +604,7 @@ alwaysApply: false  # Should have globs for language-specific
 ---
 ```
 
-### **2. :: Always Apply Configuration**
+### 2. :: Always Apply Configuration
 
 **✅ CORRECT - Universal rules**:
 
@@ -647,9 +654,9 @@ alwaysApply: false  # Universal rules should be true
 ---
 ```
 
-## **ANTI-PATTERNS**
+## ANTI-PATTERNS
 
-### **❌ Rule File Structure Violations**
+### ❌ Rule File Structure Violations
 
 - ❌ **Wrong Rule Placement** - Don't put language-specific rules at root level
 - ❌ **Wrong Rule Placement** - Don't put tool-specific rules at root level
@@ -657,28 +664,31 @@ alwaysApply: false  # Universal rules should be true
 - ❌ **Mixing Universal and Project-Specific** - Don't put project-specific examples in universal rules
 - ❌ **Missing Required Sections** - Don't create rule files without CRITICAL EXECUTION DIRECTIVE, ANTI-PATTERNS, QUALITY GATES, SUCCESS METRICS
 - ❌ **Inconsistent Formatting** - Don't use inconsistent markdown formatting or terminology
+- ❌ **Bolded Headers** - Don't use bold formatting (`**`) on headers - headers are already bold when rendered
 - ❌ **Vague File Names** - Don't use vague or unclear file names
 - ❌ **Wrong Configuration** - Don't use `alwaysApply: true` with globs
 - ❌ **Missing Globs** - Don't create language-specific rules without glob patterns
 
-## **QUALITY GATES**
+## QUALITY GATES
 
 - [ ] **Correct Directory**: Rule file is in appropriate directory (root, by-language, tool, formatting, or project-specific)
 - [ ] **Correct Header**: Rule file has proper frontmatter with appropriate globs and alwaysApply settings
 - [ ] **Required Sections**: Rule file includes CRITICAL EXECUTION DIRECTIVE, main rules section, ANTI-PATTERNS, QUALITY GATES, SUCCESS METRICS
-- [ ] **Consistent Formatting**: All sections use consistent markdown formatting (bold headers, checkmarks, etc.)
+- [ ] **Consistent Formatting**: All sections use consistent markdown formatting (no bolded headers, checkmarks, etc.)
+- [ ] **No Bolded Headers**: Headers are NOT bolded - they're already bold when rendered
 - [ ] **Clear Examples**: All examples are complete, executable, and use appropriate placeholders
 - [ ] **Appropriate Scope**: Universal rules use generic examples, project-level rules can use project-specific examples
 - [ ] **Descriptive Name**: File name clearly describes the rule category and purpose
 - [ ] **Proper Configuration**: Language-specific rules use globs with `alwaysApply: false`, universal rules use `alwaysApply: true`
 
-## **SUCCESS METRICS**
+## SUCCESS METRICS
 
 After implementing proper rule file structure and format:
 
 - ✅ **Clear Organization** - Rules are organized in logical directory structure
 - ✅ **Proper Separation** - Universal and project-specific rules are clearly separated
 - ✅ **Consistent Format** - All rule files follow the same structure and formatting
+- ✅ **No Bolded Headers** - Headers are not bolded in source, keeping markdown clean and readable
 - ✅ **Easy Discovery** - Rules are easy to find based on their category and location
 - ✅ **Maintainable Structure** - Rule files can be easily updated and maintained
 - ✅ **Clear Scope** - Universal vs project-specific rules are clearly differentiated

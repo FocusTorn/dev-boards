@@ -132,6 +132,13 @@ The Python code quality rules are organized into focused categories for easier n
 - List comprehensions with potentially None values
 - Direct imports for installed packages
 
+### **5. Test Failure Correction** (`test-failure-correction.mdc`)
+- Root cause analysis before fixing tests
+- Mock location verification
+- Mock return value completeness
+- Test data alignment
+- Success determination logic verification
+
 ## **USAGE GUIDELINES**
 
 **When investigating errors**:
@@ -152,6 +159,12 @@ The Python code quality rules are organized into focused categories for easier n
 1. Check `code-cleanup.mdc` for cleanup patterns
 2. Follow preventive rules to maintain clean code
 3. Use corrective reference for specific cleanup scenarios
+
+**When fixing test failures**:
+1. Check `test-failure-correction.mdc` for investigation protocol
+2. Follow root cause analysis before fixing tests
+3. Verify mock locations and return values
+4. Align test expectations with actual behavior
 
 ## **DUAL FRAMING APPROACH**
 

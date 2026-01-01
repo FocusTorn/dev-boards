@@ -17,6 +17,17 @@ dependencies = [
 
 #<---------------------------------------------------------------------------------------
 
+[tool.uv.workspace]
+# No workspace members - packages are configured via [tool.uv.sources] instead
+# This prevents automatic discovery and building of nested projects like .sync-manager
+
+[project.optional-dependencies]
+dev = [
+    "sphinx>=7.0",
+    "python-docs-theme>=2024.1",
+    "sphinx-autodoc-typehints>=1.24",
+]
+
 [tool.uv.sources] #>
 outerm = { path = "_shared-resources/shared-python/outerm", editable = true }
 pyprompt = { path = "_shared-resources/shared-python/pyprompt", editable = true }

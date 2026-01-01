@@ -178,6 +178,53 @@ alwaysApply: true
 
 **MANDATORY Implementation**: Automatically wrap in summary format template when these patterns are detected. **NO EXCEPTIONS**.
 
+### 1.4.1. :: Post-File-Generation Display Requirements <!-- Start Fold -->
+
+**✅ CORRECT - MANDATORY ENFORCEMENT**: When generating analysis output files (fluency outputs, testing analyses, optimization reports, etc.) that include executive summaries:
+
+- After successfully writing the analysis file, the AI agent **MUST** also display the executive summary content to the user
+- The displayed executive summary **MUST** be wrapped in a markdown code block using the summary format structure
+- The displayed summary **MUST** follow the exact summary format requirements (numbered lists with 3-space indented dash bullets)
+- This applies even if the command doesn't explicitly require displaying the summary
+- The summary formatting rules have `alwaysApply: true` and analysis results automatically trigger summary format application
+
+**✅ CORRECT - Display Format Requirements**:
+
+```markdown
+```markdown
+# [TITLE OF SUMMARY]
+
+## [TITLE OF FIRST SECTION]
+
+1. [First Top Level Bullet]
+    - [First Detail Bullet]
+    - [Second Detail Bullet]
+
+2. [Second Top Level Bullet]
+    - [First Detail Bullet]
+    - [Second Detail Bullet]
+
+---
+
+## [TITLE OF SECOND SECTION]
+
+1. [First Top Level Bullet]
+    - [First Detail Bullet]
+    - [Second Detail Bullet]
+```
+```
+
+**❌ INCORRECT - Don't skip display formatting**:
+
+- Generating file correctly but not displaying summary in format
+- Displaying plain text instead of formatted summary
+- Skipping summary display entirely after file generation
+- Using different format for displayed content vs. file content
+
+**Rationale**: The `alwaysApply: true` flag means summary formatting rules apply to ALL responses containing analysis results, not just explicit summary requests. When analysis files are generated, the executive summary should be displayed in the standardized format for consistency and readability.
+
+<!-- Close Fold: Post-File-Generation Display Requirements -->
+
 <!-- Close Fold: Automatic High-Level Summary Detection -->
 
 ### 1.5. :: Response Type Auto-Detection <!-- Start Fold -->

@@ -1,0 +1,40 @@
+[package]
+name = "dev-console"
+version = "0.1.0"
+edition = "2021"
+authors = ["FocusTorn <FocusTorn@gmail.com>"]
+license = "MIT"
+description = "TUI Dev Console for ESP32-S3 development"
+
+[[bin]]
+name = "dev-console"
+path = "src/main.rs"
+
+[dependencies]
+# Shared components (path dependency)
+tui-components = { path = "../../_shared-resources/shared-rust/resources/components" }
+
+# TUI dependencies
+ratatui = "0.29.0"
+crossterm = "0.29.0"
+
+# Configuration parsing
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
+
+# File I/O
+dirs = "5.0"
+
+# Input handling
+tui-input = "0.8"
+
+# Serial port detection
+serialport = "4.5"
+
+# Regex for parsing
+regex = "1.10"
+lazy_static = "1.5"
+
+# Command detection
+which = "6.0"
+

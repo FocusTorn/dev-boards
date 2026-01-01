@@ -28,8 +28,9 @@ p
 
 **STEP 1 - Identify Task Category** (MANDATORY FIRST STEP):
    - Determine what type of task you're working on
-   - Language-specific (Python, JavaScript, etc.) → Check `.cursor/rules/by-language/[language]/`
+   - Language-specific (Python, JavaScript,Rust, etc.) → Check `.cursor/rules/by-language/[language]/`
    - **Python tasks**: MUST check `.cursor/rules/by-language/python/code-quality/` directory (all category files)
+   - **Rust tasks**: **CRITICAL ENFORCEMENT** - MUST explicitly read `.cursor/rules/by-language/rust/build-and-test.mdc` BEFORE making any code changes. After making Rust code changes, MUST run `cargo build` (NOT `cargo check`, NOT `read_lints`), fix ALL warnings, and verify the build succeeds with zero warnings before marking the task complete. This verification is MANDATORY and cannot be skipped.
    - Tool-specific (UV, etc.) → Check `.cursor/rules/tool/[tool]/`
    - Formatting (markdown, terminal output, etc.) → Check `.cursor/rules/formatting/`
    - Code quality/linter → Check `.cursor/rules/by-language/[language]/code-quality/` directory
@@ -147,6 +148,8 @@ Only after this verification is explicitly stated can the task proceed.
 - ❌ **Skipping Rule Discovery** - Don't skip the mandatory rule discovery step
 - ❌ **Selective Rule Compliance** - Don't pick and choose which rules to follow
 - ❌ **Proceeding Without Verification** - Don't proceed with tasks without being able to answer "What rules did I discover?" and "What rules did I read?"
+- ❌ **Using Terminal Commands for File Operations** - Don't use `run_terminal_cmd` with `Add-Content`, `echo`, `cat >>`, or any terminal command for file write operations - ALWAYS use file editing tools (`search_replace`, `write`)
+- ❌ **Summarizing Instead of Following Templates** - Don't write summaries when command files specify OUTPUT FORMAT templates - ALWAYS follow template structure exactly with ALL sections
 
 ## **QUALITY GATES**
 
@@ -159,6 +162,8 @@ Only after this verification is explicitly stated can the task proceed.
 - [ ] **Rules Applied Proactively**: Applied rules from the start, not after errors appear
 - [ ] **No Reactive Rule Application**: Rules were not applied only after errors or warnings
 - [ ] **No Code Changes Before Verification**: No code changes were made before completing rule discovery verification
+- [ ] **File Editing Tools Used**: All file write operations used `search_replace` or `write` tools, NEVER terminal commands
+- [ ] **Templates Followed Exactly**: When templates are specified, output matches template structure with ALL sections filled
 
 ## **SUCCESS METRICS**
 
@@ -227,6 +232,80 @@ I will now:
 # "I'll finish this task and check rules later"
 # This is a CRITICAL PROTOCOL VIOLATION
 ```
+
+## **FILE OPERATION TOOL REQUIREMENTS**
+
+### **1. :: Mandatory File Editing Tool Usage**
+
+**CRITICAL ENFORCEMENT**: The AI agent MUST use file editing tools for ALL file write operations. Terminal commands are NEVER acceptable for file modifications.
+
+**✅ CORRECT - Use file editing tools**:
+
+When ANY task requires modifying, creating, appending to, or writing files, the AI agent MUST:
+
+1. **Use `search_replace` tool**: For editing existing files or appending with unique context
+   - Read the file first to identify unique context
+   - Use unique surrounding lines to make the match unambiguous
+   - Example: `"5. Update integration tests\n\n---"` instead of just `"---"`
+
+2. **Use `write` tool**: For creating new files or completely overwriting existing files
+   - Use when the entire file content is being written
+   - Use for new file creation
+
+3. **Read-append-write pattern**: For appending to end of file when context is unclear
+   - Read entire file: `content = read_file("file.md")`
+   - Append new content: `content += "\n\n## New Section: ..."`
+   - Write back: `write("file.md", content)`
+
+**❌ INCORRECT - Using terminal commands for file operations**:
+
+- ❌ **NEVER** use `run_terminal_cmd` with `Add-Content`, `echo`, `cat >>`, `printf`, or any other terminal command for file write operations
+- ❌ **NEVER** use PowerShell `Add-Content` command
+- ❌ **NEVER** use Unix `echo >>` or `cat >>` commands
+- ❌ **NEVER** use terminal commands as a "workaround" for file editing
+
+**MANDATORY APPLICATION**: This rule applies to ALL file operations, including:
+- Phase command staging file appends
+- Documentation file creation and updates
+- Configuration file modifications
+- Source code file edits
+- Any other file write operation
+
+**Rationale**: File editing tools provide better control, error handling, and consistency. Terminal commands bypass proper file handling mechanisms and can cause encoding issues, permission problems, and inconsistent behavior.
+
+### **2. :: Template Format Compliance Requirements**
+
+**CRITICAL ENFORCEMENT**: When command files, phase files, or documentation specify OUTPUT FORMAT templates, the AI agent MUST follow the exact template structure with ALL specified sections and subsections.
+
+**✅ CORRECT - Follow templates exactly**:
+
+When a command file specifies an OUTPUT FORMAT template:
+
+1. **Read the template structure**: Identify ALL sections, subsections, and required fields
+2. **Fill in ALL sections**: Complete every section and subsection specified in the template
+3. **Maintain template structure**: Preserve the exact heading hierarchy, bullet format, and section organization
+4. **Validate before completion**: Verify output matches template structure before marking phase/task complete
+
+**Template Placeholder Interpretation**:
+- `"[Complete Phase X analysis output here]"` means: "Fill in the template structure above with actual data using ALL sections"
+- `"[count]"` means: "Provide the actual count value"
+- `"[test_name]"` means: "Provide the actual test name"
+- **NEVER** interpret placeholders as meaning "write a summary instead of following the template"
+
+**❌ INCORRECT - Summarizing instead of following templates**:
+
+- ❌ **NEVER** write summaries when templates specify detailed structure
+- ❌ **NEVER** skip sections or subsections specified in templates
+- ❌ **NEVER** interpret template placeholders as meaning "write a brief summary"
+- ❌ **NEVER** assume summaries are acceptable when templates exist
+
+**MANDATORY VALIDATION**: Before marking any phase or task complete:
+- [ ] All template sections are present in output
+- [ ] All template subsections are filled with actual data
+- [ ] Template structure matches exactly (headings, bullets, format)
+- [ ] No sections were replaced with summaries
+
+**Rationale**: Templates ensure consistent, complete documentation. Summaries skip critical information and violate template specifications, leading to incomplete outputs.
 
 ## **NATURAL STOPS FOR RULE DISCOVERY**
 
