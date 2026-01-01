@@ -82,59 +82,111 @@ pub fn render_dashboard(
     let status_inner = status_block.inner(column2_chunks[0]);
     
     if dashboard_state.is_running && !dashboard_state.progress_stage.is_empty() {
-        // Show progress bar with time estimates if available
-        let progress_text = if let Some(ref tracker) = dashboard_state.progress_tracker {
+        // Show progress with time estimates in the proposed format
+        // Format: 
+        // Line 1: Compiling: 45.2% | Elapsed: 2m 15s | ETA: 2m 45s
+        // Line 2: [████████████████░░░░░░░░░░░░░░░░] 45.2%
+        // Line 3: Current file: main.cpp
+        // Line 4: Files compiled: 12/27
+        
+        let (line1, line2, line3, line4) = if let Some(ref tracker) = dashboard_state.progress_tracker {
             let elapsed = tracker.format_elapsed();
             let eta = tracker.format_estimated_remaining()
                 .map(|r| format!(" | ETA: {}", r))
                 .unwrap_or_default();
             
-            if dashboard_state.current_file.is_empty() {
-                format!("{}: {:.1}% | Elapsed: {}{}", 
-                    tracker.current_stage_name(), 
-                    tracker.progress_percent, 
-                    elapsed,
-                    eta
-                )
+            // Line 1: Compiling: 45.2% | Elapsed: 2m 15s | ETA: 2m 45s
+            let line1 = format!("{}: {:.1}% | Elapsed: {}{}", 
+                tracker.current_stage_name(), 
+                tracker.progress_percent, 
+                elapsed,
+                eta
+            );
+            
+            // Line 2: [████████████████░░░░░░░░░░░░░░░░] 45.2%
+            // Calculate width: reserve space for brackets, percentage text, and padding
+            let percent_text = format!("{:.1}%", tracker.progress_percent);
+            let percent_text_width = percent_text.len();
+            let progress_width = (status_inner.width as usize).saturating_sub(percent_text_width + 3); // [ ] + space + percentage
+            let filled_width = ((progress_width as f64 * tracker.progress_percent / 100.0) as usize).min(progress_width);
+            let empty_width = progress_width.saturating_sub(filled_width);
+            let line2 = format!("[{}{}] {}",
+                "█".repeat(filled_width),
+                "░".repeat(empty_width),
+                percent_text
+            );
+            
+            // Line 3: Current file: main.cpp (if available)
+            let line3 = if !dashboard_state.current_file.is_empty() {
+                format!("Current file: {}", dashboard_state.current_file.as_ref())
             } else {
-                format!("{}: {:.1}% | Elapsed: {}{} | {}", 
-                    tracker.current_stage_name(), 
-                    tracker.progress_percent, 
-                    elapsed,
-                    eta,
-                    dashboard_state.current_file.as_ref()
-                )
-            }
+                String::new()
+            };
+            
+            // Line 4: Files compiled: 12/27 (if available from tracker)
+            let line4 = if let Some(total) = tracker.total_items {
+                if total > 0 {
+                    format!("Files compiled: {}/{}", tracker.items_processed, total)
+                } else {
+                    String::new()
+                }
+            } else {
+                String::new()
+            };
+            
+            (line1, line2, line3, line4)
         } else {
             // Fallback to basic progress display
-            if dashboard_state.current_file.is_empty() {
-                format!("{}: {:.1}%", dashboard_state.progress_stage.as_ref(), dashboard_state.progress_percent)
+            let line1 = format!("{}: {:.1}%", 
+                dashboard_state.progress_stage.as_ref(), 
+                dashboard_state.progress_percent
+            );
+            
+            let percent_text = format!("{:.1}%", dashboard_state.progress_percent);
+            let percent_text_width = percent_text.len();
+            let progress_width = (status_inner.width as usize).saturating_sub(percent_text_width + 3);
+            let filled_width = ((progress_width as f64 * dashboard_state.progress_percent / 100.0) as usize).min(progress_width);
+            let empty_width = progress_width.saturating_sub(filled_width);
+            let line2 = format!("[{}{}] {}",
+                "█".repeat(filled_width),
+                "░".repeat(empty_width),
+                percent_text
+            );
+            
+            let line3 = if !dashboard_state.current_file.is_empty() {
+                format!("Current file: {}", dashboard_state.current_file.as_ref())
             } else {
-                format!("{}: {:.1}% - {}", dashboard_state.progress_stage.as_ref(), dashboard_state.progress_percent, dashboard_state.current_file.as_ref())
-            }
+                String::new()
+            };
+            
+            (line1, line2, line3, String::new())
         };
         
-        // Create progress bar
-        let progress_width = status_inner.width as usize;
-        let filled_width = ((progress_width as f64 * dashboard_state.progress_percent / 100.0) as usize).min(progress_width);
-        let empty_width = progress_width.saturating_sub(filled_width);
-        
-        let progress_bar = format!(
-            "{}{}",
-            "█".repeat(filled_width),
-            "░".repeat(empty_width)
-        );
-        
-        let progress_lines = vec![
+        // Build progress lines - exactly as proposed
+        let mut progress_lines = vec![
             Line::from(Span::styled(
-                progress_text,
+                line1,
                 Style::default().fg(Color::Cyan),
             )),
             Line::from(Span::styled(
-                progress_bar,
+                line2,
                 Style::default().fg(Color::Green),
             )),
         ];
+        
+        if !line3.is_empty() {
+            progress_lines.push(Line::from(Span::styled(
+                line3,
+                Style::default().fg(Color::White),
+            )));
+        }
+        
+        if !line4.is_empty() {
+            progress_lines.push(Line::from(Span::styled(
+                line4,
+                Style::default().fg(Color::White),
+            )));
+        }
         
         let status_para = Paragraph::new(progress_lines)
             .block(status_block)

@@ -111,11 +111,17 @@ impl ProgressTracker {
         self.items_processed = items_processed;
         self.elapsed_time = self.start_time.elapsed();
         
-        // Calculate progress percentage
+        // Calculate progress percentage - prioritize total_items if available
         if let Some(total) = self.total_items {
             if total > 0 {
-                self.progress_percent = (items_processed as f64 / total as f64) * 100.0;
+                self.progress_percent = (items_processed as f64 / total as f64 * 100.0).min(100.0);
+            } else {
+                // If total is 0, keep current progress or use a small increment
+                self.progress_percent = self.progress_percent.min(99.9);
             }
+        } else {
+            // If no total_items, progress_percent should be set externally
+            // Don't modify it here if we don't have total_items
         }
         
         // Calculate time estimates based on method
@@ -131,6 +137,11 @@ impl ProgressTracker {
         if let Some(remaining) = self.estimated_remaining {
             self.estimated_total = Some(self.elapsed_time + remaining);
         }
+    }
+    
+    /// Set progress percentage directly (for percentage-based tracking)
+    pub fn set_progress_percent(&mut self, percent: f64) {
+        self.progress_percent = percent.min(100.0).max(0.0);
     }
     
     /// Calculate estimate based on current progress rate

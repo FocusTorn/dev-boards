@@ -1,0 +1,32 @@
+{
+  "d:/_dev/_projects/dev-boards/projects/esp32-s3__lb-gold/sht21-solo": {
+    "file_path": "D:\\_dev\\_Projects\\dev-boards\\projects\\esp32-s3__LB-Gold\\sht21-solo",
+    "stage_averages": {
+      "Linking": [
+        7.5837035,
+        8.4806721
+      ],
+      "Initializing": [
+        3.8745682,
+        3.7310798
+      ],
+      "Complete": [
+        0.0001481,
+        0.0000804
+      ],
+      "Compiling": [
+        25.1517715,
+        24.132324
+      ],
+      "Generating": [
+        2.4519081,
+        2.5915540999999997
+      ]
+    },
+    "total_averages": [
+      41.2788416,
+      41.3742418
+    ],
+    "last_updated": 1767288273
+  }
+}

@@ -348,7 +348,6 @@ pub fn execute_progress_rust(
             // Update dashboard state with progress tracking
             {
                 let mut state = dashboard.lock().unwrap();
-                state.progress_percent = compile_state.calculate_progress();
                 
                 match compile_state.stage {
                     CompileStage::Initializing => state.set_progress_stage("Initializing"),
@@ -360,8 +359,10 @@ pub fn execute_progress_rust(
                 
                 state.set_current_file(&compile_state.current_file);
                 
-                // Update progress tracker with time estimates
-                let progress_percent = state.progress_percent;
+                // Update progress tracker - ensure cumulative progress across stages
+                // calculate_progress() returns stage-specific ranges, so we need to ensure
+                // progress doesn't reset when transitioning stages
+                let stage_progress = compile_state.calculate_progress();
                 if let Some(ref mut tracker) = state.progress_tracker {
                     // Use weighted estimation (70% current rate, 30% historical)
                     let method = EstimateMethod::Weighted {
@@ -369,14 +370,27 @@ pub fn execute_progress_rust(
                         historical_weight: 0.3,
                     };
                     
-                    // Update based on files compiled
+                    // Update based on files compiled (more accurate than percentage)
                     if compile_state.total_files > 0 {
+                        // Set total_items BEFORE updating progress
+                        tracker.total_items = Some(compile_state.total_files);
                         tracker.update_progress(compile_state.files_compiled, method);
+                        // Sync tracker's progress_percent back to state (this is the source of truth)
+                        // This ensures cumulative progress based on files, not stage-specific ranges
+                        state.progress_percent = tracker.progress_percent;
                     } else {
-                        // Fallback to percentage-based if no file count
-                        let items = (progress_percent * 100.0) as usize;
-                        tracker.update_progress(items, method);
+                        // Fallback: use stage-based progress but ensure it's cumulative
+                        // Don't reset progress when transitioning stages - only increase it
+                        if stage_progress > tracker.progress_percent {
+                            tracker.set_progress_percent(stage_progress);
+                        }
+                        // Still update time estimates
+                        tracker.update_progress((tracker.progress_percent * 100.0) as usize, method);
+                        state.progress_percent = tracker.progress_percent;
                     }
+                } else {
+                    // Fallback if no tracker - use stage-based progress
+                    state.progress_percent = stage_progress;
                 }
             }
         }
