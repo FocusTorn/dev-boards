@@ -22,6 +22,8 @@ mod app_state;
 mod layout_cache;
 mod event_handler;
 mod ui_coordinator;
+mod progress_tracker;
+mod progress_history;
 
 //--------------------------------------------------------<<
 // IMPORTS ------------------>> 

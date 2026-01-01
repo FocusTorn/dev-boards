@@ -82,11 +82,36 @@ pub fn render_dashboard(
     let status_inner = status_block.inner(column2_chunks[0]);
     
     if dashboard_state.is_running && !dashboard_state.progress_stage.is_empty() {
-        // Show progress bar
-        let progress_text = if dashboard_state.current_file.is_empty() {
-            format!("{}: {:.1}%", dashboard_state.progress_stage.as_ref(), dashboard_state.progress_percent)
+        // Show progress bar with time estimates if available
+        let progress_text = if let Some(ref tracker) = dashboard_state.progress_tracker {
+            let elapsed = tracker.format_elapsed();
+            let eta = tracker.format_estimated_remaining()
+                .map(|r| format!(" | ETA: {}", r))
+                .unwrap_or_default();
+            
+            if dashboard_state.current_file.is_empty() {
+                format!("{}: {:.1}% | Elapsed: {}{}", 
+                    tracker.current_stage_name(), 
+                    tracker.progress_percent, 
+                    elapsed,
+                    eta
+                )
+            } else {
+                format!("{}: {:.1}% | Elapsed: {}{} | {}", 
+                    tracker.current_stage_name(), 
+                    tracker.progress_percent, 
+                    elapsed,
+                    eta,
+                    dashboard_state.current_file.as_ref()
+                )
+            }
         } else {
-            format!("{}: {:.1}% - {}", dashboard_state.progress_stage.as_ref(), dashboard_state.progress_percent, dashboard_state.current_file.as_ref())
+            // Fallback to basic progress display
+            if dashboard_state.current_file.is_empty() {
+                format!("{}: {:.1}%", dashboard_state.progress_stage.as_ref(), dashboard_state.progress_percent)
+            } else {
+                format!("{}: {:.1}% - {}", dashboard_state.progress_stage.as_ref(), dashboard_state.progress_percent, dashboard_state.current_file.as_ref())
+            }
         };
         
         // Create progress bar

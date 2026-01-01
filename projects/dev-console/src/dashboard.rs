@@ -1,6 +1,7 @@
 // Dashboard state management module
 
 use crate::constants::MAX_OUTPUT_LINES;
+use crate::progress_tracker::{ProgressTracker, EstimateMethod};
 use std::sync::Arc;
 
 /// Dashboard state structure
@@ -18,6 +19,8 @@ pub struct DashboardState {
     pub current_file: Arc<str>,  // Use Arc<str> for string interning
     // Batch update tracking
     pending_updates: Vec<DashboardUpdate>,
+    // Advanced progress tracking with time estimates
+    pub progress_tracker: Option<ProgressTracker>,
 }
 
 /// Types of dashboard updates that can be batched
@@ -58,6 +61,7 @@ impl DashboardState {
             progress_stage: Arc::from(""),
             current_file: Arc::from(""),
             pending_updates: Vec::new(),
+            progress_tracker: None,
         }
     } //<
     
@@ -147,5 +151,49 @@ impl DashboardState {
     pub fn set_current_file(&mut self, file: &str) {
         use crate::string_intern::intern_string;
         self.current_file = intern_string(file);
+    }
+    
+    /// Initialize progress tracking for a new operation
+    pub fn start_progress_tracking(&mut self, total_items: Option<usize>, historical_data: Option<crate::progress_tracker::HistoricalData>) {
+        let mut tracker = ProgressTracker::new(total_items);
+        tracker.historical_data = historical_data;
+        self.progress_tracker = Some(tracker);
+    }
+    
+    /// Update progress with time estimates
+    pub fn update_progress_with_estimate(&mut self, items_processed: usize, method: EstimateMethod) {
+        if let Some(ref mut tracker) = self.progress_tracker {
+            tracker.update_progress(items_processed, method);
+            self.progress_percent = tracker.progress_percent;
+        }
+    }
+    
+    /// Get formatted progress string with time estimates
+    pub fn get_progress_display(&self) -> String {
+        if let Some(ref tracker) = self.progress_tracker {
+            let elapsed = tracker.format_elapsed();
+            let remaining = tracker.format_estimated_remaining()
+                .map(|r| format!(" (ETA: {})", r))
+                .unwrap_or_default();
+            
+            format!("{}% - Elapsed: {}{}", 
+                tracker.progress_percent as u32,
+                elapsed,
+                remaining
+            )
+        } else {
+            format!("{}%", self.progress_percent as u32)
+        }
+    }
+    
+    /// Transition progress tracker to a new stage
+    pub fn transition_progress_stage(&mut self, new_stage: crate::progress_tracker::ProgressStage) {
+        let stage_name = if let Some(ref mut tracker) = self.progress_tracker {
+            tracker.transition_stage(new_stage);
+            tracker.current_stage_name()
+        } else {
+            return;
+        };
+        self.set_progress_stage(stage_name);
     }
 }

@@ -5,6 +5,8 @@ use crate::settings::Settings;
 use crate::commands::utils::remove_ansi_escapes;
 use crate::process_manager::ProcessManager;
 use crate::path_utils::{find_project_root, find_arduino_cli, get_library_path};
+use crate::progress_tracker::{ProgressStage, EstimateMethod};
+use crate::progress_history::ProgressHistory;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -115,6 +117,20 @@ pub fn execute_progress_rust(
     // Find project root (workspace root)
     let project_root = find_project_root(&sketch_dir);
     
+    // Load historical data if available
+    let history_file = project_root.join(".dev-console").join("progress_history.json");
+    let mut history = ProgressHistory::load(history_file.clone())
+        .unwrap_or_else(|_| ProgressHistory::new(history_file));
+    
+    // Get historical data for this sketch
+    let historical_data = history.get_historical_data(&sketch_dir)
+        .map(|h| crate::progress_tracker::HistoricalData {
+            file_path: h.file_path.clone(),
+            stage_averages: h.stage_averages.clone(),
+            total_averages: h.total_averages.clone(),
+            last_updated: h.last_updated,
+        });
+    
     // Calculate library path
     let library_path = get_library_path(&project_root, &settings.board_model);
     
@@ -146,6 +162,12 @@ pub fn execute_progress_rust(
         state.is_running = true;
         state.set_progress_stage("Initializing");
         state.progress_percent = 0.0;
+        
+        // Initialize progress tracking with time estimates
+        state.start_progress_tracking(None, historical_data);
+        if let Some(ref mut tracker) = state.progress_tracker {
+            tracker.current_stage = ProgressStage::Initializing;
+        }
     }
     
     // Check if arduino-cli exists (unless it's in PATH)
@@ -238,20 +260,23 @@ pub fn execute_progress_rust(
                 continue;
             }
             
-            // Detect stages
-            if line_lower.contains("detecting libraries") || line_lower.contains("detecting library") {
+            // Detect stages and update progress tracker
+            let stage_changed = if line_lower.contains("detecting libraries") || line_lower.contains("detecting library") {
                 compile_state.stage = CompileStage::Compiling;
                 if compile_state.compile_stage_start.is_none() {
                     compile_state.compile_stage_start = Some(std::time::Instant::now());
                 }
+                true
             } else if line_lower.contains("generating function prototypes") || line_lower.contains("generating prototypes") {
                 compile_state.stage = CompileStage::Compiling;
+                false
             } else if line_lower.contains("linking everything together") || (line_lower.contains("linking") && line_lower.contains("together")) {
                 compile_state.stage = CompileStage::Linking;
                 compile_state.current_file.clear();
                 if compile_state.link_stage_start.is_none() {
                     compile_state.link_stage_start = Some(std::time::Instant::now());
                 }
+                true
             } else if line_lower.contains("creating esp32") || line_lower.contains("creating image") || 
                       (line_lower.contains("esptool") && line_lower.contains("elf2image")) {
                 compile_state.stage = CompileStage::Generating;
@@ -259,9 +284,26 @@ pub fn execute_progress_rust(
                 if compile_state.generate_stage_start.is_none() {
                     compile_state.generate_stage_start = Some(std::time::Instant::now());
                 }
+                true
             } else if line_lower.contains("sketch uses") || line_lower.contains("global variables use") {
                 compile_state.stage = CompileStage::Complete;
                 compile_state.current_file.clear();
+                true
+            } else {
+                false
+            };
+            
+            // Update progress tracker stage if changed
+            if stage_changed {
+                let new_stage = match compile_state.stage {
+                    CompileStage::Initializing => ProgressStage::Initializing,
+                    CompileStage::Compiling => ProgressStage::Compiling,
+                    CompileStage::Linking => ProgressStage::Linking,
+                    CompileStage::Generating => ProgressStage::Generating,
+                    CompileStage::Complete => ProgressStage::Complete,
+                };
+                let mut state = dashboard.lock().unwrap();
+                state.transition_progress_stage(new_stage);
             }
             
             // Detect compilation commands/files
@@ -303,7 +345,7 @@ pub fn execute_progress_rust(
                 }
             }
             
-            // Update dashboard state
+            // Update dashboard state with progress tracking
             {
                 let mut state = dashboard.lock().unwrap();
                 state.progress_percent = compile_state.calculate_progress();
@@ -317,6 +359,25 @@ pub fn execute_progress_rust(
                 }
                 
                 state.set_current_file(&compile_state.current_file);
+                
+                // Update progress tracker with time estimates
+                let progress_percent = state.progress_percent;
+                if let Some(ref mut tracker) = state.progress_tracker {
+                    // Use weighted estimation (70% current rate, 30% historical)
+                    let method = EstimateMethod::Weighted {
+                        current_weight: 0.7,
+                        historical_weight: 0.3,
+                    };
+                    
+                    // Update based on files compiled
+                    if compile_state.total_files > 0 {
+                        tracker.update_progress(compile_state.files_compiled, method);
+                    } else {
+                        // Fallback to percentage-based if no file count
+                        let items = (progress_percent * 100.0) as usize;
+                        tracker.update_progress(items, method);
+                    }
+                }
             }
         }
     }
@@ -327,6 +388,21 @@ pub fn execute_progress_rust(
     // Unregister process from process manager (completed normally)
     process_manager.unregister(pid);
     
+    // Record completion and timing data
+    let (total_time, stage_times) = {
+        let state = dashboard.lock().unwrap();
+        if let Some(ref tracker) = state.progress_tracker {
+            let total = tracker.elapsed_time;
+            let mut stages = std::collections::HashMap::new();
+            for (stage, timing) in &tracker.stage_times {
+                stages.insert(*stage, timing.elapsed);
+            }
+            (total, stages)
+        } else {
+            (std::time::Duration::ZERO, std::collections::HashMap::new())
+        }
+    };
+    
     {
         let mut state = dashboard.lock().unwrap();
         state.is_running = false;
@@ -336,8 +412,21 @@ pub fn execute_progress_rust(
                 if status.success() {
                     state.progress_percent = 100.0;
                     state.set_progress_stage("Complete");
+                    
+                    // Transition to Complete stage in tracker
+                    if let Some(ref mut tracker) = state.progress_tracker {
+                        tracker.transition_stage(ProgressStage::Complete);
+                        tracker.progress_percent = 100.0;
+                    }
+                    
                     state.set_status_text("Compilation completed successfully");
                     state.output_lines.push("Compilation completed successfully".to_string());
+                    
+                    // Record successful completion to history
+                    if !stage_times.is_empty() {
+                        let _ = history.record_completion(sketch_dir.clone(), stage_times, total_time);
+                        let _ = history.save();
+                    }
                 } else {
                     state.set_status_text(&format!("Compilation failed with exit code: {:?}", status.code()));
                     state.output_lines.push(format!("Compilation failed with exit code: {:?}", status.code()));

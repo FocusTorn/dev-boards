@@ -21,6 +21,7 @@ crossterm = "0.29.0"
 # Configuration parsing
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
+serde_json = "1.0"
 
 # File I/O
 dirs = "5.0"
