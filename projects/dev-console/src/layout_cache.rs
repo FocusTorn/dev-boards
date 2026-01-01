@@ -30,34 +30,40 @@ impl LayoutCache {
         self.content_area_cache = Some(area);
     }
     
-    /// Get cached field area
+    /// Get cached field area (for future use)
+    #[allow(dead_code)]
     pub fn get_field_area(&self, field_index: usize) -> Option<Rect> {
         self.field_area_cache.get(&field_index).copied()
     }
     
-    /// Cache field area
+    /// Cache field area (for future use)
+    #[allow(dead_code)]
     pub fn set_field_area(&mut self, field_index: usize, area: Rect) {
         self.field_area_cache.insert(field_index, area);
     }
     
-    /// Get cached dropdown area
+    /// Get cached dropdown area (for future use)
+    #[allow(dead_code)]
     pub fn get_dropdown_area(&self, field_index: usize) -> Option<Rect> {
         self.dropdown_area_cache.get(&field_index).copied()
     }
     
-    /// Cache dropdown area
+    /// Cache dropdown area (for future use)
+    #[allow(dead_code)]
     pub fn set_dropdown_area(&mut self, field_index: usize, area: Rect) {
         self.dropdown_area_cache.insert(field_index, area);
     }
     
-    /// Clear all caches
+    /// Clear all caches (for future use)
+    #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.content_area_cache = None;
         self.field_area_cache.clear();
         self.dropdown_area_cache.clear();
     }
     
-    /// Clear field-specific caches
+    /// Clear field-specific caches (for future use)
+    #[allow(dead_code)]
     pub fn clear_field_cache(&mut self, field_index: usize) {
         self.field_area_cache.remove(&field_index);
         self.dropdown_area_cache.remove(&field_index);

@@ -109,7 +109,7 @@ pub fn execute_pmake_command(
                     let mut state = dashboard_stderr.lock().unwrap();
                     state.output_lines.push(format!("[stderr] {}", line));
                     if state.output_lines.len() > 1 {
-                        state.output_scroll = state.output_lines.len().saturating_sub(1);
+                        // Don't auto-scroll - let user control scrolling manually
                     }
                 }
             }
@@ -133,7 +133,7 @@ pub fn execute_pmake_command(
                     let mut state = dashboard.lock().unwrap();
                     state.output_lines.push(cleaned_line.clone());
                     if state.output_lines.len() > 1 {
-                        state.output_scroll = state.output_lines.len().saturating_sub(1);
+                        // Don't auto-scroll - let user control scrolling manually
                     }
                 }
             }

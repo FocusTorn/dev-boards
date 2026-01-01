@@ -9,6 +9,7 @@ use std::path::PathBuf;
 #[derive(Debug, Clone)]
 pub struct ProgressTracker {
     // Current operation tracking
+    #[allow(dead_code)] // For future use
     pub start_time: Instant,
     pub current_stage: ProgressStage,
     pub current_stage_start: Instant,
@@ -20,6 +21,7 @@ pub struct ProgressTracker {
     
     // Time estimates
     pub elapsed_time: Duration,
+    #[allow(dead_code)] // For future use
     pub estimated_remaining: Option<Duration>,
     pub estimated_total: Option<Duration>,
     
@@ -60,10 +62,14 @@ impl ProgressStage {
 /// Timing information for a specific stage
 #[derive(Debug, Clone)]
 pub struct StageTiming {
+    #[allow(dead_code)] // For future use
     pub start_time: Instant,
     pub elapsed: Duration,
+    #[allow(dead_code)] // For future use
     pub estimated_remaining: Option<Duration>,
+    #[allow(dead_code)] // For future use
     pub items_in_stage: usize,
+    #[allow(dead_code)] // For future use
     pub total_items_in_stage: Option<usize>,
 }
 
@@ -79,9 +85,11 @@ pub struct HistoricalData {
 /// Progress estimate calculation methods
 #[derive(Debug, Clone, Copy)]
 pub enum EstimateMethod {
-    /// Use current progress rate (items/time)
+    /// Use current progress rate (items/time, for future use)
+    #[allow(dead_code)]
     CurrentRate,
-    /// Use historical averages for this stage
+    /// Use historical averages for this stage (for future use)
+    #[allow(dead_code)]
     HistoricalAverage,
     /// Weighted combination of current rate and historical data
     Weighted { current_weight: f64, historical_weight: f64 },
@@ -228,7 +236,8 @@ impl ProgressTracker {
         self.estimated_remaining.map(format_duration)
     }
     
-    /// Format estimated total time for display
+    /// Format estimated total time for display (for future use)
+    #[allow(dead_code)]
     pub fn format_estimated_total(&self) -> Option<String> {
         self.estimated_total.map(format_duration)
     }

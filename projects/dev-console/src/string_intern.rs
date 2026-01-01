@@ -29,18 +29,19 @@ impl StringInterner {
         }
     }
     
-    /// Clear all interned strings (useful for memory management)
+    /// Clear all interned strings (useful for memory management, for future use)
+    #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.interned.clear();
     }
     
-    /// Get the number of interned strings
+    /// Get the number of interned strings (for future use)
+    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.interned.len()
     }
 }
 
-/// Global string interner (thread-safe)
 lazy_static::lazy_static! {
     static ref GLOBAL_INTERNER: Mutex<StringInterner> = Mutex::new(StringInterner::new());
 }

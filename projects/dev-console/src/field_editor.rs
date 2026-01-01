@@ -22,7 +22,8 @@ pub enum FieldEditorState {
 }
 
 impl FieldEditorState {
-    /// Get the current field index
+    /// Get the current field index (for future use)
+    #[allow(dead_code)]
     pub fn field_index(&self) -> usize {
         match self {
             FieldEditorState::Selected { field_index } => *field_index,
@@ -31,34 +32,40 @@ impl FieldEditorState {
         }
     }
     
-    /// Check if the state is in editing mode
+    /// Check if the state is in editing mode (for future use)
+    #[allow(dead_code)]
     pub fn is_editing(&self) -> bool {
         matches!(self, FieldEditorState::Editing { .. })
     }
     
-    /// Check if the state is in selecting mode
+    /// Check if the state is in selecting mode (for future use)
+    #[allow(dead_code)]
     pub fn is_selecting(&self) -> bool {
         matches!(self, FieldEditorState::Selecting { .. })
     }
     
-    /// Check if the state is in selected mode
+    /// Check if the state is in selected mode (for future use)
+    #[allow(dead_code)]
     pub fn is_selected(&self) -> bool {
         matches!(self, FieldEditorState::Selected { .. })
     }
     
-    /// Create a new Selected state
+    /// Create a new Selected state (for future use)
+    #[allow(dead_code)]
     pub fn new_selected(field_index: usize) -> Self {
         FieldEditorState::Selected { field_index }
     }
     
-    /// Create a new Editing state from a value
+    /// Create a new Editing state from a value (for future use)
+    #[allow(dead_code)]
     pub fn new_editing(field_index: usize, value: String) -> Self {
         let mut input = Input::new(value);
         let _ = input.handle(tui_input::InputRequest::GoToEnd);
         FieldEditorState::Editing { field_index, input }
     }
     
-    /// Create a new Selecting state
+    /// Create a new Selecting state (for future use)
+    #[allow(dead_code)]
     pub fn new_selecting(field_index: usize, selected_index: usize, options: Vec<String>) -> Self {
         FieldEditorState::Selecting {
             field_index,
@@ -180,7 +187,8 @@ impl SettingsField {
         }
     }
     
-    /// Convert to index (for backward compatibility)
+    /// Convert to index (for backward compatibility, for future use)
+    #[allow(dead_code)]
     pub fn to_index(&self) -> usize {
         *self as usize
     }

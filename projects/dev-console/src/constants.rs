@@ -22,6 +22,7 @@ pub const CONTENT_HEIGHT_PERCENT: u16 = 50;
 pub const MAX_OUTPUT_LINES: usize = 1000;
 
 /// Toast display duration in seconds
+#[allow(dead_code)] // For future use
 pub const TOAST_DURATION_SECS: f64 = 1.5;
 
 /// Main content box handle name

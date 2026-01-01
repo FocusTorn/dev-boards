@@ -154,7 +154,7 @@ pub fn execute_upload_rust(
                                 // Add progress line to output
                                 state.output_lines.push(trimmed.to_string());
                                 if state.output_lines.len() > 1 {
-                                    state.output_scroll = state.output_lines.len().saturating_sub(1);
+                                    // Don't auto-scroll - let user control scrolling manually
                                 }
                             }
                             continue;

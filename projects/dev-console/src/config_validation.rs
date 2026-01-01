@@ -7,7 +7,9 @@ use std::path::PathBuf;
 /// Configuration validation errors
 #[derive(Debug, Clone)]
 pub enum ConfigValidationError {
+    #[allow(dead_code)] // For future use
     MissingFile(PathBuf),
+    #[allow(dead_code)] // For future use
     InvalidYaml(String),
     MissingTitle,
     MissingStatusBar,

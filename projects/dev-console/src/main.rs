@@ -296,12 +296,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                     Event::Mouse(mouse_event) => {
                         // Handle mouse scrolling for dashboard output
-                        if let Some(active_tab_idx) = registry.get_active_tab(main_content_tab_bar.handle()) {
-                            if let Some(tab_bar_state) = registry.get_tab_bar_state(main_content_tab_bar.handle()) {
-                                if let Some(tab_config) = tab_bar_state.tab_configs.get(active_tab_idx) {
-                                    if tab_config.id == "dashboard" {
-                                        handle_dashboard_scroll(&mouse_event, &mut app_state.dashboard_state, &registry);
-                                        app_state.sync_dashboard_state();
+                        // Only process scroll events, not all mouse movement
+                        if matches!(mouse_event.kind, MouseEventKind::ScrollUp | MouseEventKind::ScrollDown) {
+                            if let Some(active_tab_idx) = registry.get_active_tab(main_content_tab_bar.handle()) {
+                                if let Some(tab_bar_state) = registry.get_tab_bar_state(main_content_tab_bar.handle()) {
+                                    if let Some(tab_config) = tab_bar_state.tab_configs.get(active_tab_idx) {
+                                        if tab_config.id == "dashboard" {
+                                            // Modify Arc directly to avoid overwriting state with stale local data
+                                            handle_dashboard_scroll(&mouse_event, &app_state.dashboard_arc, &registry);
+                                        }
                                     }
                                 }
                             }

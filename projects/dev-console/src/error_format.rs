@@ -4,27 +4,32 @@
 use crate::dashboard::DashboardState;
 use std::sync::{Arc, Mutex};
 
-/// Format an error message consistently
+/// Format an error message consistently (for future use)
+#[allow(dead_code)]
 pub fn format_error(message: &str) -> String {
     format!("Error: {}", message)
 }
 
-/// Format a warning message consistently
+/// Format a warning message consistently (for future use)
+#[allow(dead_code)]
 pub fn format_warning(message: &str) -> String {
     format!("Warning: {}", message)
 }
 
-/// Format an info message consistently
+/// Format an info message consistently (for future use)
+#[allow(dead_code)]
 pub fn format_info(message: &str) -> String {
     format!("Info: {}", message)
 }
 
-/// Format a success message consistently
+/// Format a success message consistently (for future use)
+#[allow(dead_code)]
 pub fn format_success(message: &str) -> String {
     format!("Success: {}", message)
 }
 
-/// Report an error to the dashboard state
+/// Report an error to the dashboard state (for future use)
+#[allow(dead_code)]
 pub fn report_error(
     dashboard: Arc<Mutex<DashboardState>>,
     message: &str,
@@ -36,7 +41,8 @@ pub fn report_error(
     state.add_output_line(formatted);
 }
 
-/// Report a warning to the dashboard state
+/// Report a warning to the dashboard state (for future use)
+#[allow(dead_code)]
 pub fn report_warning(
     dashboard: Arc<Mutex<DashboardState>>,
     message: &str,
@@ -46,7 +52,8 @@ pub fn report_warning(
     state.add_output_line(formatted);
 }
 
-/// Report an info message to the dashboard state
+/// Report an info message to the dashboard state (for future use)
+#[allow(dead_code)]
 pub fn report_info(
     dashboard: Arc<Mutex<DashboardState>>,
     message: &str,
@@ -56,7 +63,8 @@ pub fn report_info(
     state.add_output_line(formatted);
 }
 
-/// Report a success message to the dashboard state
+/// Report a success message to the dashboard state (for future use)
+#[allow(dead_code)]
 pub fn report_success(
     dashboard: Arc<Mutex<DashboardState>>,
     message: &str,
@@ -68,7 +76,8 @@ pub fn report_success(
     state.add_output_line(formatted);
 }
 
-/// Report an error with detailed context
+/// Report an error with detailed context (for future use)
+#[allow(dead_code)]
 pub fn report_error_with_context(
     dashboard: Arc<Mutex<DashboardState>>,
     message: &str,

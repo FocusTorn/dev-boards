@@ -49,9 +49,7 @@ pub fn handle_dashboard_key_event(
             // Execute selected command
             let command = dashboard_state.commands[dashboard_state.selected_command].clone();
             
-            // Clear previous output
-            dashboard_state.output_lines.clear();
-            dashboard_state.output_scroll = 0;
+            // Don't clear previous output - preserve history
             
             if command == "Compile" {
                 // Rust-based progress command
@@ -151,7 +149,7 @@ pub fn handle_field_editor_key_event(
 /// Handle keyboard events when editing a field
 fn handle_editing_key_event(
     key_code: KeyCode,
-    key_modifiers: KeyModifiers,
+    _key_modifiers: KeyModifiers,
     field_index: usize,
     input: &Input,
     settings: &mut Settings,
@@ -356,9 +354,11 @@ pub fn handle_dropdown_navigation(
 }
 
 /// Handle mouse scrolling for dashboard output
+/// Works when hovering over the output panel (not just on scroll events)
+/// Modifies the Arc directly to avoid overwriting state with stale local data
 pub fn handle_dashboard_scroll(
     mouse_event: &crossterm::event::MouseEvent,
-    dashboard_state: &mut DashboardState,
+    dashboard_arc: &Arc<Mutex<DashboardState>>,
     registry: &RectRegistry,
 ) {
     if let Some(box_manager) = get_box_by_name(registry, HWND_MAIN_CONTENT_BOX) {
@@ -389,19 +389,24 @@ pub fn handle_dashboard_scroll(
             
             let output_area = column2_chunks[1];
             
-            // Check if mouse is over output area
-            if mouse_event.column >= output_area.x && 
-               mouse_event.column < output_area.x + output_area.width &&
-               mouse_event.row >= output_area.y && 
-               mouse_event.row < output_area.y + output_area.height {
-                match mouse_event.kind {
-                    MouseEventKind::ScrollUp => {
-                        dashboard_state.scroll_output_up(3);
+            // Check if mouse is over output area (hover detection)
+            let is_over_output = mouse_event.column >= output_area.x && 
+                                 mouse_event.column < output_area.x + output_area.width &&
+                                 mouse_event.row >= output_area.y && 
+                                 mouse_event.row < output_area.y + output_area.height;
+            
+            if is_over_output {
+                // Modify Arc directly to avoid overwriting state
+                if let Ok(mut state) = dashboard_arc.lock() {
+                    match mouse_event.kind {
+                        MouseEventKind::ScrollUp => {
+                            state.scroll_output_up(3);
+                        }
+                        MouseEventKind::ScrollDown => {
+                            state.scroll_output_down(3);
+                        }
+                        _ => {}
                     }
-                    MouseEventKind::ScrollDown => {
-                        dashboard_state.scroll_output_down(3);
-                    }
-                    _ => {}
                 }
             }
         }

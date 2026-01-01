@@ -104,7 +104,8 @@ impl ProgressHistory {
         self.history.get(&key)
     }
     
-    /// Get average total time for a file
+    /// Get average total time for a file (for future use)
+    #[allow(dead_code)]
     pub fn get_average_total_time(&self, file_path: &PathBuf) -> Option<std::time::Duration> {
         self.get_historical_data(file_path)
             .and_then(|hist| {

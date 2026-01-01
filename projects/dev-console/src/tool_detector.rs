@@ -4,22 +4,25 @@
 use std::path::PathBuf;
 use std::process::Command;
 
-/// Tool detection result
+/// Tool detection result (for future use)
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ToolInfo {
     pub path: PathBuf,
     pub available: bool,
     pub version: Option<String>,
 }
 
-/// Trait for tool detection (dependency injection)
+/// Trait for tool detection (dependency injection, for future use)
+#[allow(dead_code)]
 pub trait ToolDetector {
     fn detect_arduino_cli(&self, project_root: &PathBuf, env: &str) -> ToolInfo;
     fn detect_python(&self) -> ToolInfo;
     fn detect_uv(&self) -> ToolInfo;
 }
 
-/// Default tool detector implementation
+/// Default tool detector implementation (for future use)
+#[allow(dead_code)]
 pub struct DefaultToolDetector;
 
 impl ToolDetector for DefaultToolDetector {
@@ -121,7 +124,8 @@ impl ToolDetector for DefaultToolDetector {
     }
 }
 
-/// Tool manager that uses dependency injection
+/// Tool manager that uses dependency injection (for future use)
+#[allow(dead_code)]
 pub struct ToolManager<T: ToolDetector> {
     detector: T,
     arduino_cli: Option<ToolInfo>,
@@ -130,6 +134,7 @@ pub struct ToolManager<T: ToolDetector> {
 }
 
 impl<T: ToolDetector> ToolManager<T> {
+    #[allow(dead_code)]
     pub fn new(detector: T) -> Self {
         Self {
             detector,
@@ -139,7 +144,8 @@ impl<T: ToolDetector> ToolManager<T> {
         }
     }
     
-    /// Detect all tools (lazy initialization)
+    /// Detect all tools (lazy initialization, for future use)
+    #[allow(dead_code)]
     pub fn detect_all(&mut self, project_root: &PathBuf, env: &str) {
         if self.arduino_cli.is_none() {
             self.arduino_cli = Some(self.detector.detect_arduino_cli(project_root, env));
@@ -152,7 +158,8 @@ impl<T: ToolDetector> ToolManager<T> {
         }
     }
     
-    /// Get arduino-cli info
+    /// Get arduino-cli info (for future use)
+    #[allow(dead_code)]
     pub fn arduino_cli(&mut self, project_root: &PathBuf, env: &str) -> &ToolInfo {
         if self.arduino_cli.is_none() {
             self.arduino_cli = Some(self.detector.detect_arduino_cli(project_root, env));
@@ -160,7 +167,8 @@ impl<T: ToolDetector> ToolManager<T> {
         self.arduino_cli.as_ref().unwrap()
     }
     
-    /// Get python info
+    /// Get python info (for future use)
+    #[allow(dead_code)]
     pub fn python(&mut self) -> &ToolInfo {
         if self.python.is_none() {
             self.python = Some(self.detector.detect_python());
@@ -168,7 +176,8 @@ impl<T: ToolDetector> ToolManager<T> {
         self.python.as_ref().unwrap()
     }
     
-    /// Get uv info
+    /// Get uv info (for future use)
+    #[allow(dead_code)]
     pub fn uv(&mut self) -> &ToolInfo {
         if self.uv.is_none() {
             self.uv = Some(self.detector.detect_uv());

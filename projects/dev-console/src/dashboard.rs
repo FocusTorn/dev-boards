@@ -17,14 +17,16 @@ pub struct DashboardState {
     pub progress_percent: f64,
     pub progress_stage: Arc<str>,  // Use Arc<str> for string interning
     pub current_file: Arc<str>,  // Use Arc<str> for string interning
-    // Batch update tracking
+    // Batch update tracking (for future use)
+    #[allow(dead_code)]
     pending_updates: Vec<DashboardUpdate>,
     // Advanced progress tracking with time estimates
     pub progress_tracker: Option<ProgressTracker>,
 }
 
-/// Types of dashboard updates that can be batched
+/// Types of dashboard updates that can be batched (for future use)
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum DashboardUpdate {
     StatusText(Arc<str>),
     ProgressPercent(f64),
@@ -73,14 +75,66 @@ impl DashboardState {
     }
     
     /// Scroll output down
+    /// Note: This method doesn't have visible_height, so it uses a conservative estimate
+    /// The actual scroll position will be clamped during rendering
     pub fn scroll_output_down(&mut self, amount: usize) {
-        let max_scroll = self.output_lines.len().saturating_sub(1);
-        if self.output_scroll < max_scroll {
-            self.output_scroll = (self.output_scroll + amount).min(max_scroll);
+        // Use a conservative estimate - actual max_scroll will be calculated during render
+        // This allows scrolling to work even when visible_height is not known
+        let total_lines = self.output_lines.len();
+        if total_lines > 0 {
+            // Estimate max_scroll conservatively (assume at least 1 line visible)
+            let estimated_max = total_lines.saturating_sub(1);
+            if self.output_scroll < estimated_max {
+                self.output_scroll = (self.output_scroll + amount).min(estimated_max);
+            }
+        }
+    }
+    
+    /// Check if user is at or near the bottom of the output
+    /// Returns true if scroll position is at the end (within 3 lines for better auto-scroll)
+    pub fn is_at_bottom(&self, visible_height: usize) -> bool {
+        if self.output_lines.is_empty() {
+            return true;
+        }
+        let total_lines = self.output_lines.len();
+        // Calculate maximum scroll position
+        let max_scroll = if total_lines > visible_height {
+            total_lines - visible_height
+        } else {
+            0
+        };
+        // Consider "at bottom" if within 3 lines of the end (more lenient for auto-scroll)
+        // This allows auto-scroll to trigger even if user scrolled up slightly
+        self.output_scroll >= max_scroll.saturating_sub(3)
+    }
+    
+    /// Scroll to bottom of output
+    pub fn scroll_to_bottom(&mut self, visible_height: usize) {
+        if self.output_lines.is_empty() {
+            self.output_scroll = 0;
+            return;
+        }
+        let total_lines = self.output_lines.len();
+        // Calculate maximum scroll position
+        let max_scroll = if total_lines > visible_height {
+            total_lines - visible_height
+        } else {
+            0
+        };
+        self.output_scroll = max_scroll;
+    }
+    
+    /// Auto-scroll to bottom if user is at/near the bottom
+    /// Call this after adding new lines to keep them visible
+    #[allow(dead_code)] // Used in render_dashboard
+    pub fn auto_scroll_if_at_bottom(&mut self, visible_height: usize) {
+        if self.is_at_bottom(visible_height) {
+            self.scroll_to_bottom(visible_height);
         }
     }
     
     /// Add a line to output, enforcing size limit
+    /// Does NOT auto-scroll here - that's handled during rendering with correct visible_height
     pub fn add_output_line(&mut self, line: String) {
         self.output_lines.push(line);
         
@@ -97,18 +151,18 @@ impl DashboardState {
             }
         }
         
-        // Auto-scroll to bottom if near the end
-        if self.output_lines.len() > 1 {
-            self.output_scroll = self.output_lines.len().saturating_sub(1);
-        }
+        // Note: Auto-scroll is handled during rendering with the actual visible_height
+        // This ensures accurate scroll position calculation
     }
     
-    /// Queue an update to be applied in batch
+    /// Queue an update to be applied in batch (for future use)
+    #[allow(dead_code)]
     pub fn queue_update(&mut self, update: DashboardUpdate) {
         self.pending_updates.push(update);
     }
     
-    /// Apply all pending updates in a single lock operation
+    /// Apply all pending updates in a single lock operation (for future use)
+    #[allow(dead_code)]
     pub fn apply_pending_updates(&mut self) {
         let updates: Vec<_> = self.pending_updates.drain(..).collect();
         for update in updates {
@@ -160,7 +214,8 @@ impl DashboardState {
         self.progress_tracker = Some(tracker);
     }
     
-    /// Update progress with time estimates
+    /// Update progress with time estimates (for future use)
+    #[allow(dead_code)]
     pub fn update_progress_with_estimate(&mut self, items_processed: usize, method: EstimateMethod) {
         if let Some(ref mut tracker) = self.progress_tracker {
             tracker.update_progress(items_processed, method);
@@ -168,7 +223,8 @@ impl DashboardState {
         }
     }
     
-    /// Get formatted progress string with time estimates
+    /// Get formatted progress string with time estimates (for future use)
+    #[allow(dead_code)]
     pub fn get_progress_display(&self) -> String {
         if let Some(ref tracker) = self.progress_tracker {
             let elapsed = tracker.format_elapsed();

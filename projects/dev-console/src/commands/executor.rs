@@ -7,7 +7,8 @@ use std::sync::{Arc, Mutex};
 use std::path::PathBuf;
 use std::process::Command;
 
-/// Trait for command executors
+/// Trait for command executors (for future use)
+#[allow(dead_code)]
 pub trait CommandExecutor {
     /// Execute the command
     fn execute(
@@ -26,7 +27,8 @@ pub trait CommandExecutor {
     }
 }
 
-/// Command configuration builder
+/// Command configuration builder (for future use)
+#[allow(dead_code)]
 pub struct CommandConfig {
     pub command: String,
     pub args: Vec<String>,
@@ -37,7 +39,8 @@ pub struct CommandConfig {
 }
 
 impl CommandConfig {
-    /// Create a new command configuration builder
+    /// Create a new command configuration builder (for future use)
+    #[allow(dead_code)]
     pub fn new<S: Into<String>>(command: S) -> Self {
         Self {
             command: command.into(),
@@ -49,13 +52,15 @@ impl CommandConfig {
         }
     }
     
-    /// Add an argument
+    /// Add an argument (for future use)
+    #[allow(dead_code)]
     pub fn arg<S: Into<String>>(mut self, arg: S) -> Self {
         self.args.push(arg.into());
         self
     }
     
-    /// Add multiple arguments
+    /// Add multiple arguments (for future use)
+    #[allow(dead_code)]
     pub fn args<I, S>(mut self, args: I) -> Self
     where
         I: IntoIterator<Item = S>,
@@ -65,31 +70,37 @@ impl CommandConfig {
         self
     }
     
-    /// Set working directory
+    /// Set working directory (for future use)
+    #[allow(dead_code)]
     pub fn working_dir<P: Into<PathBuf>>(mut self, dir: P) -> Self {
         self.working_dir = Some(dir.into());
         self
     }
     
-    /// Add environment variable
+    /// Add environment variable (for future use)
+    #[allow(dead_code)]
     pub fn env<K: Into<String>, V: Into<String>>(mut self, key: K, value: V) -> Self {
         self.env_vars.push((key.into(), value.into()));
         self
     }
     
-    /// Set whether stdout should be piped
+    /// Set whether stdout should be piped (for future use)
+    #[allow(dead_code)]
     pub fn stdout_piped(mut self, piped: bool) -> Self {
         self.stdout_piped = piped;
         self
     }
     
-    /// Set whether stderr should be piped
+    /// Set whether stderr should be piped (for future use)
+    #[allow(dead_code)]
     pub fn stderr_piped(mut self, piped: bool) -> Self {
         self.stderr_piped = piped;
         self
     }
     
     /// Build the Command from this configuration
+    /// Build the command (for future use)
+    #[allow(dead_code)]
     pub fn build(&self) -> Command {
         let mut cmd = Command::new(&self.command);
         

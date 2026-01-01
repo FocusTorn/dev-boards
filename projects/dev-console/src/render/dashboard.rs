@@ -9,6 +9,172 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
 
+/// Parse a line with ANSI color codes and convert to ratatui Line
+fn parse_ansi_line(line: &str) -> Line<'static> {
+    // Simple ANSI code parser - preserves color codes
+    // If line contains ANSI codes, parse them; otherwise use plain text
+    if line.contains('\x1b') || line.contains('\u{001b}') {
+        // Line contains ANSI escape sequences - parse them
+        parse_ansi_to_spans(line)
+    } else {
+        // No ANSI codes - use plain text (convert to owned String for 'static)
+        Line::from(Span::raw(line.to_string()))
+    }
+}
+
+/// Parse ANSI escape sequences and convert to ratatui Spans
+fn parse_ansi_to_spans(text: &str) -> Line<'static> {
+    use regex::Regex;
+    use lazy_static::lazy_static;
+    
+    lazy_static! {
+        // Match ANSI escape sequences: \x1b[ followed by codes and ending with m
+        static ref ANSI_REGEX: Regex = Regex::new(r"\x1b\[([0-9;]*)([a-zA-Z])").unwrap();
+    }
+    
+    let mut spans = Vec::new();
+    let mut last_end = 0;
+    let mut current_style = Style::default();
+    
+    for cap in ANSI_REGEX.captures_iter(text) {
+        let full_match = cap.get(0).unwrap();
+        let codes = cap.get(1).map(|m| m.as_str()).unwrap_or("");
+        let command = cap.get(2).map(|m| m.as_str()).unwrap_or("");
+        
+        // Add text before this ANSI code
+        if full_match.start() > last_end {
+            let text_before = &text[last_end..full_match.start()];
+            if !text_before.is_empty() {
+                spans.push(Span::styled(text_before.to_string(), current_style));
+            }
+        }
+        
+        // Parse ANSI codes and update style
+        if command == "m" {
+            current_style = parse_ansi_codes_to_style(codes, current_style);
+        }
+        
+        last_end = full_match.end();
+    }
+    
+    // Add remaining text (convert to owned String for 'static)
+    if last_end < text.len() {
+        let remaining = &text[last_end..];
+        if !remaining.is_empty() {
+            spans.push(Span::styled(remaining.to_string(), current_style));
+        }
+    }
+    
+    // If no spans were created (no ANSI codes matched), return plain text
+    if spans.is_empty() {
+        Line::from(Span::raw(text.to_string()))
+    } else {
+        Line::from(spans)
+    }
+}
+
+/// Parse ANSI color codes and convert to ratatui Style
+fn parse_ansi_codes_to_style(codes: &str, mut current_style: Style) -> Style {
+    if codes.is_empty() {
+        // Reset
+        return Style::default();
+    }
+    
+    let code_parts: Vec<&str> = codes.split(';').collect();
+    let mut i = 0;
+    
+    while i < code_parts.len() {
+        let code = code_parts[i].parse::<u8>().unwrap_or(0);
+        
+        match code {
+            0 => {
+                // Reset
+                current_style = Style::default();
+            }
+            1 => {
+                // Bold
+                current_style = current_style.add_modifier(Modifier::BOLD);
+            }
+            30..=37 => {
+                // Foreground color (standard)
+                current_style = current_style.fg(parse_ansi_color(code - 30));
+            }
+            38 => {
+                // Extended foreground color
+                if i + 1 < code_parts.len() {
+                    let color_type = code_parts[i + 1].parse::<u8>().unwrap_or(0);
+                    if color_type == 5 && i + 2 < code_parts.len() {
+                        // 256-color mode
+                        let color_code = code_parts[i + 2].parse::<u16>().unwrap_or(0);
+                        current_style = current_style.fg(parse_256_color(color_code));
+                        i += 2;
+                    } else if color_type == 2 && i + 4 < code_parts.len() {
+                        // RGB mode
+                        let r = code_parts[i + 2].parse::<u8>().unwrap_or(0);
+                        let g = code_parts[i + 3].parse::<u8>().unwrap_or(0);
+                        let b = code_parts[i + 4].parse::<u8>().unwrap_or(0);
+                        current_style = current_style.fg(Color::Rgb(r, g, b));
+                        i += 4;
+                    }
+                }
+            }
+            39 => {
+                // Default foreground
+                current_style = current_style.fg(Color::Reset);
+            }
+            90..=97 => {
+                // Bright foreground color
+                current_style = current_style.fg(parse_ansi_color(code - 90 + 8));
+            }
+            _ => {}
+        }
+        
+        i += 1;
+    }
+    
+    current_style
+}
+
+/// Parse standard ANSI color code (0-15)
+fn parse_ansi_color(code: u8) -> Color {
+    match code {
+        0 => Color::Black,
+        1 => Color::Red,
+        2 => Color::Green,
+        3 => Color::Yellow,
+        4 => Color::Blue,
+        5 => Color::Magenta,
+        6 => Color::Cyan,
+        7 => Color::White,
+        8 => Color::DarkGray,
+        9 => Color::LightRed,
+        10 => Color::LightGreen,
+        11 => Color::LightYellow,
+        12 => Color::LightBlue,
+        13 => Color::LightMagenta,
+        14 => Color::LightCyan,
+        15 => Color::White,
+        _ => Color::Reset,
+    }
+}
+
+/// Parse 256-color code
+fn parse_256_color(code: u16) -> Color {
+    if code < 16 {
+        parse_ansi_color(code as u8)
+    } else if code < 232 {
+        // 6x6x6 color cube
+        let r = ((code - 16) / 36) * 51;
+        let g = (((code - 16) / 6) % 6) * 51;
+        let b = ((code - 16) % 6) * 51;
+        Color::Rgb(r as u8, g as u8, b as u8)
+    } else {
+        // Grayscale
+        let gray = ((code - 232) * 10 + 8) as u8;
+        Color::Rgb(gray, gray, gray)
+    }
+}
+
 /// Render dashboard panel
 pub fn render_dashboard(
     f: &mut Frame,
@@ -214,13 +380,32 @@ pub fn render_dashboard(
     // Calculate visible lines
     let visible_height = output_inner.height as usize;
     let total_lines = dashboard_state.output_lines.len();
-    let max_scroll = total_lines.saturating_sub(visible_height.max(1));
+    
+    // Calculate maximum scroll position (0-based index of first visible line when at bottom)
+    // If total_lines <= visible_height, max_scroll is 0 (no scrolling needed)
+    let max_scroll = if total_lines > visible_height {
+        total_lines - visible_height
+    } else {
+        0
+    };
+    
+    // Auto-scroll to bottom if user is at/near the bottom (keeps new lines visible)
+    // This ensures new output stays visible when user is following the output
+    // Check BEFORE clamping to ensure we detect if we should auto-scroll
+    // We check with a small tolerance (3 lines) to make auto-scroll more responsive
+    if dashboard_state.is_at_bottom(visible_height) {
+        dashboard_state.scroll_to_bottom(visible_height);
+    }
+    
+    // Ensure scroll position is valid after auto-scroll
+    // This clamps the scroll position to the valid range [0, max_scroll]
     dashboard_state.output_scroll = dashboard_state.output_scroll.min(max_scroll);
     
     // Get visible lines
     let start_line = dashboard_state.output_scroll;
     let end_line = (start_line + visible_height).min(total_lines);
     
+    // Parse ANSI color codes and convert to ratatui Spans
     let visible_lines: Vec<Line> = if dashboard_state.output_lines.is_empty() {
         vec![Line::from(Span::styled(
             "No output yet. Select a command to run.",
@@ -229,7 +414,10 @@ pub fn render_dashboard(
     } else {
         dashboard_state.output_lines[start_line..end_line]
             .iter()
-            .map(|line| Line::from(line.clone()))
+            .map(|line| {
+                // Parse ANSI codes in the line and convert to Spans
+                parse_ansi_line(line)
+            })
             .collect()
     };
     
@@ -241,8 +429,28 @@ pub fn render_dashboard(
     
     // Render scrollbar if there are more lines than visible
     if total_lines > visible_height {
-        let mut scrollbar_state = ScrollbarState::new(total_lines)
-            .position(dashboard_state.output_scroll);
+        // Position scrollbar on the right edge of the inner content area
+        // The scrollbar should align with the content viewport
+        let scrollbar_area = Rect {
+            x: output_inner.x + output_inner.width.saturating_sub(1),
+            y: output_inner.y,
+            width: 1,
+            height: output_inner.height,
+        };
+        
+        // Scrollbar calculation for ratatui:
+        // - content_length: Total number of content items (total_lines)
+        // - viewport_content_length: Number of items visible in viewport (visible_height)
+        // - position: Index of the first visible item (output_scroll)
+        // The scrollbar automatically calculates thumb size and position from these values
+        let content_length = total_lines;
+        let viewport_length = visible_height;
+        // Position is the index of the first visible line, clamped to valid range
+        let position = dashboard_state.output_scroll.min(max_scroll);
+        
+        let mut scrollbar_state = ScrollbarState::new(content_length)
+            .viewport_content_length(viewport_length)
+            .position(position);
         
         let scrollbar = Scrollbar::default()
             .orientation(ScrollbarOrientation::VerticalRight)
@@ -251,6 +459,6 @@ pub fn render_dashboard(
             .thumb_symbol("█")
             .track_symbol(Some("│"));
         
-        f.render_stateful_widget(scrollbar, output_area, &mut scrollbar_state);
+        f.render_stateful_widget(scrollbar, scrollbar_area, &mut scrollbar_state);
     }
 }

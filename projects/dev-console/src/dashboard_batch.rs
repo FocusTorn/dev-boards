@@ -4,7 +4,8 @@
 use crate::dashboard::DashboardState;
 use std::sync::{Arc, Mutex};
 
-/// Batch of dashboard state updates
+/// Batch of dashboard state updates (for future use)
+#[allow(dead_code)]
 pub struct DashboardUpdateBatch {
     status_text: Option<Arc<str>>,
     output_lines: Vec<String>,
@@ -15,7 +16,8 @@ pub struct DashboardUpdateBatch {
 }
 
 impl DashboardUpdateBatch {
-    /// Create a new batch
+    /// Create a new batch (for future use)
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             status_text: None,
@@ -27,45 +29,53 @@ impl DashboardUpdateBatch {
         }
     }
     
-    /// Set status text (uses string interning)
+    /// Set status text (uses string interning, for future use)
+    #[allow(dead_code)]
     pub fn set_status_text(&mut self, text: &str) {
         use crate::string_intern::intern_string;
         self.status_text = Some(intern_string(text));
     }
     
-    /// Add output line
+    /// Add output line (for future use)
+    #[allow(dead_code)]
     pub fn add_output_line(&mut self, line: String) {
         self.output_lines.push(line);
     }
     
-    /// Add multiple output lines
+    /// Add multiple output lines (for future use)
+    #[allow(dead_code)]
     pub fn add_output_lines(&mut self, lines: Vec<String>) {
         self.output_lines.extend(lines);
     }
     
-    /// Set progress percent
+    /// Set progress percent (for future use)
+    #[allow(dead_code)]
     pub fn set_progress_percent(&mut self, percent: f64) {
         self.progress_percent = Some(percent);
     }
     
-    /// Set progress stage (uses string interning)
+    /// Set progress stage (uses string interning, for future use)
+    #[allow(dead_code)]
     pub fn set_progress_stage(&mut self, stage: &str) {
         use crate::string_intern::intern_string;
         self.progress_stage = Some(intern_string(stage));
     }
     
-    /// Set current file (uses string interning)
+    /// Set current file (uses string interning, for future use)
+    #[allow(dead_code)]
     pub fn set_current_file(&mut self, file: &str) {
         use crate::string_intern::intern_string;
         self.current_file = Some(intern_string(file));
     }
     
-    /// Set is_running flag
+    /// Set is_running flag (for future use)
+    #[allow(dead_code)]
     pub fn set_is_running(&mut self, running: bool) {
         self.is_running = Some(running);
     }
     
-    /// Apply all batched updates to dashboard state (single lock acquisition)
+    /// Apply all batched updates to dashboard state (single lock acquisition, for future use)
+    #[allow(dead_code)]
     pub fn apply(&self, dashboard: Arc<Mutex<DashboardState>>) {
         let mut state = dashboard.lock().unwrap();
         
@@ -97,7 +107,8 @@ impl DashboardUpdateBatch {
         }
     }
     
-    /// Check if batch is empty
+    /// Check if batch is empty (for future use)
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.status_text.is_none()
             && self.output_lines.is_empty()

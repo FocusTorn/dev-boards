@@ -7,11 +7,12 @@ use crate::process_manager::ProcessManager;
 use crate::path_utils::{find_project_root, find_arduino_cli, get_library_path};
 use crate::progress_tracker::{ProgressStage, EstimateMethod};
 use crate::progress_history::ProgressHistory;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::fs::{File, OpenOptions};
 use regex::Regex;
 use lazy_static::lazy_static;
 
@@ -36,6 +37,7 @@ struct CompileState {
     compile_stage_start: Option<std::time::Instant>,
     link_stage_start: Option<std::time::Instant>,
     generate_stage_start: Option<std::time::Instant>,
+    previous_stage_progress: f64, // Track progress when transitioning stages
 }
 
 impl CompileState {
@@ -51,6 +53,7 @@ impl CompileState {
             compile_stage_start: None,
             link_stage_start: None,
             generate_stage_start: None,
+            previous_stage_progress: 0.0,
         }
     }
     
@@ -65,26 +68,41 @@ impl CompileState {
                     .map(|t| t.elapsed().as_secs_f64())
                     .unwrap_or(0.0);
                 
+                // Start from previous stage progress (or 5% minimum) to avoid jumps
+                let start_progress = self.previous_stage_progress.max(5.0);
+                let max_progress = 65.0; // Compiling stage max
+                
                 if self.total_files > 0 {
                     let file_progress = self.files_compiled as f64 / self.total_files as f64;
-                    let file_based = 5.0 + (file_progress * 60.0);
-                    let time_based = 5.0 + (compile_elapsed * 2.0).min(60.0);
-                    (file_based * 0.9 + time_based * 0.1).min(65.0)
+                    // Calculate progress within the Compiling range (start_progress to max_progress)
+                    let range = max_progress - start_progress;
+                    let file_based = start_progress + (file_progress * range);
+                    let time_based = start_progress + (compile_elapsed * 2.0).min(range);
+                    (file_based * 0.9 + time_based * 0.1).min(max_progress)
                 } else {
-                    5.0 + (compile_elapsed * 2.0).min(60.0)
+                    start_progress + (compile_elapsed * 2.0).min(max_progress - start_progress)
                 }
             }
             CompileStage::Linking => {
                 let link_elapsed = self.link_stage_start
                     .map(|t| t.elapsed().as_secs_f64())
                     .unwrap_or(0.0);
-                65.0 + (link_elapsed * 5.0).min(25.0)
+                // Start from previous stage progress (or 65% minimum) to avoid jumps
+                // More gradual progress: previous to 90% (up to 25% range)
+                let start_progress = self.previous_stage_progress.max(65.0);
+                let max_progress = 90.0; // Linking stage max
+                let range = max_progress - start_progress;
+                start_progress + (link_elapsed * 5.0).min(range)
             }
             CompileStage::Generating => {
                 let gen_elapsed = self.generate_stage_start
                     .map(|t| t.elapsed().as_secs_f64())
                     .unwrap_or(0.0);
-                90.0 + (gen_elapsed * 3.0).min(9.9)
+                // Generating typically takes ~5 seconds out of ~45 seconds total (11% of time)
+                // Start from previous stage progress (or 90% minimum) to avoid jumps
+                // Allocate up to 5% additional progress for generating stage
+                let start_progress = self.previous_stage_progress.max(90.0);
+                start_progress + (gen_elapsed * 1.0).min(5.0).min(95.0 - start_progress)
             }
             CompileStage::Complete => 100.0,
         }
@@ -116,6 +134,34 @@ pub fn execute_progress_rust(
     
     // Find project root (workspace root)
     let project_root = find_project_root(&sketch_dir);
+    
+    // Create log file for this compilation session
+    let log_file_path = project_root.join(".dev-console").join("compile_output.log");
+    // Create .dev-console directory if it doesn't exist
+    if let Some(parent) = log_file_path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    // Open log file in write mode (truncate/clear on each new compilation)
+    let log_file = Arc::new(Mutex::new(
+        OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(&log_file_path)
+            .unwrap_or_else(|e| {
+                eprintln!("Warning: Could not open log file {:?}: {}", log_file_path, e);
+                // Create a dummy file that will fail silently on write
+                std::fs::File::create("/dev/null").unwrap()
+            })
+    ));
+    
+    // Write session start marker to log
+    {
+        let mut log = log_file.lock().unwrap();
+        let _ = writeln!(log, "\n=== Compilation Session Started ===");
+        let _ = writeln!(log, "Timestamp: {:?}", std::time::SystemTime::now());
+        let _ = writeln!(log, "Sketch: {:?}", sketch_file);
+    }
     
     // Load historical data if available
     let history_file = project_root.join(".dev-console").join("progress_history.json");
@@ -149,19 +195,37 @@ pub fn execute_progress_rust(
     cmd.stderr(Stdio::piped());
     cmd.current_dir(&sketch_dir);
     
+    // Helper function to write to log file
+    let log_output = |log_file: &Arc<Mutex<File>>, line: &str| {
+        if let Ok(mut log) = log_file.lock() {
+            let _ = writeln!(log, "{}", line);
+        }
+    };
+    
     // Add initial message
     {
         let mut state = dashboard.lock().unwrap();
-        state.output_lines.push(format!("Executing: {:?} compile --fqbn {} --libraries {:?} --verbose {:?}", 
-            arduino_cli, settings.fqbn, library_path, sketch_file));
-        state.output_lines.push(format!("Build path: {:?}", build_path));
-        state.output_lines.push(format!("Library path: {:?}", library_path));
-        state.output_lines.push(format!("Library path exists: {}", library_path.exists()));
-        state.output_lines.push(format!("Arduino CLI path: {:?}", arduino_cli));
-        state.output_lines.push(format!("Arduino CLI exists: {}", arduino_cli.exists()));
+        let lines = vec![
+            format!("Executing: {:?} compile --fqbn {} --libraries {:?} --verbose {:?}", 
+                arduino_cli, settings.fqbn, library_path, sketch_file),
+            format!("Build path: {:?}", build_path),
+            format!("Library path: {:?}", library_path),
+            format!("Library path exists: {}", library_path.exists()),
+            format!("Arduino CLI path: {:?}", arduino_cli),
+            format!("Arduino CLI exists: {}", arduino_cli.exists()),
+        ];
+        for line in &lines {
+            state.add_output_line(line.clone());
+            log_output(&log_file, line);
+        }
         state.is_running = true;
         state.set_progress_stage("Initializing");
         state.progress_percent = 0.0;
+        
+        // Log initial progress
+        log_output(&log_file, "");
+        log_output(&log_file, "{{commanded progress bar percent: 0.0}}");
+        log_output(&log_file, "");
         
         // Initialize progress tracking with time estimates
         state.start_progress_tracking(None, historical_data);
@@ -174,9 +238,13 @@ pub fn execute_progress_rust(
     if !arduino_cli.exists() && arduino_cli.to_string_lossy() != "arduino-cli" {
         let mut state = dashboard.lock().unwrap();
         state.is_running = false;
-        state.set_status_text(&format!("Error: arduino-cli not found at: {:?}", arduino_cli));
-        state.output_lines.push(format!("Error: arduino-cli not found at: {:?}", arduino_cli));
-        state.output_lines.push("Please ensure arduino-cli.exe is installed in the Arduino directory at the workspace root.".to_string());
+        let error_msg1 = format!("Error: arduino-cli not found at: {:?}", arduino_cli);
+        let error_msg2 = "Please ensure arduino-cli.exe is installed in the Arduino directory at the workspace root.".to_string();
+        state.set_status_text(&error_msg1);
+        state.add_output_line(error_msg1.clone());
+        state.add_output_line(error_msg2.clone());
+        log_output(&log_file, &error_msg1);
+        log_output(&log_file, &error_msg2);
         return;
     }
     
@@ -191,10 +259,10 @@ pub fn execute_progress_rust(
             let mut state = dashboard.lock().unwrap();
             state.is_running = false;
             state.set_status_text(&format!("Error: Failed to start arduino-cli: {}", e));
-            state.output_lines.push(format!("Error: Failed to start arduino-cli: {}", e));
-            state.output_lines.push(format!("Tried path: {:?}", arduino_cli));
+            state.add_output_line(format!("Error: Failed to start arduino-cli: {}", e));
+            state.add_output_line(format!("Tried path: {:?}", arduino_cli));
             if !arduino_cli.exists() && arduino_cli.to_string_lossy() != "arduino-cli" {
-                state.output_lines.push("The arduino-cli executable was not found at the expected location.".to_string());
+                state.add_output_line("The arduino-cli executable was not found at the expected location.".to_string());
             }
             return;
         }
@@ -205,19 +273,22 @@ pub fn execute_progress_rust(
     
     // Read stderr in separate thread
     let dashboard_stderr = dashboard.clone();
+    let log_file_stderr = log_file.clone();
     if let Some(stderr) = child.stderr.take() {
         thread::spawn(move || {
             let reader = BufReader::new(stderr);
             for line in reader.lines() {
                 if let Ok(line) = line {
-                    let cleaned = remove_ansi_escapes(&line);
-                    let trimmed = cleaned.trim();
+                    // Preserve ANSI codes for colorization - only trim whitespace
+                    let trimmed = line.trim();
                     if !trimmed.is_empty() {
                         let mut state = dashboard_stderr.lock().unwrap();
-                        state.output_lines.push(trimmed.to_string());
-                        if state.output_lines.len() > 1 {
-                            state.output_scroll = state.output_lines.len().saturating_sub(1);
+                        state.add_output_line(trimmed.to_string());
+                        // Log to file
+                        if let Ok(mut log) = log_file_stderr.lock() {
+                            let _ = writeln!(log, "{}", trimmed);
                         }
+                        // Auto-scroll is handled during rendering with correct visible_height
                     }
                 }
             }
@@ -236,6 +307,7 @@ pub fn execute_progress_rust(
                 Err(_) => break,
             };
             
+            // Preserve ANSI codes for colorization - only clean for parsing
             let cleaned = remove_ansi_escapes(&line);
             let line_lower = cleaned.to_lowercase();
             let trimmed = cleaned.trim();
@@ -244,13 +316,15 @@ pub fn execute_progress_rust(
                 continue;
             }
             
-            // Add to output
+            // Add to output (preserve ANSI codes from original line)
             {
+                let trimmed_line = line.trim();
                 let mut state = dashboard.lock().unwrap();
-                state.output_lines.push(trimmed.to_string());
-                if state.output_lines.len() > 1 {
-                    state.output_scroll = state.output_lines.len().saturating_sub(1);
-                }
+                // Store original line with ANSI codes for colorized display
+                state.add_output_line(trimmed_line.to_string());
+                // Log to file
+                log_output(&log_file, trimmed_line);
+                // Auto-scroll is handled during rendering with correct visible_height
             }
             
             // Parse line for compilation state
@@ -261,7 +335,15 @@ pub fn execute_progress_rust(
             }
             
             // Detect stages and update progress tracker
+            // Get current progress from dashboard state before transitioning
+            let current_progress = {
+                let state = dashboard.lock().unwrap();
+                state.progress_percent
+            };
+            
             let stage_changed = if line_lower.contains("detecting libraries") || line_lower.contains("detecting library") {
+                // Save actual current progress from dashboard state before transitioning
+                compile_state.previous_stage_progress = current_progress;
                 compile_state.stage = CompileStage::Compiling;
                 if compile_state.compile_stage_start.is_none() {
                     compile_state.compile_stage_start = Some(std::time::Instant::now());
@@ -271,20 +353,32 @@ pub fn execute_progress_rust(
                 compile_state.stage = CompileStage::Compiling;
                 false
             } else if line_lower.contains("linking everything together") || (line_lower.contains("linking") && line_lower.contains("together")) {
+                // Save actual current progress from dashboard state before transitioning
+                compile_state.previous_stage_progress = current_progress;
                 compile_state.stage = CompileStage::Linking;
                 compile_state.current_file.clear();
                 if compile_state.link_stage_start.is_none() {
                     compile_state.link_stage_start = Some(std::time::Instant::now());
                 }
                 true
-            } else if line_lower.contains("creating esp32") || line_lower.contains("creating image") || 
-                      (line_lower.contains("esptool") && line_lower.contains("elf2image")) {
-                compile_state.stage = CompileStage::Generating;
-                compile_state.current_file.clear();
-                if compile_state.generate_stage_start.is_none() {
-                    compile_state.generate_stage_start = Some(std::time::Instant::now());
+            } else if line_lower.contains("esptool") && line_lower.contains("elf2image") && 
+                      line_lower.contains(".ino.elf") && line_lower.contains(".ino.bin") &&
+                      !line_lower.contains("bootloader") {
+                // Only trigger Generating for final .ino.elf to .ino.bin conversion (after linking)
+                // This is the actual final image generation, not bootloader creation
+                // Must check that we're past Linking stage to avoid triggering too early
+                if compile_state.stage == CompileStage::Linking || compile_state.link_stage_start.is_some() {
+                    // Save actual current progress from dashboard state before transitioning to avoid jumps
+                    compile_state.previous_stage_progress = current_progress;
+                    compile_state.stage = CompileStage::Generating;
+                    compile_state.current_file.clear();
+                    if compile_state.generate_stage_start.is_none() {
+                        compile_state.generate_stage_start = Some(std::time::Instant::now());
+                    }
+                    true
+                } else {
+                    false
                 }
-                true
             } else if line_lower.contains("sketch uses") || line_lower.contains("global variables use") {
                 compile_state.stage = CompileStage::Complete;
                 compile_state.current_file.clear();
@@ -309,6 +403,12 @@ pub fn execute_progress_rust(
             // Detect compilation commands/files
             if line.contains("xtensa-esp32s3-elf-g++") || line.contains("xtensa-esp32s3-elf-gcc") {
                 if line.contains("-c") {
+                    // Save actual current progress from dashboard state before transitioning
+                    if compile_state.stage != CompileStage::Compiling {
+                        let state = dashboard.lock().unwrap();
+                        compile_state.previous_stage_progress = state.progress_percent;
+                        drop(state); // Release lock before continuing
+                    }
                     compile_state.stage = CompileStage::Compiling;
                     if compile_state.compile_stage_start.is_none() {
                         compile_state.compile_stage_start = Some(std::time::Instant::now());
@@ -329,6 +429,12 @@ pub fn execute_progress_rust(
                 if let Some(file_match) = captures.get(1) {
                     let file_path = file_match.as_str();
                     compile_state.current_file = file_path.to_string();
+                    // Save actual current progress from dashboard state before transitioning
+                    if compile_state.stage != CompileStage::Compiling {
+                        let state = dashboard.lock().unwrap();
+                        compile_state.previous_stage_progress = state.progress_percent;
+                        drop(state); // Release lock before continuing
+                    }
                     compile_state.stage = CompileStage::Compiling;
                     if compile_state.compile_stage_start.is_none() {
                         compile_state.compile_stage_start = Some(std::time::Instant::now());
@@ -363,6 +469,8 @@ pub fn execute_progress_rust(
                 // calculate_progress() returns stage-specific ranges, so we need to ensure
                 // progress doesn't reset when transitioning stages
                 let stage_progress = compile_state.calculate_progress();
+                let old_progress = state.progress_percent;
+                
                 if let Some(ref mut tracker) = state.progress_tracker {
                     // Use weighted estimation (70% current rate, 30% historical)
                     let method = EstimateMethod::Weighted {
@@ -381,16 +489,28 @@ pub fn execute_progress_rust(
                     } else {
                         // Fallback: use stage-based progress but ensure it's cumulative
                         // Don't reset progress when transitioning stages - only increase it
-                        if stage_progress > tracker.progress_percent {
-                            tracker.set_progress_percent(stage_progress);
+                        // Use the maximum of current tracker progress and stage progress to avoid jumps
+                        let new_progress = stage_progress.max(tracker.progress_percent);
+                        if new_progress > tracker.progress_percent {
+                            tracker.set_progress_percent(new_progress);
                         }
                         // Still update time estimates
                         tracker.update_progress((tracker.progress_percent * 100.0) as usize, method);
                         state.progress_percent = tracker.progress_percent;
                     }
                 } else {
-                    // Fallback if no tracker - use stage-based progress
-                    state.progress_percent = stage_progress;
+                    // Fallback if no tracker - use stage-based progress, but don't decrease
+                    // Ensure progress only increases, never decreases
+                    state.progress_percent = stage_progress.max(state.progress_percent);
+                }
+                
+                // Log progress update if it changed
+                let new_progress = state.progress_percent;
+                if (new_progress - old_progress).abs() > 0.01 {
+                    // Progress changed significantly, log it
+                    log_output(&log_file, "");
+                    log_output(&log_file, &format!("{{commanded progress bar percent: {:.2}}}", new_progress));
+                    log_output(&log_file, "");
                 }
             }
         }
@@ -434,7 +554,10 @@ pub fn execute_progress_rust(
                     }
                     
                     state.set_status_text("Compilation completed successfully");
-                    state.output_lines.push("Compilation completed successfully".to_string());
+                    // Log final progress update
+                    log_output(&log_file, "");
+                    log_output(&log_file, "{{commanded progress bar percent: 100.0}}");
+                    log_output(&log_file, "");
                     
                     // Record successful completion to history
                     if !stage_times.is_empty() {
@@ -442,13 +565,17 @@ pub fn execute_progress_rust(
                         let _ = history.save();
                     }
                 } else {
-                    state.set_status_text(&format!("Compilation failed with exit code: {:?}", status.code()));
-                    state.output_lines.push(format!("Compilation failed with exit code: {:?}", status.code()));
+                    let error_msg = format!("Compilation failed with exit code: {:?}", status.code());
+                    state.set_status_text(&error_msg);
+                    state.add_output_line(error_msg.clone());
+                    log_output(&log_file, &error_msg);
                 }
             }
             Err(e) => {
-                state.set_status_text(&format!("Error waiting for process: {}", e));
-                state.output_lines.push(format!("Error waiting for process: {}", e));
+                let error_msg = format!("Error waiting for process: {}", e);
+                state.set_status_text(&error_msg);
+                state.add_output_line(error_msg.clone());
+                log_output(&log_file, &error_msg);
             }
         }
     }

@@ -71,7 +71,8 @@ impl ProcessManager {
         }
     }
     
-    /// Get the number of tracked processes
+    /// Get the number of tracked processes (for future use)
+    #[allow(dead_code)]
     pub fn process_count(&self) -> usize {
         if let Ok(processes) = self.processes.lock() {
             processes.len()
@@ -80,7 +81,8 @@ impl ProcessManager {
         }
     }
     
-    /// Check if any processes are being tracked
+    /// Check if any processes are being tracked (for future use)
+    #[allow(dead_code)]
     pub fn has_processes(&self) -> bool {
         self.process_count() > 0
     }

@@ -36,7 +36,8 @@ impl AppState {
         }
     }
     
-    /// Save settings
+    /// Save settings (for future use)
+    #[allow(dead_code)]
     pub fn save_settings(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         self.settings.save()
     }
