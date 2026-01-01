@@ -21,108 +21,139 @@ pub enum FieldEditorState {
     },
 }
 
-/// Settings fields definition and management
-pub struct SettingsFields {
-    labels: Vec<&'static str>,
-    getters: Vec<Box<dyn Fn(&Settings) -> String>>,
-    setters: Vec<Box<dyn Fn(&mut Settings, String)>>,
-}
-
-impl SettingsFields {
-    /// Create a new settings fields instance
-    pub fn new() -> Self {
-        let mut labels = Vec::new();
-        let mut getters: Vec<Box<dyn Fn(&Settings) -> String>> = Vec::new();
-        let mut setters: Vec<Box<dyn Fn(&mut Settings, String)>> = Vec::new();
-        
-        // Sketch Directory
-        labels.push("Sketch Directory");
-        getters.push(Box::new(|s| s.sketch_directory.clone()));
-        setters.push(Box::new(|s, v| s.sketch_directory = v));
-        
-        // Sketch Name
-        labels.push("Sketch Name");
-        getters.push(Box::new(|s| s.sketch_name.clone()));
-        setters.push(Box::new(|s, v| s.sketch_name = v));
-        
-        // Environment (arduino, esp-idf)
-        labels.push("Environment");
-        getters.push(Box::new(|s| s.env.clone()));
-        setters.push(Box::new(|s, v| s.env = v));
-        
-        // Board Model (esp32-s3, ard-nano)
-        labels.push("Board Model");
-        getters.push(Box::new(|s| s.board_model.clone()));
-        setters.push(Box::new(|s, v| s.board_model = v));
-        
-        // FQBN
-        labels.push("FQBN");
-        getters.push(Box::new(|s| s.fqbn.clone()));
-        setters.push(Box::new(|s, v| s.fqbn = v));
-        
-        // Port
-        labels.push("Port");
-        getters.push(Box::new(|s| s.port.clone()));
-        setters.push(Box::new(|s, v| s.port = v));
-        
-        // Baudrate
-        labels.push("Baudrate");
-        getters.push(Box::new(|s| s.baudrate.to_string()));
-        setters.push(Box::new(|s, v| {
-            if let Ok(b) = v.parse::<u32>() {
-                s.baudrate = b;
-            }
-        }));
-        
-        Self {
-            labels,
-            getters,
-            setters,
+impl FieldEditorState {
+    /// Get the current field index
+    pub fn field_index(&self) -> usize {
+        match self {
+            FieldEditorState::Selected { field_index } => *field_index,
+            FieldEditorState::Editing { field_index, .. } => *field_index,
+            FieldEditorState::Selecting { field_index, .. } => *field_index,
         }
     }
     
-    /// Get value for a field
-    pub fn get_value(&self, settings: &Settings, index: usize) -> String {
-        (self.getters[index])(settings)
+    /// Check if the state is in editing mode
+    pub fn is_editing(&self) -> bool {
+        matches!(self, FieldEditorState::Editing { .. })
     }
     
-    /// Set value for a field
-    pub fn set_value(&self, settings: &mut Settings, index: usize, value: String) {
-        (self.setters[index])(settings, value);
+    /// Check if the state is in selecting mode
+    pub fn is_selecting(&self) -> bool {
+        matches!(self, FieldEditorState::Selecting { .. })
     }
     
-    /// Get the number of fields
-    pub fn count(&self) -> usize {
-        self.labels.len()
+    /// Check if the state is in selected mode
+    pub fn is_selected(&self) -> bool {
+        matches!(self, FieldEditorState::Selected { .. })
     }
     
-    /// Get the label for a field
-    pub fn get_label(&self, index: usize) -> &str {
-        self.labels[index]
+    /// Create a new Selected state
+    pub fn new_selected(field_index: usize) -> Self {
+        FieldEditorState::Selected { field_index }
     }
     
-    /// Check if a field is a dropdown field
-    pub fn is_dropdown(&self, index: usize) -> bool {
-        // Environment (index 2) and Port (index 5) are dropdowns
-        index == 2 || index == 5
+    /// Create a new Editing state from a value
+    pub fn new_editing(field_index: usize, value: String) -> Self {
+        let mut input = Input::new(value);
+        let _ = input.handle(tui_input::InputRequest::GoToEnd);
+        FieldEditorState::Editing { field_index, input }
+    }
+    
+    /// Create a new Selecting state
+    pub fn new_selecting(field_index: usize, selected_index: usize, options: Vec<String>) -> Self {
+        FieldEditorState::Selecting {
+            field_index,
+            selected_index,
+            options,
+        }
+    }
+}
+
+/// Settings field type enum - type-safe field access
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SettingsField {
+    SketchDirectory = 0,
+    SketchName = 1,
+    Environment = 2,
+    BoardModel = 3,
+    FQBN = 4,
+    Port = 5,
+    Baudrate = 6,
+}
+
+impl SettingsField {
+    /// Get all fields in order
+    pub fn all() -> Vec<SettingsField> {
+        vec![
+            SettingsField::SketchDirectory,
+            SettingsField::SketchName,
+            SettingsField::Environment,
+            SettingsField::BoardModel,
+            SettingsField::FQBN,
+            SettingsField::Port,
+            SettingsField::Baudrate,
+        ]
+    }
+    
+    /// Get field label
+    pub fn label(&self) -> &'static str {
+        match self {
+            SettingsField::SketchDirectory => "Sketch Directory",
+            SettingsField::SketchName => "Sketch Name",
+            SettingsField::Environment => "Environment",
+            SettingsField::BoardModel => "Board Model",
+            SettingsField::FQBN => "FQBN",
+            SettingsField::Port => "Port",
+            SettingsField::Baudrate => "Baudrate",
+        }
+    }
+    
+    /// Get value from settings
+    pub fn get_value(&self, settings: &Settings) -> String {
+        match self {
+            SettingsField::SketchDirectory => settings.sketch_directory.clone(),
+            SettingsField::SketchName => settings.sketch_name.clone(),
+            SettingsField::Environment => settings.env.clone(),
+            SettingsField::BoardModel => settings.board_model.clone(),
+            SettingsField::FQBN => settings.fqbn.clone(),
+            SettingsField::Port => settings.port.clone(),
+            SettingsField::Baudrate => settings.baudrate.to_string(),
+        }
+    }
+    
+    /// Set value in settings
+    pub fn set_value(&self, settings: &mut Settings, value: String) {
+        match self {
+            SettingsField::SketchDirectory => settings.sketch_directory = value,
+            SettingsField::SketchName => settings.sketch_name = value,
+            SettingsField::Environment => settings.env = value,
+            SettingsField::BoardModel => settings.board_model = value,
+            SettingsField::FQBN => settings.fqbn = value,
+            SettingsField::Port => settings.port = value,
+            SettingsField::Baudrate => {
+                if let Ok(b) = value.parse::<u32>() {
+                    settings.baudrate = b;
+                }
+            }
+        }
+    }
+    
+    /// Check if field is a dropdown
+    pub fn is_dropdown(&self) -> bool {
+        matches!(self, SettingsField::Environment | SettingsField::Port)
     }
     
     /// Get dropdown options for a field
-    pub fn get_dropdown_options(&self, index: usize) -> Vec<String> {
-        match index {
-            2 => {
-                // Environment dropdown
+    pub fn get_dropdown_options(&self) -> Vec<String> {
+        match self {
+            SettingsField::Environment => {
                 vec!["arduino".to_string(), "esp-idf".to_string()]
             }
-            5 => {
+            SettingsField::Port => {
                 // Port dropdown - detect available COM ports
                 match available_ports() {
                     Ok(ports) => {
                         ports.into_iter()
-                            .map(|p| {
-                                // On Windows, ports are like "COM1", "COM9", etc.
-                                p.port_name
-                            })
+                            .map(|p| p.port_name)
                             .collect()
                     }
                     Err(_) => {
@@ -133,5 +164,74 @@ impl SettingsFields {
             }
             _ => vec![],
         }
+    }
+    
+    /// Convert from index (for backward compatibility)
+    pub fn from_index(index: usize) -> Option<Self> {
+        match index {
+            0 => Some(SettingsField::SketchDirectory),
+            1 => Some(SettingsField::SketchName),
+            2 => Some(SettingsField::Environment),
+            3 => Some(SettingsField::BoardModel),
+            4 => Some(SettingsField::FQBN),
+            5 => Some(SettingsField::Port),
+            6 => Some(SettingsField::Baudrate),
+            _ => None,
+        }
+    }
+    
+    /// Convert to index (for backward compatibility)
+    pub fn to_index(&self) -> usize {
+        *self as usize
+    }
+}
+
+/// Settings fields definition and management (backward compatibility wrapper)
+pub struct SettingsFields;
+
+impl SettingsFields {
+    /// Create a new settings fields instance
+    pub fn new() -> Self {
+        Self
+    }
+    
+    /// Get value for a field (by index for backward compatibility)
+    pub fn get_value(&self, settings: &Settings, index: usize) -> String {
+        SettingsField::from_index(index)
+            .map(|field| field.get_value(settings))
+            .unwrap_or_default()
+    }
+    
+    /// Set value for a field (by index for backward compatibility)
+    pub fn set_value(&self, settings: &mut Settings, index: usize, value: String) {
+        if let Some(field) = SettingsField::from_index(index) {
+            field.set_value(settings, value);
+        }
+    }
+    
+    /// Get the number of fields
+    pub fn count(&self) -> usize {
+        SettingsField::all().len()
+    }
+    
+    /// Get the label for a field
+    pub fn get_label(&self, index: usize) -> &str {
+        SettingsField::from_index(index)
+            .map(|field| field.label())
+            .unwrap_or("")
+    }
+    
+    /// Check if a field is a dropdown field
+    pub fn is_dropdown(&self, index: usize) -> bool {
+        SettingsField::from_index(index)
+            .map(|field| field.is_dropdown())
+            .unwrap_or(false)
+    }
+    
+    /// Get dropdown options for a field
+    pub fn get_dropdown_options(&self, index: usize) -> Vec<String> {
+        SettingsField::from_index(index)
+            .map(|field| field.get_dropdown_options())
+            .unwrap_or_default()
     }
 }

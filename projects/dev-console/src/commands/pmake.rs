@@ -6,16 +6,17 @@ use crate::dashboard::DashboardState;
 use crate::settings::Settings;
 use crate::commands::utils::remove_ansi_escapes;
 use crate::process_manager::ProcessManager;
+use crate::path_utils::{find_workspace_root, find_pmake_script};
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::fs;
 
 //--------------------------------------------------------<<
 
 /// Execute pmake command (Build, Compile, Upload) and capture output
+#[allow(dead_code)]
 pub fn execute_pmake_command(
     dashboard: Arc<Mutex<DashboardState>>,
     settings: Settings,
@@ -24,51 +25,17 @@ pub fn execute_pmake_command(
 ) {
     let sketch_dir = PathBuf::from(&settings.sketch_directory);
     
-    let pmake_script = sketch_dir.join("pmake.py");
-    let pmake_script_parent = sketch_dir.parent().map(|p| p.join("pmake.py"));
-    
-    let script_path = if pmake_script.exists() {
-        pmake_script
-    } else if let Some(parent_script) = pmake_script_parent {
-        if parent_script.exists() {
-            parent_script
-        } else {
-            {
-                let mut state = dashboard.lock().unwrap();
-                state.status_text = "Error: pmake.py not found".to_string();
-                state.output_lines.push("Error: Could not find pmake.py script".to_string());
-            }
+    let script_path = match find_pmake_script(&sketch_dir) {
+        Some(path) => path,
+        None => {
+            let mut state = dashboard.lock().unwrap();
+            state.set_status_text("Error: pmake.py not found");
+            state.add_output_line("Error: Could not find pmake.py script".to_string());
             return;
         }
-    } else {
-        {
-            let mut state = dashboard.lock().unwrap();
-            state.status_text = "Error: pmake.py not found".to_string();
-            state.output_lines.push("Error: Could not find pmake.py script".to_string());
-        }
-        return;
     };
     
-    let workspace_root = sketch_dir
-        .ancestors()
-        .find(|path| {
-            let pyproject = path.join("pyproject.toml");
-            if pyproject.exists() {
-                if let Ok(content) = fs::read_to_string(&pyproject) {
-                    return content.contains("[tool.uv") || content.contains("[project]");
-                }
-            }
-            false
-        })
-        .map(|p| p.to_path_buf())
-        .unwrap_or_else(|| {
-            sketch_dir.parent()
-                .and_then(|p| p.parent())
-                .and_then(|p| p.parent())
-                .and_then(|p| p.parent())
-                .map(|p| p.to_path_buf())
-                .unwrap_or_else(|| sketch_dir.clone())
-        });
+    let workspace_root = find_workspace_root(&sketch_dir);
     
     let pmake_arg = match command.as_str() {
         "Build" => "build",
@@ -76,7 +43,7 @@ pub fn execute_pmake_command(
         "Upload" => "upload",
         _ => {
             let mut state = dashboard.lock().unwrap();
-            state.status_text = format!("Error: Unknown command: {}", command);
+            state.set_status_text(&format!("Error: Unknown command: {}", command));
             state.output_lines.push(format!("Error: Unknown command: {}", command));
             return;
         }
@@ -111,7 +78,7 @@ pub fn execute_pmake_command(
         }
         Err(e) => {
             let mut state = dashboard.lock().unwrap();
-            state.status_text = format!("Error: {}", e);
+            state.set_status_text(&format!("Error: {}", e));
             state.output_lines.push(format!("Failed to execute command: {}", e));
             return;
         }
@@ -183,15 +150,15 @@ pub fn execute_pmake_command(
         match exit_status {
             Ok(status) => {
                 if status.success() {
-                    state.status_text = format!("{} completed successfully", command);
+                    state.set_status_text(&format!("{} completed successfully", command));
                     state.output_lines.push(format!("{} completed successfully", command));
                 } else {
-                    state.status_text = format!("{} failed with exit code: {:?}", command, status.code());
+                    state.set_status_text(&format!("{} failed with exit code: {:?}", command, status.code()));
                     state.output_lines.push(format!("{} failed with exit code: {:?}", command, status.code()));
                 }
             }
             Err(e) => {
-                state.status_text = format!("Command execution error: {}", e);
+                state.set_status_text(&format!("Command execution error: {}", e));
                 state.output_lines.push(format!("Command execution error: {}", e));
             }
         }

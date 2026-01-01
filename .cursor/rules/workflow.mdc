@@ -30,7 +30,7 @@ p
    - Determine what type of task you're working on
    - Language-specific (Python, JavaScript,Rust, etc.) → Check `.cursor/rules/by-language/[language]/`
    - **Python tasks**: MUST check `.cursor/rules/by-language/python/code-quality/` directory (all category files)
-   - **Rust tasks**: **CRITICAL ENFORCEMENT** - MUST explicitly read `.cursor/rules/by-language/rust/build-and-test.mdc` BEFORE making any code changes. After making Rust code changes, MUST run `cargo build` (NOT `cargo check`, NOT `read_lints`), fix ALL warnings, and verify the build succeeds with zero warnings before marking the task complete. This verification is MANDATORY and cannot be skipped.
+   - **Rust tasks**: **CRITICAL ENFORCEMENT** - MUST explicitly read `.cursor/rules/by-language/rust/build-and-test.mdc` BEFORE making any code changes. After making Rust code changes, MUST run `cargo build`, fix ALL warnings, and verify the build succeeds with zero warnings before marking the task complete. This verification is MANDATORY and cannot be skipped.
    - Tool-specific (UV, etc.) → Check `.cursor/rules/tool/[tool]/`
    - Formatting (markdown, terminal output, etc.) → Check `.cursor/rules/formatting/`
    - Code quality/linter → Check `.cursor/rules/by-language/[language]/code-quality/` directory

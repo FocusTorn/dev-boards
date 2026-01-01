@@ -38,3 +38,9 @@ lazy_static = "1.5"
 # Command detection
 which = "6.0"
 
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

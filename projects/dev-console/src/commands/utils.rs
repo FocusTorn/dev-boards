@@ -15,6 +15,7 @@ pub fn remove_ansi_escapes(s: &str) -> String {
 }
 
 /// Extract percentage from a line
+#[allow(dead_code)]
 pub fn extract_percentage(line: &str) -> Option<f64> {
     if let Some(captures) = PERCENT_RE.captures(line) {
         if let Ok(percent) = captures[1].parse::<f64>() {
@@ -25,6 +26,7 @@ pub fn extract_percentage(line: &str) -> Option<f64> {
 }
 
 /// Extract current file from a line
+#[allow(dead_code)]
 pub fn extract_current_file(line: &str) -> Option<String> {
     if let Some(captures) = FILE_RE.captures(line) {
         return Some(captures[1].to_string());

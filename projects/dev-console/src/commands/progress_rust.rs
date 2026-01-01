@@ -4,6 +4,7 @@ use crate::dashboard::DashboardState;
 use crate::settings::Settings;
 use crate::commands::utils::remove_ansi_escapes;
 use crate::process_manager::ProcessManager;
+use crate::path_utils::{find_project_root, find_arduino_cli, get_library_path};
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -111,33 +112,14 @@ pub fn execute_progress_rust(
     let sketch_file = sketch_dir.join(&settings.sketch_name);
     let build_path = sketch_dir.join("build");
     
-    // Find project root (workspace root) - same logic as Python version
-    let project_root = sketch_dir
-        .parent()  // esp32-s3__LB-Gold
-        .and_then(|p| p.parent())  // projects
-        .and_then(|p| p.parent())  // dev-boards (workspace root)
-        .map(|p| p.to_path_buf())
-        .unwrap_or_else(|| sketch_dir.clone());
+    // Find project root (workspace root)
+    let project_root = find_project_root(&sketch_dir);
     
     // Calculate library path
-    let library_path = project_root.join("lib").join(&settings.board_model);
+    let library_path = get_library_path(&project_root, &settings.board_model);
     
     // Find arduino-cli
-    let arduino_cli = if settings.env == "arduino" {
-        let workspace_path = project_root.join("Arduino").join("arduino-cli.exe");
-        
-        if workspace_path.exists() {
-            workspace_path
-        } else {
-            if which::which("arduino-cli").is_ok() {
-                PathBuf::from("arduino-cli")
-            } else {
-                workspace_path
-            }
-        }
-    } else {
-        PathBuf::from("arduino-cli")
-    };
+    let arduino_cli = find_arduino_cli(&settings.env, &project_root);
     
     // Build command arguments - MUST include --libraries like Python version
     let mut cmd = Command::new(&arduino_cli);
@@ -162,7 +144,7 @@ pub fn execute_progress_rust(
         state.output_lines.push(format!("Arduino CLI path: {:?}", arduino_cli));
         state.output_lines.push(format!("Arduino CLI exists: {}", arduino_cli.exists()));
         state.is_running = true;
-        state.progress_stage = "Initializing".to_string();
+        state.set_progress_stage("Initializing");
         state.progress_percent = 0.0;
     }
     
@@ -170,7 +152,7 @@ pub fn execute_progress_rust(
     if !arduino_cli.exists() && arduino_cli.to_string_lossy() != "arduino-cli" {
         let mut state = dashboard.lock().unwrap();
         state.is_running = false;
-        state.status_text = format!("Error: arduino-cli not found at: {:?}", arduino_cli);
+        state.set_status_text(&format!("Error: arduino-cli not found at: {:?}", arduino_cli));
         state.output_lines.push(format!("Error: arduino-cli not found at: {:?}", arduino_cli));
         state.output_lines.push("Please ensure arduino-cli.exe is installed in the Arduino directory at the workspace root.".to_string());
         return;
@@ -186,7 +168,7 @@ pub fn execute_progress_rust(
         Err(e) => {
             let mut state = dashboard.lock().unwrap();
             state.is_running = false;
-            state.status_text = format!("Error: Failed to start arduino-cli: {}", e);
+            state.set_status_text(&format!("Error: Failed to start arduino-cli: {}", e));
             state.output_lines.push(format!("Error: Failed to start arduino-cli: {}", e));
             state.output_lines.push(format!("Tried path: {:?}", arduino_cli));
             if !arduino_cli.exists() && arduino_cli.to_string_lossy() != "arduino-cli" {
@@ -327,14 +309,14 @@ pub fn execute_progress_rust(
                 state.progress_percent = compile_state.calculate_progress();
                 
                 match compile_state.stage {
-                    CompileStage::Initializing => state.progress_stage = "Initializing".to_string(),
-                    CompileStage::Compiling => state.progress_stage = "Compiling".to_string(),
-                    CompileStage::Linking => state.progress_stage = "Linking".to_string(),
-                    CompileStage::Generating => state.progress_stage = "Generating".to_string(),
-                    CompileStage::Complete => state.progress_stage = "Complete".to_string(),
+                    CompileStage::Initializing => state.set_progress_stage("Initializing"),
+                    CompileStage::Compiling => state.set_progress_stage("Compiling"),
+                    CompileStage::Linking => state.set_progress_stage("Linking"),
+                    CompileStage::Generating => state.set_progress_stage("Generating"),
+                    CompileStage::Complete => state.set_progress_stage("Complete"),
                 }
                 
-                state.current_file = compile_state.current_file.clone();
+                state.set_current_file(&compile_state.current_file);
             }
         }
     }
@@ -353,16 +335,16 @@ pub fn execute_progress_rust(
             Ok(status) => {
                 if status.success() {
                     state.progress_percent = 100.0;
-                    state.progress_stage = "Complete".to_string();
-                    state.status_text = "Compilation completed successfully".to_string();
+                    state.set_progress_stage("Complete");
+                    state.set_status_text("Compilation completed successfully");
                     state.output_lines.push("Compilation completed successfully".to_string());
                 } else {
-                    state.status_text = format!("Compilation failed with exit code: {:?}", status.code());
+                    state.set_status_text(&format!("Compilation failed with exit code: {:?}", status.code()));
                     state.output_lines.push(format!("Compilation failed with exit code: {:?}", status.code()));
                 }
             }
             Err(e) => {
-                state.status_text = format!("Error waiting for process: {}", e);
+                state.set_status_text(&format!("Error waiting for process: {}", e));
                 state.output_lines.push(format!("Error waiting for process: {}", e));
             }
         }

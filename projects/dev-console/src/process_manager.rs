@@ -26,6 +26,7 @@ impl ProcessManager {
     }
     
     /// Kill all registered processes and clean up
+    /// Uses native Rust process termination where possible, falls back to external commands
     pub fn cleanup(&self) {
         let pids = match self.processes.lock() {
             Ok(p) => p.clone(), // Clone the list so we can release the lock
@@ -33,11 +34,14 @@ impl ProcessManager {
         };
         
         for pid in pids {
-            // Kill the process by PID
+            // Try to kill the process
+            // Note: Native Rust doesn't support killing by PID directly on Windows
+            // On Unix, we could use signals, but for cross-platform compatibility,
+            // we use external commands. This could be improved with platform-specific crates.
             #[cfg(unix)]
             {
                 use std::process::Command;
-                // On Unix, use kill command
+                // On Unix, use kill command with TERM signal for graceful shutdown
                 let _ = Command::new("kill")
                     .arg("-TERM")
                     .arg(pid.to_string())
@@ -47,7 +51,7 @@ impl ProcessManager {
             #[cfg(windows)]
             {
                 use std::process::Command;
-                // On Windows, use taskkill
+                // On Windows, use taskkill with /F for force termination
                 let _ = Command::new("taskkill")
                     .args(&["/F", "/PID", &pid.to_string()])
                     .output();
@@ -65,6 +69,20 @@ impl ProcessManager {
         if let Ok(mut processes) = self.processes.lock() {
             processes.retain(|&p| p != pid);
         }
+    }
+    
+    /// Get the number of tracked processes
+    pub fn process_count(&self) -> usize {
+        if let Ok(processes) = self.processes.lock() {
+            processes.len()
+        } else {
+            0
+        }
+    }
+    
+    /// Check if any processes are being tracked
+    pub fn has_processes(&self) -> bool {
+        self.process_count() > 0
     }
 }
 

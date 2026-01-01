@@ -2,6 +2,7 @@
 
 use crate::settings::Settings;
 use crate::field_editor::{FieldEditorState, SettingsFields};
+use crate::constants::*;
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -19,8 +20,8 @@ pub fn render_settings(
     editor_state: &FieldEditorState,
 ) {
     // Check if terminal is too small (minimum size requirements)
-    let min_width_pixels = 80;
-    let min_height_pixels = 21;
+    let min_width_pixels = MIN_WIDTH_PIXELS;
+    let min_height_pixels = MIN_HEIGHT_PIXELS;
     
     if area.width < min_width_pixels || area.height < min_height_pixels {
         // Terminal is too small - show warning message
@@ -74,8 +75,8 @@ pub fn render_settings(
     }
     
     // Calculate content size: 50% of available space, but at least 80 pixels wide and 25 pixels tall
-    let content_width = (area.width * 50 / 100).max(min_width_pixels).min(area.width);
-    let content_height = (area.height * 50 / 100).max(min_height_pixels).min(area.height);
+    let content_width = (area.width * CONTENT_WIDTH_PERCENT / 100).max(min_width_pixels).min(area.width);
+    let content_height = (area.height * CONTENT_HEIGHT_PERCENT / 100).max(min_height_pixels).min(area.height);
     // Center the content (no blank lines above/below)
     let content_x = area.x + (area.width.saturating_sub(content_width)) / 2;
     let content_y = area.y + (area.height.saturating_sub(content_height)) / 2;
@@ -227,12 +228,12 @@ fn render_section(
     let title_color = Color::White;
     
     // Calculate field height (3 lines per field)
-    let field_height = 3;
-    let spacing = 1; // Spacing between fields
+    let field_height = FIELD_HEIGHT;
+    let spacing = FIELD_SPACING; // Spacing between fields
     let total_fields = field_indices.len();
     
     // Calculate exact height needed: (field_height * total_fields) + (spacing * (total_fields - 1)) + borders (2)
-    let mut needed_height = (field_height * total_fields) + (spacing * total_fields.saturating_sub(1)) + 2;
+    let mut needed_height = (field_height * total_fields as u16) + (spacing * total_fields.saturating_sub(1) as u16) + 2;
     
     // If target_height is provided (for matching heights), use it
     // Otherwise, if this is Device section, add 1 extra row

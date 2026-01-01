@@ -84,9 +84,9 @@ pub fn render_dashboard(
     if dashboard_state.is_running && !dashboard_state.progress_stage.is_empty() {
         // Show progress bar
         let progress_text = if dashboard_state.current_file.is_empty() {
-            format!("{}: {:.1}%", dashboard_state.progress_stage, dashboard_state.progress_percent)
+            format!("{}: {:.1}%", dashboard_state.progress_stage.as_ref(), dashboard_state.progress_percent)
         } else {
-            format!("{}: {:.1}% - {}", dashboard_state.progress_stage, dashboard_state.progress_percent, dashboard_state.current_file)
+            format!("{}: {:.1}% - {}", dashboard_state.progress_stage.as_ref(), dashboard_state.progress_percent, dashboard_state.current_file.as_ref())
         };
         
         // Create progress bar
@@ -118,7 +118,7 @@ pub fn render_dashboard(
         f.render_widget(status_para, column2_chunks[0]);
     } else {
         // Show regular status text
-        let status_para = Paragraph::new(dashboard_state.status_text.clone())
+        let status_para = Paragraph::new(dashboard_state.status_text.as_ref())
             .block(status_block)
             .style(Style::default().fg(Color::White));
         

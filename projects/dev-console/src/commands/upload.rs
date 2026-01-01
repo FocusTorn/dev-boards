@@ -4,6 +4,7 @@ use crate::dashboard::DashboardState;
 use crate::settings::Settings;
 use crate::commands::utils::remove_ansi_escapes;
 use crate::process_manager::ProcessManager;
+use crate::path_utils::{find_project_root, find_arduino_cli};
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -28,29 +29,11 @@ pub fn execute_upload_rust(
     let sketch_dir = PathBuf::from(&settings.sketch_directory);
     let build_path = sketch_dir.join("build");
     
-    // Find project root (workspace root) - same logic as Python version
-    let project_root = sketch_dir
-        .parent()  // esp32-s3__LB-Gold
-        .and_then(|p| p.parent())  // projects
-        .and_then(|p| p.parent())  // dev-boards (workspace root)
-        .map(|p| p.to_path_buf())
-        .unwrap_or_else(|| sketch_dir.clone());
+    // Find project root (workspace root)
+    let project_root = find_project_root(&sketch_dir);
     
     // Find arduino-cli
-    let arduino_cli = if settings.env == "arduino" {
-        let workspace_path = project_root.join("Arduino").join("arduino-cli.exe");
-        if workspace_path.exists() {
-            workspace_path
-        } else {
-            if which::which("arduino-cli").is_ok() {
-                PathBuf::from("arduino-cli")
-            } else {
-                workspace_path
-            }
-        }
-    } else {
-        PathBuf::from("arduino-cli")
-    };
+    let arduino_cli = find_arduino_cli(&settings.env, &project_root);
     
     // Build command arguments - same as Python upload_custom
     let mut cmd = Command::new(&arduino_cli);
@@ -66,11 +49,11 @@ pub fn execute_upload_rust(
     // Add initial message
     {
         let mut state = dashboard.lock().unwrap();
-        state.output_lines.push(format!("Uploading to {} on port {}...", settings.board_model, settings.port));
-        state.output_lines.push(format!("Executing: {:?} upload -p {} --fqbn {} --build-path {:?} {:?}", 
+        state.add_output_line(format!("Uploading to {} on port {}...", settings.board_model, settings.port));
+        state.add_output_line(format!("Executing: {:?} upload -p {} --fqbn {} --build-path {:?} {:?}", 
             arduino_cli, settings.port, settings.fqbn, build_path, sketch_dir));
         state.is_running = true;
-        state.progress_stage = "Initializing".to_string();
+        state.set_progress_stage("Initializing");
         state.progress_percent = 0.0;
     }
     
@@ -78,8 +61,8 @@ pub fn execute_upload_rust(
     if !arduino_cli.exists() && arduino_cli.to_string_lossy() != "arduino-cli" {
         let mut state = dashboard.lock().unwrap();
         state.is_running = false;
-        state.status_text = format!("Error: arduino-cli not found at: {:?}", arduino_cli);
-        state.output_lines.push(format!("Error: arduino-cli not found at: {:?}", arduino_cli));
+        state.set_status_text(&format!("Error: arduino-cli not found at: {:?}", arduino_cli));
+        state.add_output_line(format!("Error: arduino-cli not found at: {:?}", arduino_cli));
         return;
     }
     
@@ -93,7 +76,7 @@ pub fn execute_upload_rust(
         Err(e) => {
             let mut state = dashboard.lock().unwrap();
             state.is_running = false;
-            state.status_text = format!("Error: Failed to start arduino-cli: {}", e);
+            state.set_status_text(&format!("Error: Failed to start arduino-cli: {}", e));
             state.output_lines.push(format!("Error: Failed to start arduino-cli: {}", e));
             return;
         }
@@ -113,10 +96,7 @@ pub fn execute_upload_rust(
                     let trimmed = cleaned.trim();
                     if !trimmed.is_empty() {
                         let mut state = dashboard_stderr.lock().unwrap();
-                        state.output_lines.push(trimmed.to_string());
-                        if state.output_lines.len() > 1 {
-                            state.output_scroll = state.output_lines.len().saturating_sub(1);
-                        }
+                        state.add_output_line(trimmed.to_string());
                     }
                 }
             }
@@ -168,8 +148,8 @@ pub fn execute_upload_rust(
                             {
                                 let mut state = dashboard.lock().unwrap();
                                 state.progress_percent = percent;
-                                state.progress_stage = format!("Writing at {}", addr);
-                                state.current_file = addr;
+                                state.set_progress_stage(&format!("Writing at {}", addr));
+                                state.set_current_file(&addr);
                                 
                                 // Add progress line to output
                                 state.output_lines.push(trimmed.to_string());
@@ -191,11 +171,8 @@ pub fn execute_upload_rust(
                 {
                     let mut state = dashboard.lock().unwrap();
                     state.progress_percent = 100.0;
-                    state.progress_stage = "Upload complete".to_string();
-                    state.output_lines.push(trimmed.to_string());
-                    if state.output_lines.len() > 1 {
-                        state.output_scroll = state.output_lines.len().saturating_sub(1);
-                    }
+                    state.set_progress_stage("Upload complete");
+                    state.add_output_line(trimmed.to_string());
                 }
                 continue;
             }
@@ -204,10 +181,7 @@ pub fn execute_upload_rust(
             if trimmed.contains("Hard resetting") {
                 {
                     let mut state = dashboard.lock().unwrap();
-                    state.output_lines.push(trimmed.to_string());
-                    if state.output_lines.len() > 1 {
-                        state.output_scroll = state.output_lines.len().saturating_sub(1);
-                    }
+                    state.add_output_line(trimmed.to_string());
                 }
                 continue;
             }
@@ -242,17 +216,17 @@ pub fn execute_upload_rust(
             Ok(status) => {
                 if status.success() {
                     state.progress_percent = 100.0;
-                    state.progress_stage = "Upload complete".to_string();
-                    state.status_text = "Upload completed successfully".to_string();
-                    state.output_lines.push("Upload completed successfully".to_string());
+                    state.set_progress_stage("Upload complete");
+                    state.set_status_text("Upload completed successfully");
+                    state.add_output_line("Upload completed successfully".to_string());
                 } else {
-                    state.status_text = format!("Upload failed with exit code: {:?}", status.code());
-                    state.output_lines.push(format!("Upload failed with exit code: {:?}", status.code()));
+                    state.set_status_text(&format!("Upload failed with exit code: {:?}", status.code()));
+                    state.add_output_line(format!("Upload failed with exit code: {:?}", status.code()));
                 }
             }
             Err(e) => {
-                state.status_text = format!("Error waiting for process: {}", e);
-                state.output_lines.push(format!("Error waiting for process: {}", e));
+                state.set_status_text(&format!("Error waiting for process: {}", e));
+                state.add_output_line(format!("Error waiting for process: {}", e));
             }
         }
     }
