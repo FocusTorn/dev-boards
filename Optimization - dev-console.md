@@ -214,6 +214,12 @@
     - Multi-project workspace support
     - Plugin system for custom commands
     - Advanced progress tracking with time estimates
+      - **See `ADVANCED_PROGRESS_TRACKING.md` for detailed design and implementation plan**
+      - Time estimation based on current rate and historical data
+      - Per-stage time tracking (Initializing, Compiling, Linking, etc.)
+      - Historical performance data storage for accurate estimates
+      - ETA calculation with weighted current/historical methods
+      - Enhanced UI display with elapsed time and estimated remaining time
 
 2. Developer Experience Features
     - Configuration wizard for first-time setup
@@ -284,3 +290,83 @@ Several infrastructure modules have been created to support future development a
 - **High**: tool_detector.rs, dashboard_batch.rs
 - **Medium**: error_format.rs, commands/executor.rs
 - **Low**: string_intern.rs (already integrated)
+
+---
+
+## FUTURE INTEGRATION WORK
+
+The following infrastructure modules are ready for integration but not yet fully utilized throughout the codebase:
+
+### High Priority Integration Tasks
+
+1. **tool_detector.rs Integration**
+   - **Current State**: Module created with ToolDetector trait, DefaultToolDetector, and ToolManager
+   - **Integration Needed**: Replace scattered tool detection code in:
+     - `commands/progress_rust.rs` - arduino-cli detection
+     - `commands/upload.rs` - arduino-cli detection
+     - `commands/pmake.rs` - uv/python detection
+     - `path_utils.rs` - arduino-cli detection
+   - **Benefits**: Centralized tool detection, easier testing, dependency injection support
+   - **Estimated Impact**: Reduces code duplication, improves maintainability
+
+2. **dashboard_batch.rs Integration**
+   - **Current State**: Module created with DashboardUpdateBatch struct
+   - **Integration Needed**: Use batch updates in command execution modules:
+     - `commands/progress_rust.rs` - Batch progress updates during compilation
+     - `commands/upload.rs` - Batch upload progress updates
+     - `commands/pmake.rs` - Batch command output updates
+   - **Benefits**: Reduces lock contention on Arc<Mutex<DashboardState>>, improves performance
+   - **Estimated Impact**: 30-50% reduction in lock contention during command execution
+
+### Medium Priority Integration Tasks
+
+3. **error_format.rs Integration**
+   - **Current State**: Module created with standardized formatting functions
+   - **Integration Needed**: Replace ad-hoc error formatting in:
+     - `commands/progress_rust.rs` - Use `report_error()` instead of manual formatting
+     - `commands/upload.rs` - Use `report_error()` and `report_success()`
+     - `commands/pmake.rs` - Use standardized error reporting
+   - **Benefits**: Consistent error message formatting across the application
+   - **Estimated Impact**: Improved user experience, easier error message maintenance
+
+4. **commands/executor.rs Integration**
+   - **Current State**: CommandExecutor trait and CommandConfig builder created
+   - **Integration Needed**: 
+     - Implement CommandExecutor trait for all command types
+     - Use CommandConfig builder in command execution modules
+     - Replace manual Command::new() construction with builder pattern
+   - **Benefits**: Unified command execution interface, more flexible command setup
+   - **Estimated Impact**: Code reduction, improved command configuration flexibility
+
+### Low Priority Integration Tasks
+
+5. **string_intern.rs Enhancement**
+   - **Current State**: Fully integrated, DashboardState uses Arc<str>
+   - **Enhancement Needed**: Use pre-interned common strings more extensively:
+     - Replace string literals with `common::READY`, `common::RUNNING`, etc.
+     - Intern more status messages at startup
+   - **Benefits**: Further reduction in string allocations
+   - **Estimated Impact**: Minor performance improvement, cleaner code
+
+### Integration Guidelines
+
+**When integrating infrastructure modules**:
+
+1. **Start with High Priority**: Focus on tool_detector.rs and dashboard_batch.rs first for maximum impact
+2. **Incremental Integration**: Integrate one module at a time to avoid breaking changes
+3. **Test After Each Integration**: Verify functionality after each module integration
+4. **Update Documentation**: Keep INFRASTRUCTURE_MODULES.md updated as modules are integrated
+5. **Measure Impact**: Track performance improvements after integration
+
+**Integration Checklist**:
+
+- [ ] Replace tool detection in progress_rust.rs with ToolManager
+- [ ] Replace tool detection in upload.rs with ToolManager
+- [ ] Replace tool detection in pmake.rs with ToolManager
+- [ ] Integrate DashboardUpdateBatch in progress_rust.rs
+- [ ] Integrate DashboardUpdateBatch in upload.rs
+- [ ] Integrate DashboardUpdateBatch in pmake.rs
+- [ ] Replace error formatting in command modules with error_format functions
+- [ ] Implement CommandExecutor trait for all command types
+- [ ] Use CommandConfig builder in command execution
+- [ ] Enhance string interning usage with common pre-interned strings

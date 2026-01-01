@@ -216,6 +216,9 @@
     - Advanced progress tracking with time estimates
 
 2. Developer Experience Features
+    - Add unit tests for command execution modules
+    - Add integration tests for UI rendering
+    - Document command execution flow
     - Configuration wizard for first-time setup
     - Command output filtering and search
     - Customizable keyboard shortcuts
@@ -233,10 +236,7 @@
     - Automated testing integration
     - Project templates and scaffolding
 
-5. Development Experience
-    - Add unit tests for command execution modules
-    - Add integration tests for UI rendering
-    - Document command execution flow
+
 
 ---
 
