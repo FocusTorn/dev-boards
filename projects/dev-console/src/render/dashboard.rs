@@ -438,16 +438,29 @@ pub fn render_dashboard(
             height: output_inner.height,
         };
         
-        // Scrollbar calculation for ratatui:
-        // - content_length: Total number of content items (total_lines)
+        // Scrollbar calculation for ratatui ScrollbarState:
+        // According to ratatui docs, ScrollbarState expects:
+        // - content_length: Total number of items in the content (total_lines)
         // - viewport_content_length: Number of items visible in viewport (visible_height)
-        // - position: Index of the first visible item (output_scroll)
-        // The scrollbar automatically calculates thumb size and position from these values
+        // - position: The current scroll position (index of first visible item)
+        //
+        // The scrollbar automatically calculates:
+        // - Thumb size = (viewport_length / content_length) * scrollbar_height
+        // - Thumb position = (position / (content_length - viewport_length)) * available_track_height
+        //
+        // CRITICAL: When at bottom, position must be exactly max_scroll to show thumb at bottom
+        // The scrollbar calculates: thumb_pos = (position / max_scrollable) * track_height
+        // When position = max_scroll, thumb should be at bottom of track
         let content_length = total_lines;
         let viewport_length = visible_height;
-        // Position is the index of the first visible line, clamped to valid range
-        let position = dashboard_state.output_scroll.min(max_scroll);
+        // Ensure position is exactly max_scroll when at bottom (not just clamped)
+        let position = if dashboard_state.output_scroll >= max_scroll {
+            max_scroll
+        } else {
+            dashboard_state.output_scroll
+        };
         
+        // Create scrollbar state - must be created fresh each render to ensure correct calculation
         let mut scrollbar_state = ScrollbarState::new(content_length)
             .viewport_content_length(viewport_length)
             .position(position);

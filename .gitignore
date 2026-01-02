@@ -131,3 +131,5 @@ lib/esp32-s3
 projects/dev-console/target/
 
 **/.cursor/
+
+.dev-console/compile_output.log

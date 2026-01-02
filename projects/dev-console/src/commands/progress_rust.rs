@@ -3,123 +3,18 @@
 use crate::dashboard::DashboardState;
 use crate::settings::Settings;
 use crate::commands::utils::remove_ansi_escapes;
+use crate::commands::compile_state::{CompileState, CompileStage};
+use crate::commands::compile_parser::{detect_stage_change, parse_compilation_info};
+use crate::commands::process_handler::ProcessHandler;
 use crate::process_manager::ProcessManager;
 use crate::path_utils::{find_project_root, find_arduino_cli, get_library_path};
 use crate::progress_tracker::{ProgressStage, EstimateMethod};
 use crate::progress_history::ProgressHistory;
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::process::Command;
 use std::sync::{Arc, Mutex};
-use std::thread;
 use std::fs::{File, OpenOptions};
-use regex::Regex;
-use lazy_static::lazy_static;
-
-// Compilation state tracking
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum CompileStage {
-    Initializing,
-    Compiling,
-    Linking,
-    Generating,
-    Complete,
-}
-
-struct CompileState {
-    stage: CompileStage,
-    current_file: String,
-    files_compiled: usize,
-    total_files: usize,
-    compile_lines_seen: std::collections::HashSet<String>,
-    compiled_lines_seen: std::collections::HashSet<String>,
-    start_time: std::time::Instant,
-    compile_stage_start: Option<std::time::Instant>,
-    link_stage_start: Option<std::time::Instant>,
-    generate_stage_start: Option<std::time::Instant>,
-    previous_stage_progress: f64, // Track progress when transitioning stages
-}
-
-impl CompileState {
-    fn new() -> Self {
-        Self {
-            stage: CompileStage::Initializing,
-            current_file: String::new(),
-            files_compiled: 0,
-            total_files: 0,
-            compile_lines_seen: std::collections::HashSet::new(),
-            compiled_lines_seen: std::collections::HashSet::new(),
-            start_time: std::time::Instant::now(),
-            compile_stage_start: None,
-            link_stage_start: None,
-            generate_stage_start: None,
-            previous_stage_progress: 0.0,
-        }
-    }
-    
-    fn calculate_progress(&self) -> f64 {
-        match self.stage {
-            CompileStage::Initializing => {
-                let elapsed = self.start_time.elapsed().as_secs_f64();
-                (elapsed / 2.0).min(5.0).max(1.0)
-            }
-            CompileStage::Compiling => {
-                let compile_elapsed = self.compile_stage_start
-                    .map(|t| t.elapsed().as_secs_f64())
-                    .unwrap_or(0.0);
-                
-                // Start from previous stage progress (or 5% minimum) to avoid jumps
-                let start_progress = self.previous_stage_progress.max(5.0);
-                let max_progress = 65.0; // Compiling stage max
-                
-                if self.total_files > 0 {
-                    let file_progress = self.files_compiled as f64 / self.total_files as f64;
-                    // Calculate progress within the Compiling range (start_progress to max_progress)
-                    let range = max_progress - start_progress;
-                    let file_based = start_progress + (file_progress * range);
-                    let time_based = start_progress + (compile_elapsed * 2.0).min(range);
-                    (file_based * 0.9 + time_based * 0.1).min(max_progress)
-                } else {
-                    start_progress + (compile_elapsed * 2.0).min(max_progress - start_progress)
-                }
-            }
-            CompileStage::Linking => {
-                let link_elapsed = self.link_stage_start
-                    .map(|t| t.elapsed().as_secs_f64())
-                    .unwrap_or(0.0);
-                // Start from previous stage progress (or 65% minimum) to avoid jumps
-                // More gradual progress: previous to 90% (up to 25% range)
-                let start_progress = self.previous_stage_progress.max(65.0);
-                let max_progress = 90.0; // Linking stage max
-                let range = max_progress - start_progress;
-                start_progress + (link_elapsed * 5.0).min(range)
-            }
-            CompileStage::Generating => {
-                let gen_elapsed = self.generate_stage_start
-                    .map(|t| t.elapsed().as_secs_f64())
-                    .unwrap_or(0.0);
-                // Generating typically takes ~5 seconds out of ~45 seconds total (11% of time)
-                // Start from previous stage progress (or 90% minimum) to avoid jumps
-                // Allocate up to 5% additional progress for generating stage
-                let start_progress = self.previous_stage_progress.max(90.0);
-                start_progress + (gen_elapsed * 1.0).min(5.0).min(95.0 - start_progress)
-            }
-            CompileStage::Complete => 100.0,
-        }
-    }
-}
-
-lazy_static! {
-    static ref RE_COMPILE_COMMAND: Regex = Regex::new(
-        r"@([^\s]+\.(cpp|c|ino|S))|([^\s/\\]+\.(cpp|c|ino|S))"
-    ).unwrap();
-    static ref RE_COMPILE_LINE: Regex = Regex::new(
-        r"(?i)compiling\s+([^\s]+\.(cpp|c|ino|S))"
-    ).unwrap();
-    static ref RE_COMPILED_FILE: Regex = Regex::new(
-        r"(?i)\.(cpp|c|ino|S)\.o|gcc-ar|compiled\s+[^\s]+\.(cpp|c|ino|S)|using previously compiled file"
-    ).unwrap();
-}
 
 /// Execute progress command using Rust (direct arduino-cli call)
 pub fn execute_progress_rust(
@@ -191,8 +86,6 @@ pub fn execute_progress_rust(
     cmd.arg("--build-path").arg(&build_path);
     cmd.arg("--verbose");
     cmd.arg(&sketch_file);
-    cmd.stdout(Stdio::piped());
-    cmd.stderr(Stdio::piped());
     cmd.current_dir(&sketch_dir);
     
     // Helper function to write to log file
@@ -248,13 +141,9 @@ pub fn execute_progress_rust(
         return;
     }
     
-    // Spawn process
-    let mut child = match cmd.spawn() {
-        Ok(child) => {
-            // Register process with process manager for cleanup tracking
-            process_manager.register(&child);
-            child
-        }
+    // Spawn process using process handler
+    let mut process_handler = match ProcessHandler::spawn(cmd, process_manager.clone()) {
+        Ok(handler) => handler,
         Err(e) => {
             let mut state = dashboard.lock().unwrap();
             state.is_running = false;
@@ -268,37 +157,14 @@ pub fn execute_progress_rust(
         }
     };
     
-    // Store PID for unregistering when process completes
-    let pid = child.id();
-    
-    // Read stderr in separate thread
-    let dashboard_stderr = dashboard.clone();
-    let log_file_stderr = log_file.clone();
-    if let Some(stderr) = child.stderr.take() {
-        thread::spawn(move || {
-            let reader = BufReader::new(stderr);
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    // Preserve ANSI codes for colorization - only trim whitespace
-                    let trimmed = line.trim();
-                    if !trimmed.is_empty() {
-                        let mut state = dashboard_stderr.lock().unwrap();
-                        state.add_output_line(trimmed.to_string());
-                        // Log to file
-                        if let Ok(mut log) = log_file_stderr.lock() {
-                            let _ = writeln!(log, "{}", trimmed);
-                        }
-                        // Auto-scroll is handled during rendering with correct visible_height
-                    }
-                }
-            }
-        });
-    }
+    // Start stderr reader in separate thread
+    process_handler.start_stderr_reader(dashboard.clone(), log_file.clone());
     
     // Read stdout and parse
     let mut compile_state = CompileState::new();
+    let mut pending_lines: Vec<String> = Vec::new(); // Buffer for lines when lock is busy
     
-    if let Some(stdout) = child.stdout.take() {
+    if let Some(stdout) = process_handler.take_stdout() {
         let reader = BufReader::new(stdout);
         
         for line_result in reader.lines() {
@@ -309,151 +175,90 @@ pub fn execute_progress_rust(
             
             // Preserve ANSI codes for colorization - only clean for parsing
             let cleaned = remove_ansi_escapes(&line);
-            let line_lower = cleaned.to_lowercase();
             let trimmed = cleaned.trim();
             
             if trimmed.is_empty() {
                 continue;
             }
             
-            // Add to output (preserve ANSI codes from original line)
-            {
-                let trimmed_line = line.trim();
-                let mut state = dashboard.lock().unwrap();
-                // Store original line with ANSI codes for colorized display
-                state.add_output_line(trimmed_line.to_string());
-                // Log to file
-                log_output(&log_file, trimmed_line);
-                // Auto-scroll is handled during rendering with correct visible_height
-            }
+            let trimmed_line = line.trim();
+            // Log to file immediately (no lock needed)
+            log_output(&log_file, trimmed_line);
             
-            // Parse line for compilation state
-            // Detect errors
-            if line_lower.contains("error") || line_lower.contains("fatal") {
+            // Try to add line to dashboard - use try_lock to avoid blocking UI thread
+            let current_progress = if let Ok(mut state) = dashboard.try_lock() {
+                // Got the lock - add pending lines first, then this one
+                for pending_line in pending_lines.drain(..) {
+                    state.add_output_line(pending_line);
+                }
+                state.add_output_line(trimmed_line.to_string());
+                // Get current progress while we have the lock
+                state.progress_percent
+            } else {
+                // Lock is busy (UI thread is rendering) - queue this line for later
+                // This prevents blocking the UI thread during rapid output bursts
+                pending_lines.push(trimmed_line.to_string());
+                // Use calculated progress as fallback
+                compile_state.calculate_progress()
+            };
+            // Auto-scroll is handled during rendering with correct visible_height
+            
+            // Parse line for compilation state using parser module
+            let (stage_changed, should_continue) = detect_stage_change(&line, &mut compile_state, current_progress);
+            if !should_continue {
                 // Error detected - already added to output
                 continue;
             }
             
-            // Detect stages and update progress tracker
-            // Get current progress from dashboard state before transitioning
-            let current_progress = {
-                let state = dashboard.lock().unwrap();
-                state.progress_percent
-            };
+            // Parse compilation info (files, commands, etc.)
+            parse_compilation_info(&line, &mut compile_state);
             
-            let stage_changed = if line_lower.contains("detecting libraries") || line_lower.contains("detecting library") {
-                // Save actual current progress from dashboard state before transitioning
-                compile_state.previous_stage_progress = current_progress;
-                compile_state.stage = CompileStage::Compiling;
-                if compile_state.compile_stage_start.is_none() {
-                    compile_state.compile_stage_start = Some(std::time::Instant::now());
-                }
-                true
-            } else if line_lower.contains("generating function prototypes") || line_lower.contains("generating prototypes") {
-                compile_state.stage = CompileStage::Compiling;
-                false
-            } else if line_lower.contains("linking everything together") || (line_lower.contains("linking") && line_lower.contains("together")) {
-                // Save actual current progress from dashboard state before transitioning
-                compile_state.previous_stage_progress = current_progress;
-                compile_state.stage = CompileStage::Linking;
-                compile_state.current_file.clear();
-                if compile_state.link_stage_start.is_none() {
-                    compile_state.link_stage_start = Some(std::time::Instant::now());
-                }
-                true
-            } else if line_lower.contains("esptool") && line_lower.contains("elf2image") && 
-                      line_lower.contains(".ino.elf") && line_lower.contains(".ino.bin") &&
-                      !line_lower.contains("bootloader") {
-                // Only trigger Generating for final .ino.elf to .ino.bin conversion (after linking)
-                // This is the actual final image generation, not bootloader creation
-                // Must check that we're past Linking stage to avoid triggering too early
-                if compile_state.stage == CompileStage::Linking || compile_state.link_stage_start.is_some() {
-                    // Save actual current progress from dashboard state before transitioning to avoid jumps
-                    compile_state.previous_stage_progress = current_progress;
-                    compile_state.stage = CompileStage::Generating;
-                    compile_state.current_file.clear();
-                    if compile_state.generate_stage_start.is_none() {
-                        compile_state.generate_stage_start = Some(std::time::Instant::now());
-                    }
-                    true
+            // Calculate progress BEFORE locking (expensive operations outside lock)
+            let stage_progress = compile_state.calculate_progress();
+            
+            // Update dashboard state with progress tracking - SINGLE LOCK for all updates
+            // Only update if stage changed OR progress changed significantly to reduce lock contention
+            let should_update = stage_changed || {
+                // Check if progress would change significantly (do this calculation outside lock)
+                let current_tracker_progress = if compile_state.total_files > 0 {
+                    // Estimate based on files
+                    (compile_state.files_compiled as f64 / compile_state.total_files as f64) * 60.0 + 5.0
                 } else {
-                    false
-                }
-            } else if line_lower.contains("sketch uses") || line_lower.contains("global variables use") {
-                compile_state.stage = CompileStage::Complete;
-                compile_state.current_file.clear();
-                true
-            } else {
-                false
+                    stage_progress
+                };
+                // Only update if progress would change by more than 0.5%
+                (current_tracker_progress - compile_state.last_logged_progress).abs() > 0.5
             };
             
-            // Update progress tracker stage if changed
-            if stage_changed {
-                let new_stage = match compile_state.stage {
-                    CompileStage::Initializing => ProgressStage::Initializing,
-                    CompileStage::Compiling => ProgressStage::Compiling,
-                    CompileStage::Linking => ProgressStage::Linking,
-                    CompileStage::Generating => ProgressStage::Generating,
-                    CompileStage::Complete => ProgressStage::Complete,
+            if should_update {
+                // Try to get lock, but don't block - if busy, skip this update
+                // Progress will be updated on next successful lock acquisition
+                let mut state = match dashboard.try_lock() {
+                    Ok(s) => s,
+                    Err(_) => {
+                        // Lock busy - skip this update, will catch up later
+                        continue;
+                    }
                 };
-                let mut state = dashboard.lock().unwrap();
-                state.transition_progress_stage(new_stage);
-            }
-            
-            // Detect compilation commands/files
-            if line.contains("xtensa-esp32s3-elf-g++") || line.contains("xtensa-esp32s3-elf-gcc") {
-                if line.contains("-c") {
-                    // Save actual current progress from dashboard state before transitioning
-                    if compile_state.stage != CompileStage::Compiling {
-                        let state = dashboard.lock().unwrap();
-                        compile_state.previous_stage_progress = state.progress_percent;
-                        drop(state); // Release lock before continuing
-                    }
-                    compile_state.stage = CompileStage::Compiling;
-                    if compile_state.compile_stage_start.is_none() {
-                        compile_state.compile_stage_start = Some(std::time::Instant::now());
-                    }
-                    
-                    if let Some(captures) = RE_COMPILE_COMMAND.captures(&line) {
-                        if let Some(file_match) = captures.get(1).or_else(|| captures.get(3)) {
-                            let file_path = file_match.as_str();
-                            compile_state.current_file = file_path.to_string();
-                            if !compile_state.compile_lines_seen.contains(trimmed) {
-                                compile_state.compile_lines_seen.insert(trimmed.to_string());
-                                compile_state.total_files = compile_state.compile_lines_seen.len();
-                            }
-                        }
+                
+                // Flush any pending lines while we have the lock
+                if !pending_lines.is_empty() {
+                    for pending_line in pending_lines.drain(..) {
+                        state.add_output_line(pending_line);
                     }
                 }
-            } else if let Some(captures) = RE_COMPILE_LINE.captures(&line_lower) {
-                if let Some(file_match) = captures.get(1) {
-                    let file_path = file_match.as_str();
-                    compile_state.current_file = file_path.to_string();
-                    // Save actual current progress from dashboard state before transitioning
-                    if compile_state.stage != CompileStage::Compiling {
-                        let state = dashboard.lock().unwrap();
-                        compile_state.previous_stage_progress = state.progress_percent;
-                        drop(state); // Release lock before continuing
-                    }
-                    compile_state.stage = CompileStage::Compiling;
-                    if compile_state.compile_stage_start.is_none() {
-                        compile_state.compile_stage_start = Some(std::time::Instant::now());
-                    }
-                    if !compile_state.compile_lines_seen.contains(trimmed) {
-                        compile_state.compile_lines_seen.insert(trimmed.to_string());
-                        compile_state.total_files = compile_state.compile_lines_seen.len();
-                    }
+                
+                // Update stage if changed
+                if stage_changed {
+                    let new_stage = match compile_state.stage {
+                        CompileStage::Initializing => ProgressStage::Initializing,
+                        CompileStage::Compiling => ProgressStage::Compiling,
+                        CompileStage::Linking => ProgressStage::Linking,
+                        CompileStage::Generating => ProgressStage::Generating,
+                        CompileStage::Complete => ProgressStage::Complete,
+                    };
+                    state.transition_progress_stage(new_stage);
                 }
-            } else if RE_COMPILED_FILE.is_match(&line_lower) {
-                if !compile_state.compiled_lines_seen.contains(trimmed) {
-                    compile_state.compiled_lines_seen.insert(trimmed.to_string());
-                    compile_state.files_compiled = compile_state.compiled_lines_seen.len();
-                }
-            }
-            
-            // Update dashboard state with progress tracking
-            {
-                let mut state = dashboard.lock().unwrap();
                 
                 match compile_state.stage {
                     CompileStage::Initializing => state.set_progress_stage("Initializing"),
@@ -466,9 +271,6 @@ pub fn execute_progress_rust(
                 state.set_current_file(&compile_state.current_file);
                 
                 // Update progress tracker - ensure cumulative progress across stages
-                // calculate_progress() returns stage-specific ranges, so we need to ensure
-                // progress doesn't reset when transitioning stages
-                let stage_progress = compile_state.calculate_progress();
                 let old_progress = state.progress_percent;
                 
                 if let Some(ref mut tracker) = state.progress_tracker {
@@ -484,12 +286,9 @@ pub fn execute_progress_rust(
                         tracker.total_items = Some(compile_state.total_files);
                         tracker.update_progress(compile_state.files_compiled, method);
                         // Sync tracker's progress_percent back to state (this is the source of truth)
-                        // This ensures cumulative progress based on files, not stage-specific ranges
                         state.progress_percent = tracker.progress_percent;
                     } else {
                         // Fallback: use stage-based progress but ensure it's cumulative
-                        // Don't reset progress when transitioning stages - only increase it
-                        // Use the maximum of current tracker progress and stage progress to avoid jumps
                         let new_progress = stage_progress.max(tracker.progress_percent);
                         if new_progress > tracker.progress_percent {
                             tracker.set_progress_percent(new_progress);
@@ -500,27 +299,33 @@ pub fn execute_progress_rust(
                     }
                 } else {
                     // Fallback if no tracker - use stage-based progress, but don't decrease
-                    // Ensure progress only increases, never decreases
                     state.progress_percent = stage_progress.max(state.progress_percent);
                 }
                 
-                // Log progress update if it changed
+                // Log progress update if it changed significantly
                 let new_progress = state.progress_percent;
                 if (new_progress - old_progress).abs() > 0.01 {
                     // Progress changed significantly, log it
+                    compile_state.last_logged_progress = new_progress;
                     log_output(&log_file, "");
                     log_output(&log_file, &format!("{{commanded progress bar percent: {:.2}}}", new_progress));
                     log_output(&log_file, "");
                 }
             }
         }
+        
+        // Flush any remaining pending lines before exiting
+        if !pending_lines.is_empty() {
+            if let Ok(mut state) = dashboard.lock() {
+                for pending_line in pending_lines.drain(..) {
+                    state.add_output_line(pending_line);
+                }
+            }
+        }
     }
     
     // Wait for process to finish
-    let exit_status = child.wait();
-    
-    // Unregister process from process manager (completed normally)
-    process_manager.unregister(pid);
+    let exit_status = process_handler.wait(process_manager);
     
     // Record completion and timing data
     let (total_time, stage_times) = {
