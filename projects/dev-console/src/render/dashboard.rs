@@ -1,6 +1,6 @@
 // Dashboard panel rendering
 
-use crate::dashboard::DashboardState;
+use crate::dashboard::{DashboardState, SCROLL_TO_BOTTOM};
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -389,16 +389,13 @@ pub fn render_dashboard(
         0
     };
     
-    // Auto-scroll to bottom if user is at/near the bottom (keeps new lines visible)
-    // This ensures new output stays visible when user is following the output
-    // Check BEFORE clamping to ensure we detect if we should auto-scroll
-    // We check with a small tolerance (3 lines) to make auto-scroll more responsive
-    if dashboard_state.is_at_bottom(visible_height) {
+    // Handle auto-scroll: if scroll position is SCROLL_TO_BOTTOM sentinel, scroll to bottom
+    // This is much simpler than checking "is_at_bottom" with tolerance
+    if dashboard_state.output_scroll == SCROLL_TO_BOTTOM {
         dashboard_state.scroll_to_bottom(visible_height);
     }
     
-    // Ensure scroll position is valid after auto-scroll
-    // This clamps the scroll position to the valid range [0, max_scroll]
+    // Ensure scroll position is valid (clamp to valid range [0, max_scroll])
     dashboard_state.output_scroll = dashboard_state.output_scroll.min(max_scroll);
     
     // Get visible lines
@@ -421,21 +418,40 @@ pub fn render_dashboard(
             .collect()
     };
     
+    // Render the block (borders and title) to the full area
+    f.render_widget(output_block.clone(), output_area);
+    
+    // Create content area that's one column narrower to leave space for scrollbar
+    // This ensures content doesn't overlap with the scrollbar
+    let content_area = if total_lines > visible_height {
+        // Leave one column for scrollbar
+        Rect {
+            x: output_inner.x,
+            y: output_inner.y,
+            width: output_inner.width.saturating_sub(1),
+            height: output_inner.height,
+        }
+    } else {
+        // No scrollbar, use full width
+        output_inner
+    };
+    
+    // Render content without block (block already rendered above)
     let output_para = Paragraph::new(visible_lines)
-        .block(output_block.clone())
         .style(Style::default().fg(Color::White));
     
-    f.render_widget(output_para, output_area);
+    f.render_widget(output_para, content_area);
     
     // Render scrollbar if there are more lines than visible
     if total_lines > visible_height {
         // Position scrollbar on the right edge of the inner content area
-        // The scrollbar should align with the content viewport
+        // The scrollbar should extend the full height from top to bottom of inner area
+        // output_inner already accounts for padding, so use its full height
         let scrollbar_area = Rect {
             x: output_inner.x + output_inner.width.saturating_sub(1),
-            y: output_inner.y,
+            y: output_inner.y,  // Start at top of inner area (after top padding)
             width: 1,
-            height: output_inner.height,
+            height: output_inner.height,  // Full height of inner area (no gap at bottom)
         };
         
         // Scrollbar calculation for ratatui ScrollbarState:
@@ -453,12 +469,9 @@ pub fn render_dashboard(
         // When position = max_scroll, thumb should be at bottom of track
         let content_length = total_lines;
         let viewport_length = visible_height;
-        // Ensure position is exactly max_scroll when at bottom (not just clamped)
-        let position = if dashboard_state.output_scroll >= max_scroll {
-            max_scroll
-        } else {
-            dashboard_state.output_scroll
-        };
+        // Position is already set correctly by scroll_to_bottom() when SCROLL_TO_BOTTOM was detected
+        // Just ensure it's clamped to valid range
+        let position = dashboard_state.output_scroll.min(max_scroll);
         
         // Create scrollbar state - must be created fresh each render to ensure correct calculation
         let mut scrollbar_state = ScrollbarState::new(content_length)

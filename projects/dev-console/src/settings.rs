@@ -62,6 +62,11 @@ impl Settings {
         }
         let contents = serde_yaml::to_string(self)?;
         fs::write(&path, contents)?;
+        // Ensure file is flushed to disk
+        use std::io::Write;
+        if let Ok(mut file) = std::fs::OpenOptions::new().write(true).open(&path) {
+            let _ = file.flush();
+        }
         Ok(())
     }
 }

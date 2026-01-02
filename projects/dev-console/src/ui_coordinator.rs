@@ -2,11 +2,9 @@
 // Handles UI rendering logic and layout management
 
 use crate::render::{render_content, render_settings, render_dashboard};
-use crate::settings::Settings;
 use crate::field_editor::{FieldEditorState, SettingsFields};
 use crate::dashboard::DashboardState;
-use crate::layout_cache::LayoutCache;
-use crate::layout_utils::calculate_centered_content_area;
+use crate::layout_manager::LayoutManager;
 
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
@@ -34,10 +32,10 @@ pub fn render_ui(
     registry: &mut RectRegistry,
     main_content_box_handle_name: &str,
     original_anchor_metrics: &mut Option<Rect>,
-    layout_cache: &mut LayoutCache,
+    layout_manager: &mut LayoutManager,
     main_content_tab_bar: &TabBarManager,
     tab_style: TabBarStyle,
-    settings: &Settings,
+    settings_manager: &crate::settings_manager::SettingsManager,
     settings_fields: &SettingsFields,
     field_editor_state: &FieldEditorState,
     dashboard_arc: &Arc<Mutex<DashboardState>>,
@@ -103,7 +101,8 @@ pub fn render_ui(
                 };
                 
                 if tab_config.id == "settings" {
-                    render_settings(f, nested_area, settings, settings_fields, field_editor_state);
+                    let settings = settings_manager.get(); // Get current settings
+                    render_settings(f, nested_area, &settings, settings_fields, field_editor_state);
                 } else if tab_config.id == "dashboard" {
                     // Render dashboard directly from Arc to avoid cloning
                     if let Ok(mut state) = dashboard_arc.lock() {
@@ -129,7 +128,7 @@ pub fn render_ui(
         field_editor_state,
         registry,
         main_content_box_handle_name,
-        layout_cache,
+        layout_manager,
     );
     
     // Render popup
@@ -148,25 +147,15 @@ fn render_dropdown_overlay(
     field_editor_state: &FieldEditorState,
     registry: &RectRegistry,
     main_content_box_handle_name: &str,
-    layout_cache: &mut LayoutCache,
+    layout_manager: &mut LayoutManager,
 ) {
     if let FieldEditorState::Selecting { field_index, selected_index, options } = field_editor_state {
         if let Some(box_manager) = get_box_by_name(registry, main_content_box_handle_name) {
             if let Some(content_rect) = box_manager.metrics(registry) {
                 let content_rect: Rect = content_rect.into();
                 
-                // Use cached content area or calculate and cache it
-                if let Some(content_area) = layout_cache.get_content_area()
-                    .filter(|cached| {
-                        cached.width == content_rect.width && cached.height == content_rect.height
-                    })
-                    .or_else(|| {
-                        calculate_centered_content_area(content_rect).map(|area| {
-                            layout_cache.set_content_area(area);
-                            area
-                        })
-                    })
-                {
+                // Use LayoutManager for cached content area calculation
+                if let Some(content_area) = layout_manager.get_content_area(content_rect) {
                     // Split into top section (Sketch Directory, Sketch Name) and bottom section (Device/Connection)
                     let main_chunks = Layout::default()
                         .direction(Direction::Vertical)
@@ -286,7 +275,7 @@ pub fn handle_cursor_positioning(
     registry: &RectRegistry,
     main_content_tab_bar: &TabBarManager,
     main_content_box_handle_name: &str,
-    layout_cache: &LayoutCache,
+    layout_manager: &mut LayoutManager,
 ) {
     if let FieldEditorState::Editing { field_index, ref input } = field_editor_state {
         if let Some(active_tab_idx) = registry.get_active_tab(main_content_tab_bar.handle()) {
@@ -303,15 +292,8 @@ pub fn handle_cursor_positioning(
                                 
                                 // Only position cursor if terminal is large enough
                                 if content_rect.width >= min_width_pixels && content_rect.height >= min_height_pixels {
-                                    // Use cached content area or calculate and cache it
-                                    if let Some(content_area) = layout_cache.get_content_area()
-                                        .filter(|cached| {
-                                            cached.width == content_rect.width && cached.height == content_rect.height
-                                        })
-                                        .or_else(|| {
-                                            calculate_centered_content_area(content_rect).map(|area| area)
-                                        })
-                                    {
+                                    // Use LayoutManager for cached content area calculation
+                                    if let Some(content_area) = layout_manager.get_content_area(content_rect) {
                                         // Get inner area width for scroll calculation
                                         let inner_width = if *field_index < 2 {
                                             // Top fields use full width minus borders

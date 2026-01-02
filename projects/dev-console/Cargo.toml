@@ -39,6 +39,9 @@ lazy_static = "1.5"
 # Command detection
 which = "6.0"
 
+# MQTT client (pure Rust codec, no native dependencies)
+mqttrs = "0.4"
+
 [profile.release]
 opt-level = 3
 lto = true

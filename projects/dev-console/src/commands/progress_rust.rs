@@ -24,11 +24,156 @@ pub fn execute_progress_rust(
 ) {
     // Build arduino-cli command
     let sketch_dir = PathBuf::from(&settings.sketch_directory);
-    let sketch_file = sketch_dir.join(&settings.sketch_name);
+    // Add .ino extension if not already present (sketch_name from dropdown is without extension)
+    let sketch_file = if settings.sketch_name.ends_with(".ino") {
+        sketch_dir.join(&settings.sketch_name)
+    } else {
+        sketch_dir.join(format!("{}.ino", settings.sketch_name))
+    };
+    
+    // Debug: Log settings being used
+    {
+        let mut state = dashboard.lock().unwrap();
+        state.add_output_line(format!("[DEBUG] Sketch directory: '{}'", settings.sketch_directory));
+        state.add_output_line(format!("[DEBUG] Sketch name from settings: '{}'", settings.sketch_name));
+        state.add_output_line(format!("[DEBUG] Sketch file path: {:?}", sketch_file));
+    }
+    
+    // Validate that the sketch file exists
+    if !sketch_file.exists() {
+        let mut state = dashboard.lock().unwrap();
+        state.is_running = false;
+        let error_msg = format!(
+            "Error: Sketch file not found: {:?}\nAvailable .ino files in directory:",
+            sketch_file
+        );
+        state.set_status_text(&error_msg);
+        state.add_output_line(error_msg.clone());
+        
+        // List available .ino files to help user
+        if let Ok(entries) = std::fs::read_dir(&sketch_dir) {
+            let ino_files: Vec<String> = entries
+                .filter_map(|entry| {
+                    if let Ok(entry) = entry {
+                        let path = entry.path();
+                        if path.is_file() {
+                            if let Some(ext) = path.extension() {
+                                if ext == "ino" {
+                                    if let Some(file_name) = path.file_name() {
+                                        return Some(file_name.to_string_lossy().to_string());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    None
+                })
+                .collect();
+            
+            if !ino_files.is_empty() {
+                state.add_output_line("Please select one of these files from the Sketch Name dropdown:".to_string());
+                for file in ino_files {
+                    state.add_output_line(format!("  - {}", file));
+                }
+            } else {
+                state.add_output_line("No .ino files found in the sketch directory.".to_string());
+            }
+        }
+        
+        return;
+    }
+    
     let build_path = sketch_dir.join("build");
     
     // Find project root (workspace root)
     let project_root = find_project_root(&sketch_dir);
+    
+    // Arduino CLI requires the directory name to match the .ino file name
+    // If they don't match, create a temporary directory structure
+    let (compile_dir, temp_dir_created) = {
+        let sketch_file_name = sketch_file.file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("");
+        let dir_name = sketch_dir.file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("");
+        
+        if sketch_file_name == dir_name {
+            // Names match - use the directory directly
+            (sketch_dir.clone(), false)
+        } else {
+            // Names don't match - create temporary directory
+            let temp_dir = project_root.join(".dev-console").join("temp_compile").join(sketch_file_name);
+            
+            // Create temp directory
+            if let Err(e) = std::fs::create_dir_all(&temp_dir) {
+                let mut state = dashboard.lock().unwrap();
+                state.is_running = false;
+                let error_msg = format!(
+                    "Error: Failed to create temporary compile directory: {:?}\n{}",
+                    temp_dir, e
+                );
+                state.set_status_text(&error_msg);
+                state.add_output_line(error_msg);
+                return;
+            }
+            
+            // Copy the sketch file to temp directory with matching name
+            let temp_sketch_file = temp_dir.join(format!("{}.ino", sketch_file_name));
+            if let Err(e) = std::fs::copy(&sketch_file, &temp_sketch_file) {
+                let mut state = dashboard.lock().unwrap();
+                state.is_running = false;
+                let error_msg = format!(
+                    "Error: Failed to copy sketch file to temporary directory: {:?}\n{}",
+                    temp_sketch_file, e
+                );
+                state.set_status_text(&error_msg);
+                state.add_output_line(error_msg);
+                // Clean up temp directory
+                let _ = std::fs::remove_dir_all(&temp_dir);
+                return;
+            }
+            
+            // Copy any other files from the sketch directory (for includes, etc.)
+            // BUT exclude other .ino files - arduino-cli scans all .ino files and resolves
+            // includes from all of them, which would cause wrong libraries to be included
+            if let Ok(entries) = std::fs::read_dir(&sketch_dir) {
+                for entry in entries {
+                    if let Ok(entry) = entry {
+                        let path = entry.path();
+                        if path.is_file() && path != sketch_file {
+                            // Skip other .ino files - only copy the selected one
+                            if let Some(ext) = path.extension() {
+                                if ext == "ino" {
+                                    continue;
+                                }
+                            }
+                            // Copy non-.ino files (headers, config files, etc.)
+                            if let Some(file_name) = path.file_name() {
+                                let dest = temp_dir.join(file_name);
+                                let _ = std::fs::copy(&path, &dest);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Log temporary directory creation
+            {
+                let mut state = dashboard.lock().unwrap();
+                state.add_output_line(format!(
+                    "[DEBUG] Sketch name '{}' doesn't match directory name '{}'",
+                    sketch_file_name, dir_name
+                ));
+                state.add_output_line(format!(
+                    "[DEBUG] Created temporary compile directory: {:?}",
+                    temp_dir
+                ));
+            }
+            
+            (temp_dir, true)
+        }
+    };
     
     // Create log file for this compilation session
     let log_file_path = project_root.join(".dev-console").join("compile_output.log");
@@ -56,6 +201,9 @@ pub fn execute_progress_rust(
         let _ = writeln!(log, "\n=== Compilation Session Started ===");
         let _ = writeln!(log, "Timestamp: {:?}", std::time::SystemTime::now());
         let _ = writeln!(log, "Sketch: {:?}", sketch_file);
+        if temp_dir_created {
+            let _ = writeln!(log, "Temporary compile directory: {:?}", compile_dir);
+        }
     }
     
     // Load historical data if available
@@ -63,7 +211,7 @@ pub fn execute_progress_rust(
     let mut history = ProgressHistory::load(history_file.clone())
         .unwrap_or_else(|_| ProgressHistory::new(history_file));
     
-    // Get historical data for this sketch
+    // Get historical data for this sketch (use original sketch_dir for history)
     let historical_data = history.get_historical_data(&sketch_dir)
         .map(|h| crate::progress_tracker::HistoricalData {
             file_path: h.file_path.clone(),
@@ -79,14 +227,15 @@ pub fn execute_progress_rust(
     let arduino_cli = find_arduino_cli(&settings.env, &project_root);
     
     // Build command arguments - MUST include --libraries like Python version
+    // Arduino CLI expects a directory, not a file path
     let mut cmd = Command::new(&arduino_cli);
     cmd.arg("compile");
     cmd.arg("--fqbn").arg(&settings.fqbn);
     cmd.arg("--libraries").arg(&library_path);
     cmd.arg("--build-path").arg(&build_path);
     cmd.arg("--verbose");
-    cmd.arg(&sketch_file);
-    cmd.current_dir(&sketch_dir);
+    cmd.arg(&compile_dir);  // Pass directory, not file
+    cmd.current_dir(&compile_dir);
     
     // Helper function to write to log file
     let log_output = |log_file: &Arc<Mutex<File>>, line: &str| {
@@ -98,15 +247,18 @@ pub fn execute_progress_rust(
     // Add initial message
     {
         let mut state = dashboard.lock().unwrap();
-        let lines = vec![
+        let mut lines = vec![
             format!("Executing: {:?} compile --fqbn {} --libraries {:?} --verbose {:?}", 
-                arduino_cli, settings.fqbn, library_path, sketch_file),
+                arduino_cli, settings.fqbn, library_path, compile_dir),
             format!("Build path: {:?}", build_path),
             format!("Library path: {:?}", library_path),
             format!("Library path exists: {}", library_path.exists()),
             format!("Arduino CLI path: {:?}", arduino_cli),
             format!("Arduino CLI exists: {}", arduino_cli.exists()),
         ];
+        if temp_dir_created {
+            lines.push(format!("[NOTE] Using temporary compile directory (sketch name doesn't match directory name)"));
+        }
         for line in &lines {
             state.add_output_line(line.clone());
             log_output(&log_file, line);
@@ -382,6 +534,17 @@ pub fn execute_progress_rust(
                 state.add_output_line(error_msg.clone());
                 log_output(&log_file, &error_msg);
             }
+        }
+    }
+    
+    // Clean up temporary directory if it was created
+    if temp_dir_created {
+        if let Err(e) = std::fs::remove_dir_all(&compile_dir) {
+            let mut state = dashboard.lock().unwrap();
+            state.add_output_line(format!(
+                "[WARNING] Failed to clean up temporary directory {:?}: {}",
+                compile_dir, e
+            ));
         }
     }
 }

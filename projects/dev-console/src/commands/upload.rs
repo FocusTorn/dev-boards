@@ -46,15 +46,31 @@ pub fn execute_upload_rust(
     cmd.stderr(Stdio::piped());
     cmd.current_dir(&sketch_dir);
     
+    // Clear status and output panels before starting upload
+    {
+        let mut state = dashboard.lock().unwrap();
+        // Clear output lines
+        state.output_lines.clear();
+        // Reset progress
+        state.progress_percent = 0.0;
+        state.set_progress_stage("");
+        state.set_current_file("");
+        // Reset scroll position
+        state.output_scroll = 0;
+        state.auto_scroll_enabled = true;
+        // Set initial status
+        use crate::string_intern::common;
+        state.status_text = common::RUNNING.clone();
+        state.is_running = true;
+    }
+    
     // Add initial message
     {
         let mut state = dashboard.lock().unwrap();
         state.add_output_line(format!("Uploading to {} on port {}...", settings.board_model, settings.port));
         state.add_output_line(format!("Executing: {:?} upload -p {} --fqbn {} --build-path {:?} {:?}", 
             arduino_cli, settings.port, settings.fqbn, build_path, sketch_dir));
-        state.is_running = true;
         state.set_progress_stage("Initializing");
-        state.progress_percent = 0.0;
     }
     
     // Check if arduino-cli exists

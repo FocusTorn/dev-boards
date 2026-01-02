@@ -3,6 +3,8 @@
 use crate::settings::Settings;
 use serialport::available_ports;
 use tui_input::Input;
+use std::fs;
+use std::path::PathBuf;
 
 /// Settings field editor state
 #[derive(Debug, Clone)]
@@ -146,11 +148,11 @@ impl SettingsField {
     
     /// Check if field is a dropdown
     pub fn is_dropdown(&self) -> bool {
-        matches!(self, SettingsField::Environment | SettingsField::Port)
+        matches!(self, SettingsField::Environment | SettingsField::Port | SettingsField::SketchName)
     }
     
     /// Get dropdown options for a field
-    pub fn get_dropdown_options(&self) -> Vec<String> {
+    pub fn get_dropdown_options(&self, settings: &Settings) -> Vec<String> {
         match self {
             SettingsField::Environment => {
                 vec!["arduino".to_string(), "esp-idf".to_string()]
@@ -167,6 +169,45 @@ impl SettingsField {
                         // Fallback to common ports if detection fails
                         vec!["COM1".to_string(), "COM3".to_string(), "COM5".to_string(), "COM7".to_string(), "COM9".to_string()]
                     }
+                }
+            }
+            SettingsField::SketchName => {
+                // Sketch Name dropdown - scan sketch directory for .ino files
+                if settings.sketch_directory.is_empty() {
+                    return vec![];
+                }
+                
+                let sketch_dir = PathBuf::from(&settings.sketch_directory);
+                if !sketch_dir.exists() || !sketch_dir.is_dir() {
+                    return vec![];
+                }
+                
+                match fs::read_dir(&sketch_dir) {
+                    Ok(entries) => {
+                        let mut ino_files: Vec<String> = entries
+                            .filter_map(|entry| {
+                                if let Ok(entry) = entry {
+                                    let path = entry.path();
+                                    if path.is_file() {
+                                        if let Some(ext) = path.extension() {
+                                            if ext == "ino" {
+                                                // Return just the filename without extension
+                                                if let Some(file_name) = path.file_stem() {
+                                                    return Some(file_name.to_string_lossy().to_string());
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                None
+                            })
+                            .collect();
+                        
+                        // Sort alphabetically for consistent display
+                        ino_files.sort();
+                        ino_files
+                    }
+                    Err(_) => vec![],
                 }
             }
             _ => vec![],
@@ -237,9 +278,9 @@ impl SettingsFields {
     }
     
     /// Get dropdown options for a field
-    pub fn get_dropdown_options(&self, index: usize) -> Vec<String> {
+    pub fn get_dropdown_options(&self, index: usize, settings: &Settings) -> Vec<String> {
         SettingsField::from_index(index)
-            .map(|field| field.get_dropdown_options())
+            .map(|field| field.get_dropdown_options(settings))
             .unwrap_or_default()
     }
 }

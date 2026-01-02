@@ -4,6 +4,7 @@
 // MODULES ------------------>> 
 
 mod settings;
+mod settings_manager;
 mod field_editor;
 mod dashboard;
 mod dashboard_batch;
@@ -14,12 +15,14 @@ mod tool_detector;
 mod string_intern;
 mod render;
 mod commands;
+mod command_helper;
 mod process_manager;
 mod constants;
 mod path_utils;
 mod layout_utils;
 mod app_state;
 mod layout_cache;
+mod layout_manager;
 mod event_handler;
 mod ui_coordinator;
 mod progress_tracker;
@@ -28,6 +31,7 @@ mod progress_history;
 //--------------------------------------------------------<<
 // IMPORTS ------------------>> 
 
+use crate::layout_manager::LayoutManager;
 use ratatui::{
     backend::CrosstermBackend,
     Terminal,
@@ -52,7 +56,6 @@ use crossterm::{
 use app_state::AppState;
 use config_validation::load_and_validate_config;
 use constants::*;
-use layout_cache::LayoutCache;
 use event_handler::{
     handle_dashboard_key_event,
     handle_dashboard_scroll,
@@ -133,7 +136,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     let main_content_box_handle_name = HWND_MAIN_CONTENT_BOX;
     let mut original_anchor_metrics: Option<Rect> = None;
-    let mut layout_cache = LayoutCache::new();
+    let mut layout_manager = LayoutManager::new();
     
     // ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
     // │                                           MAIN LOOP                                            │
@@ -156,13 +159,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &mut registry,
                 main_content_box_handle_name,
                 &mut original_anchor_metrics,
-                &mut layout_cache,
+                &mut layout_manager,
                 &main_content_tab_bar,
                 tab_style,
                 &app_state.settings,
                 &app_state.settings_fields,
                 &app_state.field_editor_state,
-                &app_state.dashboard_arc,
+                &app_state.dashboard,
                 &popup,
                 &toasts,
                 &mut current_tab_bar,
@@ -175,7 +178,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &registry,
                 &main_content_tab_bar,
                 main_content_box_handle_name,
-                &layout_cache,
+                &mut layout_manager,
             );
         })?;
         
@@ -196,15 +199,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             if let Some(tab_bar_state) = registry.get_tab_bar_state(main_content_tab_bar.handle()) {
                                 if let Some(tab_config) = tab_bar_state.tab_configs.get(active_tab_idx) {
                                     if tab_config.id == "dashboard" {
+                                        // SettingsManager always has latest values - no reload needed
                                         if handle_dashboard_key_event(
                                             key.code,
-                                            &mut app_state.dashboard_state,
-                                            &app_state.dashboard_arc,
-                                            app_state.settings.clone(),
+                                            &app_state.dashboard,
+                                            &app_state.settings,
                                             app_state.process_manager.clone(),
                                         ) {
-                                            app_state.sync_dashboard_state();
-                                                continue;
+                                            continue;
                                         }
                                     }
                                 }
@@ -218,7 +220,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     key.code,
                                     key.modifiers,
                                     &app_state.field_editor_state,
-                                    &mut app_state.settings,
+                                    &app_state.settings,
                                     &app_state.settings_fields,
                                     &mut registry,
                                     &main_content_tab_bar,
@@ -241,7 +243,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     key.code,
                                     key.modifiers,
                                     &app_state.field_editor_state,
-                                    &mut app_state.settings,
+                                    &app_state.settings,
                                     &app_state.settings_fields,
                                     &mut registry,
                                     &main_content_tab_bar,
@@ -269,7 +271,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             key.code,
                                             key.modifiers,
                                             &app_state.field_editor_state,
-                                            &mut app_state.settings,
+                                            &app_state.settings,
                                             &app_state.settings_fields,
                                             &mut registry,
                                             &main_content_tab_bar,
@@ -302,8 +304,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 if let Some(tab_bar_state) = registry.get_tab_bar_state(main_content_tab_bar.handle()) {
                                     if let Some(tab_config) = tab_bar_state.tab_configs.get(active_tab_idx) {
                                         if tab_config.id == "dashboard" {
-                                            // Modify Arc directly to avoid overwriting state with stale local data
-                                            handle_dashboard_scroll(&mouse_event, &app_state.dashboard_arc, &registry);
+                                            // Modify Arc directly (no local copy anymore)
+                                            handle_dashboard_scroll(&mouse_event, &app_state.dashboard, &registry);
                                         }
                                     }
                                 }
@@ -327,7 +329,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 &app_state.settings_fields,
                                 &registry,
                                 &main_content_tab_bar,
-                                &mut layout_cache,
+                                &mut layout_manager,
                             ) {
                                 app_state.field_editor_state = new_state;
                         }

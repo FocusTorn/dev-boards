@@ -86,6 +86,41 @@ impl ProcessManager {
     pub fn has_processes(&self) -> bool {
         self.process_count() > 0
     }
+    
+    /// Kill all running processes (for canceling commands)
+    pub fn kill_all(&self) {
+        let pids = match self.processes.lock() {
+            Ok(p) => p.clone(), // Clone the list so we can release the lock
+            Err(_) => return, // Poisoned lock, can't kill
+        };
+        
+        for pid in pids {
+            // Kill the process
+            #[cfg(unix)]
+            {
+                use std::process::Command;
+                // On Unix, use kill command with TERM signal for graceful shutdown
+                let _ = Command::new("kill")
+                    .arg("-TERM")
+                    .arg(pid.to_string())
+                    .output();
+            }
+            
+            #[cfg(windows)]
+            {
+                use std::process::Command;
+                // On Windows, use taskkill with /F for force termination
+                let _ = Command::new("taskkill")
+                    .args(&["/F", "/PID", &pid.to_string()])
+                    .output();
+            }
+        }
+        
+        // Clear the list after killing
+        if let Ok(mut processes) = self.processes.lock() {
+            processes.clear();
+        }
+    }
 }
 
 impl Default for ProcessManager {
