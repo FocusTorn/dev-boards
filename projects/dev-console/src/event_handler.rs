@@ -8,6 +8,7 @@ use crate::constants::HWND_MAIN_CONTENT_BOX;
 use crate::field_editor::{FieldEditorState, SettingsFields};
 use crate::layout_manager::LayoutManager;
 use crate::settings_manager::SettingsManager;
+use crate::profile_state::ProfileState;
 
 use crossterm::event::{KeyCode, KeyModifiers, MouseEventKind};
 use tui_input::{Input, InputRequest};
@@ -94,26 +95,119 @@ pub enum FieldEditorEventResult {
     StateChanged(FieldEditorState),
 }
 
+/// Result of handling a profile event
+#[derive(Debug)]
+pub enum ProfileEventResult {
+    Continue,
+    Toast(Toast),
+    #[allow(dead_code)]
+    RefreshProfiles,
+    SaveProfile(String),
+    LoadProfile(String),
+}
+
+/// Handle profile keyboard events
+pub fn handle_profile_key_event(
+    key_code: KeyCode,
+    key_modifiers: KeyModifiers,
+    profile_state: &ProfileState,
+    settings_manager: &SettingsManager,
+) -> ProfileEventResult {
+    let is_active = *profile_state.is_active.lock().unwrap();
+    
+    match key_code {
+        KeyCode::Char('p') | KeyCode::Char('P') if !key_modifiers.contains(KeyModifiers::CONTROL) => {
+            // Toggle profile mode
+            let mut active = profile_state.is_active.lock().unwrap();
+            *active = !*active;
+            if *active {
+                // Refresh profiles when activating
+                let _ = profile_state.refresh_profiles();
+            } else {
+                profile_state.clear_selection();
+            }
+            ProfileEventResult::Continue
+        }
+        KeyCode::Char('s') | KeyCode::Char('S') if !key_modifiers.contains(KeyModifiers::CONTROL) => {
+            // Save current settings as profile - generate default name
+            let settings = settings_manager.get();
+            // Generate name like "sht21-solo-win" format: sketch_name-env-platform
+            let platform = if cfg!(windows) { "win" } else if cfg!(unix) { "unix" } else { "other" };
+            let default_name = if !settings.sketch_name.is_empty() {
+                format!("{}-{}-{}", settings.sketch_name, settings.env, platform)
+            } else {
+                format!("profile-{}-{}", settings.env, platform)
+            };
+            ProfileEventResult::SaveProfile(default_name)
+        }
+        KeyCode::Char('l') | KeyCode::Char('L') if !key_modifiers.contains(KeyModifiers::CONTROL) => {
+            // Load selected profile (works even when not active)
+            if let Some(profile_name) = profile_state.get_selected_profile() {
+                ProfileEventResult::LoadProfile(profile_name)
+            } else {
+                ProfileEventResult::Toast(Toast::new(
+                    "No profile selected".to_string(),
+                    ToastType::Error,
+                ))
+            }
+        }
+        KeyCode::Enter if is_active => {
+            // Load selected profile
+            if let Some(profile_name) = profile_state.get_selected_profile() {
+                ProfileEventResult::LoadProfile(profile_name)
+            } else {
+                ProfileEventResult::Toast(Toast::new(
+                    "No profile selected".to_string(),
+                    ToastType::Error,
+                ))
+            }
+        }
+        KeyCode::Up | KeyCode::Char('k') if is_active => {
+            profile_state.move_up();
+            ProfileEventResult::Continue
+        }
+        KeyCode::Down | KeyCode::Char('j') if is_active => {
+            profile_state.move_down();
+            ProfileEventResult::Continue
+        }
+        _ => ProfileEventResult::Continue,
+    }
+}
+
 /// Handle field editor keyboard events
 pub fn handle_field_editor_key_event(
     key_code: KeyCode,
     key_modifiers: KeyModifiers,
-    field_editor_state: &FieldEditorState,
+    editor_state: &FieldEditorState,
     settings_manager: &SettingsManager,
     settings_fields: &SettingsFields,
+    profile_state: &crate::profile_state::ProfileState,
     registry: &mut RectRegistry,
     main_content_tab_bar: &TabBarManager,
     tab_style: TabBarStyle,
 ) -> FieldEditorEventResult {
-    match field_editor_state {
+    match editor_state {
         FieldEditorState::Editing { field_index, input } => {
             handle_editing_key_event(key_code, key_modifiers, *field_index, input, settings_manager, settings_fields)
         }
         FieldEditorState::Selected { field_index } => {
-            handle_selected_key_event(key_code, *field_index, settings_manager, settings_fields, registry, main_content_tab_bar, tab_style)
+            handle_selected_key_event(
+                key_code,
+                *field_index,
+                settings_manager,
+                settings_fields,
+                profile_state,
+                registry,
+                main_content_tab_bar,
+                tab_style,
+            )
         }
         FieldEditorState::Selecting { field_index, selected_index, options } => {
             handle_selecting_key_event(key_code, *field_index, *selected_index, options, settings_manager, settings_fields)
+        }
+        FieldEditorState::ProfileSelecting { .. } => {
+            // Enter and Esc are handled in the main loop
+            FieldEditorEventResult::Continue
         }
     }
 }
@@ -154,6 +248,7 @@ fn handle_selected_key_event(
     field_index: usize,
     settings_manager: &SettingsManager,
     settings_fields: &SettingsFields,
+    profile_state: &crate::profile_state::ProfileState,
     registry: &mut RectRegistry,
     main_content_tab_bar: &TabBarManager,
     tab_style: TabBarStyle,
@@ -187,22 +282,12 @@ fn handle_selected_key_event(
             }
         }
         KeyCode::Up | KeyCode::Char('k') => {
-            if field_index > 0 {
-                FieldEditorEventResult::StateChanged(FieldEditorState::Selected {
-                    field_index: field_index - 1,
-                })
-            } else {
-                FieldEditorEventResult::Continue
-            }
+            profile_state.move_up();
+            FieldEditorEventResult::Continue
         }
         KeyCode::Down | KeyCode::Char('j') => {
-            if field_index < settings_fields.count() - 1 {
-                FieldEditorEventResult::StateChanged(FieldEditorState::Selected {
-                    field_index: field_index + 1,
-                })
-            } else {
-                FieldEditorEventResult::Continue
-            }
+            profile_state.move_down();
+            FieldEditorEventResult::Continue
         }
         KeyCode::Tab => {
             let next_index = (field_index + 1) % settings_fields.count();
@@ -360,18 +445,22 @@ pub fn handle_dashboard_scroll(
                 height: content_rect.height.saturating_sub(2),
             };
             
+            // Column 1 width should match render/dashboard.rs (max_command_width + 4)
+            let max_command_width = 15u16; // Conservative estimate matching most commands
+            let commands_box_width = (max_command_width + 4).min(nested_area.width);
+
             let columns = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints([
-                    Constraint::Percentage(50),
-                    Constraint::Percentage(50),
+                    Constraint::Length(commands_box_width),
+                    Constraint::Min(0),
                 ])
                 .split(nested_area);
             
             let column2_chunks = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints([
-                    Constraint::Length(3),
+                    Constraint::Length(4), // Match Constraint::Length(4) in dashboard.rs
                     Constraint::Min(0),
                 ])
                 .split(columns[1]);
@@ -456,70 +545,75 @@ pub fn handle_settings_field_click(
                                             });
                                         }
                                     } else {
-                                        // Check bottom section (Device/Connection)
+                                        // Check bottom section (Device | Connection | MQTT with 2 sub-columns)
                                         let section_y = content_y + 6;
-                                        let section_width = content_width / 2;
                                         
-                                        // Check Device section (left)
-                                        if mouse_event.column >= content_x && mouse_event.column < content_x + section_width {
-                                            let relative_y = mouse_event.row.saturating_sub(section_y + 1);
-                                            let field_offset = relative_y / 4; // 3 lines per field + 1 spacing
-                                            if field_offset < 3 {
-                                                let field_index = 2 + field_offset as usize; // Environment (2), Board Model (3), FQBN (4)
-                                                if field_index < 5 {
-                                                    // Check if dropdown field
-                                                    if settings_fields.is_dropdown(field_index) {
-                                                        let options = settings_fields.get_dropdown_options(field_index, &settings);
-                                                        let current_value = settings_fields.get_value(&settings, field_index);
-                                                        let selected_index = options.iter()
-                                                            .position(|opt| opt == &current_value)
-                                                            .unwrap_or(0);
-                                                        return Some(FieldEditorState::Selecting {
-                                                            field_index,
-                                                            selected_index,
-                                                            options,
-                                                        });
-                                                    } else {
-                                                        let current_value = settings_fields.get_value(&settings, field_index);
-                                                        let mut input = Input::new(current_value);
-                                                        let _ = input.handle(InputRequest::GoToEnd);
-                                                        return Some(FieldEditorState::Editing {
-                                                            field_index,
-                                                            input,
-                                                        });
-                                                    }
+                                        let bottom_columns = Layout::default()
+                                            .direction(Direction::Horizontal)
+                                            .constraints([
+                                                Constraint::Percentage(25), // Device
+                                                Constraint::Percentage(25), // Connection
+                                                Constraint::Percentage(50), // MQTT (2 sub-columns)
+                                            ])
+                                            .split(Rect {
+                                                x: content_x,
+                                                y: section_y,
+                                                width: content_width,
+                                                height: content_area.height.saturating_sub(6),
+                                            });
+                                        
+                                        // Helper to find which field in a section was clicked
+                                        let find_field = |mouse_x: u16, mouse_y: u16, area: Rect, indices: &[usize]| -> Option<usize> {
+                                            if mouse_x >= area.x && mouse_x < area.x + area.width &&
+                                               mouse_y >= area.y && mouse_y < area.y + area.height {
+                                                let relative_y = mouse_y.saturating_sub(area.y + 1); // +1 for top border
+                                                let field_offset = (relative_y / 4) as usize; // 3 lines per field + 1 spacing
+                                                if field_offset < indices.len() {
+                                                    return Some(indices[field_offset]);
                                                 }
                                             }
-                                        }
-                                        // Check Connection section (right)
-                                        else if mouse_event.column >= content_x + section_width && mouse_event.column < content_x + content_width {
-                                            let relative_y = mouse_event.row.saturating_sub(section_y + 1);
-                                            let field_offset = relative_y / 4; // 3 lines per field + 1 spacing
-                                            if field_offset < 2 {
-                                                let field_index = 5 + field_offset as usize; // Port (5), Baudrate (6)
-                                                if field_index < 7 {
-                                                    // Check if dropdown field
-                                                    if settings_fields.is_dropdown(field_index) {
-                                                        let options = settings_fields.get_dropdown_options(field_index, &settings);
-                                                        let current_value = settings_fields.get_value(&settings, field_index);
-                                                        let selected_index = options.iter()
-                                                            .position(|opt| opt == &current_value)
-                                                            .unwrap_or(0);
-                                                        return Some(FieldEditorState::Selecting {
-                                                            field_index,
-                                                            selected_index,
-                                                            options,
-                                                        });
-                                                    } else {
-                                                        let current_value = settings_fields.get_value(&settings, field_index);
-                                                        let mut input = Input::new(current_value);
-                                                        let _ = input.handle(InputRequest::GoToEnd);
-                                                        return Some(FieldEditorState::Editing {
-                                                            field_index,
-                                                            input,
-                                                        });
-                                                    }
-                                                }
+                                            None
+                                        };
+
+                                        // Check Device and Connection columns
+                                        let clicked_field = find_field(mouse_event.column, mouse_event.row, bottom_columns[0], &[2, 3, 4])
+                                            .or_else(|| find_field(mouse_event.column, mouse_event.row, bottom_columns[1], &[5, 6]));
+                                        
+                                        // Check MQTT section (2 sub-columns)
+                                        let clicked_field = clicked_field.or_else(|| {
+                                            let mqtt_columns = Layout::default()
+                                                .direction(Direction::Horizontal)
+                                                .constraints([
+                                                    Constraint::Percentage(50), // Credentials
+                                                    Constraint::Percentage(50), // Topics
+                                                ])
+                                                .split(bottom_columns[2]);
+                                            
+                                            find_field(mouse_event.column, mouse_event.row, mqtt_columns[0], &[7, 8, 9, 10])
+                                                .or_else(|| find_field(mouse_event.column, mouse_event.row, mqtt_columns[1], &[11, 12, 13]))
+                                        });
+
+                                        if let Some(field_index) = clicked_field {
+                                            // Check if dropdown field
+                                            if settings_fields.is_dropdown(field_index) {
+                                                let options = settings_fields.get_dropdown_options(field_index, &settings);
+                                                let current_value = settings_fields.get_value(&settings, field_index);
+                                                let selected_index = options.iter()
+                                                    .position(|opt| opt == &current_value)
+                                                    .unwrap_or(0);
+                                                return Some(FieldEditorState::Selecting {
+                                                    field_index,
+                                                    selected_index,
+                                                    options,
+                                                });
+                                            } else {
+                                                let current_value = settings_fields.get_value(&settings, field_index);
+                                                let mut input = Input::new(current_value);
+                                                let _ = input.handle(InputRequest::GoToEnd);
+                                                return Some(FieldEditorState::Editing {
+                                                    field_index,
+                                                    input,
+                                                });
                                             }
                                         }
                                     }

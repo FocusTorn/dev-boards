@@ -12,6 +12,14 @@ pub struct AppConfig { //>
     pub application: ApplicationConfig,
     #[serde(rename = "tab_bars")]
     pub tab_bars: std::collections::HashMap<String, TabBarConfigYaml>,
+    #[serde(rename = "tab_content")]
+    pub tab_content: Vec<TabContentConfigYaml>,
+} //<
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct TabContentConfigYaml { //>
+    pub tab_id: String,
+    pub bindings: Vec<BindingConfigYaml>,
 } //<
 
 #[derive(Debug, Clone, Deserialize)]

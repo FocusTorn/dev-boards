@@ -1,0 +1,232 @@
+---
+globs: **/*.py
+
+---
+
+# Python Code Quality Rules - Index
+
+## **CRITICAL EXECUTION DIRECTIVE**
+
+**AI Agent Directive**: Follow code quality rules exactly for all Python code quality and linter configuration tasks.
+
+**MANDATORY EXECUTION PROTOCOL**:
+
+1. **PROACTIVE RULE DISCOVERY**: Before starting ANY Python code quality or linter configuration task, MUST check for relevant rules in `.agent/rules/by-language/python/code-quality/` directory
+2. **NO DEVIATION**: All code quality rules must be followed exactly as written
+3. **NO SKIPPING**: No steps may be skipped, abbreviated, or modified
+4. **NO SELECTIVE COMPLIANCE**: All rules apply to all code quality activities
+5. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
+
+**REQUIRED PRE-TASK CHECKLIST**:
+
+- [ ] **Rule Discovery**: Checked `.agent/rules/by-language/python/code-quality/` directory before starting task
+- [ ] **Rule Review**: Read and understood all relevant category files before making changes
+- [ ] **Rule Application**: Applied rules from the start, not after errors appear
+
+## **MANDATORY RULE DISCOVERY FOR PYTHON FILES**
+
+### **CRITICAL REQUIREMENT - NO EXCEPTIONS**
+
+**ABSOLUTE MANDATE**: When working on ANY file containing Python code, the AI agent MUST read and follow ALL applicable rules from `.agent/rules/by-language/python/` directory structure. This requirement applies WITHOUT EXCEPTION to:
+
+1. **Files with `.py` extension**: ALL `.py` files require rule discovery and compliance
+2. **Files WITHOUT `.py` extension**: ALL extensionless files containing Python code require rule discovery and compliance
+3. **All Python code contexts**: Whether editing, reviewing, debugging, or refactoring Python code
+
+**MANDATORY EXECUTION REQUIREMENTS**:
+
+- **BEFORE ANY ACTION**: The AI agent MUST check `.agent/rules/by-language/python/` directory structure for applicable rules
+- **NO SKIPPING**: Rule discovery cannot be skipped, abbreviated, or deferred
+- **NO EXCEPTIONS**: File extension status (`.py` or no extension) does NOT exempt from this requirement
+- **COMPLETE COMPLIANCE**: All discovered rules MUST be followed exactly as written
+- **PROACTIVE APPLICATION**: Rules must be applied from the start, not reactively after errors appear
+
+**SYNTAX-BASED RULE APPLICATION**:
+
+When encountering a file without a `.py` extension that contains Python code:
+
+1. **DETECT PYTHON SYNTAX**: Analyze file content to identify Python code (shebang, imports, Python keywords, syntax patterns)
+2. **APPLY ALL PYTHON RULES**: Treat the file as if it had a `.py` extension and apply ALL rules from:
+   - `.agent/rules/by-language/python/code-quality/` (all category files)
+   - `.agent/rules/by-language/python/code-organization.mdc`
+   - `.agent/rules/by-language/python/code-structure.mdc`
+   - `.agent/rules/by-language/python/script-to-package.mdc`
+   - Any other applicable Python-specific rules
+3. **NO EXEMPTIONS**: Extensionless Python files receive the SAME rule treatment as `.py` files
+
+**✅ CORRECT - Mandatory rule discovery for extensionless Python files**:
+
+```python
+# File: scripts/sync (no .py extension, but contains Python code)
+#!/usr/bin/env python3
+"""Extensionless Python script."""
+
+# AI Agent MUST:
+# 1. Detect Python syntax from shebang and code structure
+# 2. Check .agent/rules/by-language/python/code-quality/ directory
+# 3. Read all relevant category files (error-investigation.mdc, imports-and-type-checking.mdc, etc.)
+# 4. Apply ALL Python code quality rules as if file had .py extension
+# 5. Follow all rules from start, not after errors appear
+```
+
+**❌ INCORRECT - Skipping rule discovery for extensionless files**:
+
+```python
+# Wrong: AI agent skips rule discovery because file has no .py extension
+# File: scripts/sync (no extension, contains Python code)
+# AI agent proceeds without checking .agent/rules/by-language/python/ rules
+# This is a CRITICAL PROTOCOL VIOLATION
+```
+
+**❌ INCORRECT - Selective rule application**:
+
+```python
+# Wrong: AI agent applies only some rules, not all applicable rules
+# File: scripts/sync (no extension, contains Python code)
+# AI agent checks code-quality but ignores code-organization.mdc
+# This violates the MANDATORY EXECUTION PROTOCOL
+```
+
+**VIOLATION CONSEQUENCES**:
+
+- **CRITICAL PROTOCOL VIOLATION**: Skipping rule discovery for Python files (with or without extension) constitutes a critical protocol violation
+- **NON-COMPLIANCE**: Any action taken on Python code without first checking applicable rules is non-compliant
+- **REQUIRED REMEDIATION**: All violations must be immediately remediated by:
+  1. Stopping current task
+  2. Completing rule discovery
+  3. Reading all applicable rule files
+  4. Re-applying rules to current task
+
+## **CATEGORY ORGANIZATION**
+
+The Python code quality rules are organized into focused categories for easier navigation and maintenance:
+
+### **1. Error Investigation** (`error-investigation.mdc`)
+- Upstream cause investigation protocols
+- Root cause analysis before fixing errors
+- Type checker configuration investigation
+- Error resolution reference guides
+
+### **2. Imports and Type Checking** (`imports-and-type-checking.mdc`)
+- Runtime imports with sys.path modifications
+- Type ignore comments (when and how to use)
+- Type narrowing for optional imports
+- Linter configuration (pyrightconfig.json, pyproject.toml)
+- Process object handling
+- Context manager optional access
+- Helper modules with runtime imports
+
+### **3. Type Annotations** (`type-annotations.mdc`)
+- Modern Python type annotations (Python 3.9+)
+- Built-in generic types (list, set, dict, tuple)
+- Union syntax (| None vs Optional)
+- argparse type handling
+- Return type annotations
+- Type conversion patterns
+
+### **4. Code Cleanup** (`code-cleanup.mdc`)
+- Unused imports removal
+- Unused return values suppression
+- Windows console encoding patterns
+- Runtime function checks
+- List comprehensions with potentially None values
+- Direct imports for installed packages
+
+### **5. Test Failure Correction** (`test-failure-correction.mdc`)
+- Root cause analysis before fixing tests
+- Mock location verification
+- Mock return value completeness
+- Test data alignment
+- Success determination logic verification
+
+## **USAGE GUIDELINES**
+
+**When investigating errors**:
+1. Start with `error-investigation.mdc` to understand the investigation protocol
+2. Use the corrective reference sections to find specific error resolution steps
+
+**When working with imports**:
+1. Check `imports-and-type-checking.mdc` for runtime import patterns
+2. Follow preventive rules to avoid common pitfalls
+3. Use corrective reference when type checker errors occur
+
+**When adding type annotations**:
+1. Reference `type-annotations.mdc` for modern patterns
+2. Follow preventive rules to use correct syntax
+3. Use corrective reference to fix type annotation errors
+
+**When cleaning up code**:
+1. Check `code-cleanup.mdc` for cleanup patterns
+2. Follow preventive rules to maintain clean code
+3. Use corrective reference for specific cleanup scenarios
+
+**When fixing test failures**:
+1. Check `test-failure-correction.mdc` for investigation protocol
+2. Follow root cause analysis before fixing tests
+3. Verify mock locations and return values
+4. Align test expectations with actual behavior
+
+## **DUAL FRAMING APPROACH**
+
+Each category file uses a dual framing approach:
+
+1. **PREVENTIVE RULES** (What NOT to Do): Clear prohibitions and anti-patterns to prevent mistakes
+2. **CORRECTIVE REFERENCE** (How to Fix When Errors Occur): Step-by-step guides and protocols for resolving specific errors
+
+This structure ensures rules serve both as:
+- **Proactive guidance**: Preventing errors before they occur
+- **Reactive reference**: Providing clear resolution paths when errors are encountered
+
+## **ANTI-PATTERNS**
+
+### **❌ Rule Discovery Violations**
+
+- ❌ **Missing Rule Check** - Don't start Python code quality tasks without first checking `.agent/rules/by-language/python/code-quality/` directory
+- ❌ **Skipping Rules for Extensionless Files** - Don't skip rule discovery for files without `.py` extension that contain Python code - this is a CRITICAL PROTOCOL VIOLATION
+- ❌ **Reactive Rule Application** - Don't apply rules only after errors appear - check and apply rules proactively
+- ❌ **Ignoring CRITICAL EXECUTION DIRECTIVE** - Don't skip the mandatory rule discovery step in the execution protocol
+- ❌ **Selective Category Reading** - Don't read only one category file - check all relevant categories for your task
+- ❌ **Selective Rule Application** - Don't apply only some Python rules - ALL applicable rules from `.agent/rules/by-language/python/` must be followed
+
+## **QUALITY GATES**
+
+- [ ] **Rule Discovery Completed**: Checked `.agent/rules/by-language/python/code-quality/` directory before starting task
+- [ ] **Extensionless File Detection**: If file has no `.py` extension, detected Python syntax and applied all Python rules
+- [ ] **All Python Rules Checked**: Checked ALL applicable rules in `.agent/rules/by-language/python/` directory structure (not just code-quality)
+- [ ] **Relevant Categories Read**: Read all category files relevant to the current task
+- [ ] **Rules Applied Proactively**: Applied rules from the start, not after errors appear
+- [ ] **No Reactive Rule Application**: Rules were not applied only after errors or warnings
+- [ ] **No Exceptions Made**: Rule discovery completed regardless of file extension status
+
+## **SUCCESS METRICS**
+
+After implementing proper code quality workflow:
+
+- ✅ **Proactive Rule Discovery** - All relevant category files checked before starting tasks
+- ✅ **No Reactive Rule Application** - Rules applied from the start, not after errors
+- ✅ **Comprehensive Rule Coverage** - All applicable category files discovered and followed
+- ✅ **Consistent Compliance** - All tasks follow the same rule discovery protocol
+- ✅ **Clear Error Resolution** - Corrective reference sections provide clear paths for error resolution
+
+## **EXECUTION PRIORITY MATRIX**
+
+### **CRITICAL PRIORITY (Execute immediately)**
+
+- **Rule Discovery**: Check for relevant category files in `.agent/rules/by-language/python/code-quality/` before starting ANY task
+- **Read Category Files**: Read all relevant category files before making changes
+- **Apply Rules Proactively**: Apply rules from the start, not after errors
+
+### **HIGH PRIORITY (Execute before proceeding)**
+
+- Verify all relevant categories have been checked
+- Confirm category files have been read and understood
+- Ensure rules are being applied proactively
+
+### **MEDIUM PRIORITY (Execute during normal operation)**
+
+- Maintain awareness of new category files as they're added
+- Update rule discovery process as category structure evolves
+
+## **DYNAMIC MANAGEMENT NOTE**
+
+This document is optimized for AI agent internal processing and may be updated dynamically based on operational needs and pattern recognition. The structure prioritizes AI agent compliance and effectiveness over traditional documentation practices.

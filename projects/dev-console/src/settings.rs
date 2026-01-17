@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 //--------------------------------------------------------<<
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Settings { //>
     pub sketch_directory: String,
     pub sketch_name: String,
@@ -17,6 +17,20 @@ pub struct Settings { //>
     pub port: String,
     pub baudrate: u32,
     pub create_log: bool,
+    #[serde(default)]
+    pub mqtt_host: Option<String>,
+    #[serde(default)]
+    pub mqtt_port: Option<u16>,
+    #[serde(default)]
+    pub mqtt_username: Option<String>,
+    #[serde(default)]
+    pub mqtt_password: Option<String>,
+    #[serde(default)]
+    pub mqtt_topic_command: Option<String>,
+    #[serde(default)]
+    pub mqtt_topic_state: Option<String>,
+    #[serde(default)]
+    pub mqtt_topic_status: Option<String>,
 } //<
 
 impl Default for Settings { //>
@@ -30,6 +44,13 @@ impl Default for Settings { //>
             port: "COM9".to_string(),
             baudrate: 115200,
             create_log: false,
+            mqtt_host: None,
+            mqtt_port: None,
+            mqtt_username: Some("mqtt".to_string()),
+            mqtt_password: Some("mqtt".to_string()),
+            mqtt_topic_command: Some("controller/esp32-s3-led/command".to_string()),
+            mqtt_topic_state: Some("controller/esp32-s3-led/state".to_string()),
+            mqtt_topic_status: Some("controller/esp32-s3-led/status".to_string()),
         }
     }
 } //<

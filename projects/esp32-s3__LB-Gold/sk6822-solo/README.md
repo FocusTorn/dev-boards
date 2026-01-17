@@ -90,17 +90,17 @@ arduino-cli monitor -p COM9 --config baudrate=115200
 ## MQTT Topics
 
 ### Subscribe (ESP32-S3 receives commands)
-- `sensors/esp32-s3-led/command` - LED control commands
+- `controller/esp32-s3-led/command` - LED control commands
 
 ### Publish (ESP32-S3 sends updates)
-- `sensors/esp32-s3-led/state` - Current LED state
-- `sensors/esp32-s3-led/status` - Device status (automatic, via library)
+- `controller/esp32-s3-led/state` - Current LED state
+- `controller/esp32-s3-led/status` - Device status (automatic, via library)
 
 ## MQTT Message Formats
 
 ### Command: Set Color
 
-**Topic:** `sensors/esp32-s3-led/command`
+**Topic:** `controller/esp32-s3-led/command`
 
 **Message:**
 ```json
@@ -115,7 +115,7 @@ arduino-cli monitor -p COM9 --config baudrate=115200
 
 ### Command: Set Brightness
 
-**Topic:** `sensors/esp32-s3-led/command`
+**Topic:** `controller/esp32-s3-led/command`
 
 **Message:**
 ```json
@@ -127,7 +127,7 @@ arduino-cli monitor -p COM9 --config baudrate=115200
 
 ### Command: Start Pattern
 
-**Topic:** `sensors/esp32-s3-led/command`
+**Topic:** `controller/esp32-s3-led/command`
 
 **Message:**
 ```json
@@ -147,7 +147,7 @@ arduino-cli monitor -p COM9 --config baudrate=115200
 
 ### Command: Stop Pattern
 
-**Topic:** `sensors/esp32-s3-led/command`
+**Topic:** `controller/esp32-s3-led/command`
 
 **Message:**
 ```json
@@ -158,7 +158,7 @@ arduino-cli monitor -p COM9 --config baudrate=115200
 
 ### Command: Clear LEDs
 
-**Topic:** `sensors/esp32-s3-led/command`
+**Topic:** `controller/esp32-s3-led/command`
 
 **Message:**
 ```json
@@ -169,7 +169,7 @@ arduino-cli monitor -p COM9 --config baudrate=115200
 
 ### State (Published by ESP32-S3)
 
-**Topic:** `sensors/esp32-s3-led/state`
+**Topic:** `controller/esp32-s3-led/state`
 
 **Message:**
 ```json
@@ -186,7 +186,7 @@ arduino-cli monitor -p COM9 --config baudrate=115200
 
 ### Home Assistant Format
 
-**Topic:** `sensors/esp32-s3-led/command`
+**Topic:** `controller/esp32-s3-led/command`
 
 **Message:**
 ```json
@@ -208,23 +208,23 @@ arduino-cli monitor -p COM9 --config baudrate=115200
 
 ```bash
 # Set LED to red
-mosquitto_pub -h localhost -t "sensors/esp32-s3-led/command" \
+mosquitto_pub -h localhost -t "controller/esp32-s3-led/command" \
   -m '{"action":"set_color","r":255,"g":0,"b":0,"w":0}'
 
 # Set brightness
-mosquitto_pub -h localhost -t "sensors/esp32-s3-led/command" \
+mosquitto_pub -h localhost -t "controller/esp32-s3-led/command" \
   -m '{"action":"set_brightness","value":128}'
 
 # Start rainbow pattern
-mosquitto_pub -h localhost -t "sensors/esp32-s3-led/command" \
+mosquitto_pub -h localhost -t "controller/esp32-s3-led/command" \
   -m '{"action":"pattern","name":"rainbow","speed":50}'
 
 # Stop pattern
-mosquitto_pub -h localhost -t "sensors/esp32-s3-led/command" \
+mosquitto_pub -h localhost -t "controller/esp32-s3-led/command" \
   -m '{"action":"stop"}'
 
 # Clear LEDs
-mosquitto_pub -h localhost -t "sensors/esp32-s3-led/command" \
+mosquitto_pub -h localhost -t "controller/esp32-s3-led/command" \
   -m '{"action":"clear"}'
 ```
 

@@ -95,12 +95,20 @@ impl DashboardState {
             // Estimate max_scroll conservatively (assume at least 1 line visible)
             let estimated_max = total_lines.saturating_sub(1);
             let current_scroll = if self.output_scroll == SCROLL_TO_BOTTOM {
-                0  // Start from 0 if we were at bottom
+                0  // Start from 0 if we were at bottom (unlikely when scrolling down)
             } else {
                 self.output_scroll
             };
+            
             if current_scroll < estimated_max {
                 self.output_scroll = (current_scroll + amount).min(estimated_max);
+                
+                // If we reached the end of the buffer, re-enable auto-scroll
+                // This allows the user to "snap back" to following the logs
+                if self.output_scroll >= estimated_max {
+                    self.auto_scroll_enabled = true;
+                    self.output_scroll = SCROLL_TO_BOTTOM;
+                }
             }
         }
     }

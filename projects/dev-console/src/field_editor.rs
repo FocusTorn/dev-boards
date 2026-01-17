@@ -21,6 +21,10 @@ pub enum FieldEditorState {
         selected_index: usize,
         options: Vec<String>,
     },
+    ProfileSelecting {
+        selected_index: usize,
+        options: Vec<String>,
+    },
 }
 
 impl FieldEditorState {
@@ -31,6 +35,7 @@ impl FieldEditorState {
             FieldEditorState::Selected { field_index } => *field_index,
             FieldEditorState::Editing { field_index, .. } => *field_index,
             FieldEditorState::Selecting { field_index, .. } => *field_index,
+            FieldEditorState::ProfileSelecting { .. } => 0, // Profile selector is not a form field
         }
     }
     
@@ -40,10 +45,10 @@ impl FieldEditorState {
         matches!(self, FieldEditorState::Editing { .. })
     }
     
-    /// Check if the state is in selecting mode (for future use)
+    /// Check if the state is in selecting mode (including profile selecting)
     #[allow(dead_code)]
     pub fn is_selecting(&self) -> bool {
-        matches!(self, FieldEditorState::Selecting { .. })
+        matches!(self, FieldEditorState::Selecting { .. } | FieldEditorState::ProfileSelecting { .. })
     }
     
     /// Check if the state is in selected mode (for future use)
@@ -87,6 +92,13 @@ pub enum SettingsField {
     FQBN = 4,
     Port = 5,
     Baudrate = 6,
+    MqttHost = 7,
+    MqttPort = 8,
+    MqttUsername = 9,
+    MqttPassword = 10,
+    MqttTopicCommand = 11,
+    MqttTopicState = 12,
+    MqttTopicStatus = 13,
 }
 
 impl SettingsField {
@@ -100,6 +112,13 @@ impl SettingsField {
             SettingsField::FQBN,
             SettingsField::Port,
             SettingsField::Baudrate,
+            SettingsField::MqttHost,
+            SettingsField::MqttPort,
+            SettingsField::MqttUsername,
+            SettingsField::MqttPassword,
+            SettingsField::MqttTopicCommand,
+            SettingsField::MqttTopicState,
+            SettingsField::MqttTopicStatus,
         ]
     }
     
@@ -113,6 +132,13 @@ impl SettingsField {
             SettingsField::FQBN => "FQBN",
             SettingsField::Port => "Port",
             SettingsField::Baudrate => "Baudrate",
+            SettingsField::MqttHost => "MQTT Host",
+            SettingsField::MqttPort => "MQTT Port",
+            SettingsField::MqttUsername => "MQTT Username",
+            SettingsField::MqttPassword => "MQTT Password",
+            SettingsField::MqttTopicCommand => "Command Topic",
+            SettingsField::MqttTopicState => "State Topic",
+            SettingsField::MqttTopicStatus => "Status Topic",
         }
     }
     
@@ -126,6 +152,13 @@ impl SettingsField {
             SettingsField::FQBN => settings.fqbn.clone(),
             SettingsField::Port => settings.port.clone(),
             SettingsField::Baudrate => settings.baudrate.to_string(),
+            SettingsField::MqttHost => settings.mqtt_host.clone().unwrap_or_default(),
+            SettingsField::MqttPort => settings.mqtt_port.map(|p| p.to_string()).unwrap_or_default(),
+            SettingsField::MqttUsername => settings.mqtt_username.clone().unwrap_or_default(),
+            SettingsField::MqttPassword => settings.mqtt_password.clone().unwrap_or_default(),
+            SettingsField::MqttTopicCommand => settings.mqtt_topic_command.clone().unwrap_or_default(),
+            SettingsField::MqttTopicState => settings.mqtt_topic_state.clone().unwrap_or_default(),
+            SettingsField::MqttTopicStatus => settings.mqtt_topic_status.clone().unwrap_or_default(),
         }
     }
     
@@ -143,6 +176,17 @@ impl SettingsField {
                     settings.baudrate = b;
                 }
             }
+            SettingsField::MqttHost => settings.mqtt_host = Some(value),
+            SettingsField::MqttPort => {
+                if let Ok(p) = value.parse::<u16>() {
+                    settings.mqtt_port = Some(p);
+                }
+            }
+            SettingsField::MqttUsername => settings.mqtt_username = Some(value),
+            SettingsField::MqttPassword => settings.mqtt_password = Some(value),
+            SettingsField::MqttTopicCommand => settings.mqtt_topic_command = Some(value),
+            SettingsField::MqttTopicState => settings.mqtt_topic_state = Some(value),
+            SettingsField::MqttTopicStatus => settings.mqtt_topic_status = Some(value),
         }
     }
     
@@ -224,6 +268,13 @@ impl SettingsField {
             4 => Some(SettingsField::FQBN),
             5 => Some(SettingsField::Port),
             6 => Some(SettingsField::Baudrate),
+            7 => Some(SettingsField::MqttHost),
+            8 => Some(SettingsField::MqttPort),
+            9 => Some(SettingsField::MqttUsername),
+            10 => Some(SettingsField::MqttPassword),
+            11 => Some(SettingsField::MqttTopicCommand),
+            12 => Some(SettingsField::MqttTopicState),
+            13 => Some(SettingsField::MqttTopicStatus),
             _ => None,
         }
     }

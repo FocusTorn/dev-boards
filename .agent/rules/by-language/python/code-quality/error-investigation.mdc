@@ -1,0 +1,253 @@
+---
+globs: **/*.py
+
+---
+
+# Error Investigation Rules
+
+## **CRITICAL EXECUTION DIRECTIVE**
+
+**AI Agent Directive**: Follow error investigation rules exactly for all error and lint warning resolution tasks.
+
+**MANDATORY EXECUTION PROTOCOL**:
+
+1. **NO DEVIATION**: All error investigation rules must be followed exactly as written
+2. **NO SKIPPING**: No steps may be skipped, abbreviated, or modified
+3. **NO SELECTIVE COMPLIANCE**: All rules apply to all error investigation activities
+4. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
+
+## **PREVENTIVE RULES** (What NOT to Do)
+
+### **❌ NEVER Do These**
+
+- ❌ **NEVER add `# type: ignore` without investigating root cause** - Always investigate why the error exists before suppressing it
+- ❌ **NEVER fix symptoms without checking upstream causes** - Don't add workarounds without investigating helper modules, type definitions, and import chains
+- ❌ **NEVER skip type checker configuration investigation** - When imports work at runtime but fail in type checker, investigate configuration before adding type ignore
+- ❌ **NEVER add type ignore without user approval** - Type ignore comments require explicit user approval after investigation
+- ❌ **NEVER fix errors locally when the fix belongs upstream** - Fix type definitions in helper modules, not in consuming code
+- ❌ **NEVER assume errors are code issues without checking configuration** - Type checker configuration may be the root cause
+
+## **CORRECTIVE REFERENCE** (How to Fix When Errors Occur)
+
+### **0. :: Error Investigation Protocol**
+
+**When you see**: Any type checker error or lint warning
+
+**Follow this protocol**:
+
+1. **Identify the error location**: Note the file, line, and error type
+2. **Verify runtime behavior**: Test that the code works at runtime (if applicable)
+3. **Check type checker configuration**: If imports work at runtime but fail in type checker:
+   - Check `pyproject.toml` for `[tool.basedpyright]` or `[tool.pyright]` sections
+   - Verify `extraPaths` includes the package directory
+   - Check `executionEnvironments` configuration
+   - Determine if configuration needs updating or if error is a false positive
+   - **CRITICAL**: Type checker configuration is an upstream cause that must be investigated when runtime imports succeed but type checker fails
+4. **Check helper modules**: If the error involves imported functions/classes, check the helper module (e.g., `local_imports.py`) for type annotations
+5. **Check type definitions**: Verify that `Callable` types, `Optional` types, and other type annotations match actual function signatures
+6. **Check import chains**: Trace back through import statements to find where types are defined
+7. **Fix at the source**: Fix type definitions in helper modules rather than adding `# type: ignore` comments in consuming code
+8. **Verify fix propagates**: After fixing upstream, verify that the original error is resolved without needing local workarounds
+9. **Request user approval**: If type ignore is needed, propose the solution and request explicit approval before adding
+
+**Enhanced Error Investigation Protocol**: When addressing type checker errors for imports, the investigation protocol MUST include: (1) Verify package structure and runtime import behavior (test that imports work at runtime), (2) Check type checker configuration (`pyproject.toml` for `[tool.basedpyright]` or `[tool.pyright]` sections, or `pyrightconfig.json` for `extraPaths` and `executionEnvironments`), (3) Check helper modules and type definitions (existing coverage), (4) Check import chains (existing coverage), (5) Determine if the issue is configuration-related or code-related before proposing fixes. Type checker configuration is an upstream cause that must be investigated when runtime imports succeed but type checker fails.
+
+**✅ CORRECT - Error investigation protocol**:
+
+```python
+# Error in locate-package.py:
+# "Object of type '_write_header_fat' cannot be used with 'with'"
+
+# Step 1: Check where _write_header_fat comes from
+from local_imports import write_header_fat
+
+# Step 2: Check local_imports.py type definition
+# In local_imports.py:
+_WriteHeaderFatType = Callable[[str, Optional[int], bool, bool, bool], Optional[AbstractContextManager[None]]]
+write_header_fat = cast(_WriteHeaderFatType, getattr(_outerm_module, 'write_header_fat', None))
+
+# Step 3: The type is correct, but the consumer needs to handle Optional
+# Fix in locate-package.py: Check result and cast before using in 'with'
+header_cm_result = _write_header_fat(package_name)
+if header_cm_result is None:
+    raise RuntimeError("write_header_fat returned None unexpectedly")
+header_cm: AbstractContextManager[None] = cast(AbstractContextManager[None], header_cm_result)
+with header_cm:
+    pass
+```
+
+**✅ CORRECT - Type checker configuration investigation**:
+
+```python
+# Error: "Import 'outerm.palette' could not be resolved"
+# But runtime import works: from outerm.palette import Palette ✓
+
+# Step 1: Verify runtime import works
+import outerm.palette  # ✓ Works at runtime
+
+# Step 2: Check type checker configuration
+# Check pyproject.toml for [tool.basedpyright] section
+# Verify extraPaths includes package directory:
+# extraPaths = ["___shared/shared-python"]
+
+# Step 3: If configuration is correct, investigate package structure
+# Check if package has __init__.py, proper relative imports
+
+# Step 4: Only after confirming configuration is correct (or cannot be fixed)
+# should type ignore be considered, and only with user approval
+```
+
+**❌ INCORRECT - Fixing symptoms without investigating root cause**:
+
+```python
+# Wrong: Adding type: ignore without investigating why the error exists
+with _write_header_fat(package_name):  # type: ignore
+    pass
+
+# Should investigate:
+# 1. What type does _write_header_fat return?
+# 2. Is the type definition correct in the helper module?
+# 3. Can we fix the type definition or use proper type narrowing?
+```
+
+**❌ INCORRECT - Not checking helper modules**:
+
+```python
+# Wrong: Fixing error locally without checking if helper module has wrong types
+# Error: "Object cannot be called" for write_header_fat()
+
+# Wrong approach: Adding type: ignore
+result = write_header_fat(...)  # type: ignore
+
+# Correct approach: Check local_imports.py
+# If write_header_fat is typed as Optional[Callable], fix the type definition
+# Or use proper type narrowing in the consuming code
+```
+
+**❌ INCORRECT - Not tracing import chains**:
+
+```python
+# Wrong: Fixing error without understanding where the type comes from
+# Error in my_script.py about some_function()
+
+# Wrong: Just add type: ignore
+result = some_function()  # type: ignore
+
+# Correct: Trace the import
+from helper import some_function
+# Check helper.py to see how some_function is typed
+# Fix the type definition in helper.py if needed
+```
+
+**❌ INCORRECT - Skipping type checker configuration investigation**:
+
+```python
+# Wrong: Assuming error is code issue without checking configuration
+# Error: "Import could not be resolved" but runtime import works
+
+# Wrong: Immediately adding type: ignore
+from outerm.palette import Palette  # type: ignore
+
+# Correct: Investigate type checker configuration first
+# Check pyproject.toml for [tool.basedpyright] configuration
+# Verify extraPaths and executionEnvironments
+# Only add type ignore after confirming configuration is correct or cannot be fixed
+```
+
+### **1. :: Type Checker Configuration Investigation**
+
+**When you see**: "Import could not be resolved" but runtime imports work
+
+**Follow this protocol**:
+
+1. **Verify package structure**: Check that package has `__init__.py`, proper relative imports
+2. **Test runtime imports**: Verify imports work at runtime
+3. **Check type checker configuration**:
+   - Check `pyproject.toml` for `[tool.basedpyright]` or `[tool.pyright]` sections
+   - Verify `extraPaths` includes the package directory
+   - Check `executionEnvironments` configuration
+   - **CRITICAL**: Type checker configuration is an upstream cause - investigate this before considering type ignore
+4. **Determine root cause**: Is it configuration issue or false positive?
+5. **Fix configuration if needed**: Update `extraPaths` or `executionEnvironments`
+6. **Request approval if type ignore needed**: Only after confirming configuration is correct or cannot be fixed
+
+**Type Checker Resolution Investigation Protocol**: When type checker reports "Import could not be resolved" but runtime imports succeed, the AI agent MUST investigate type checker configuration before adding type ignore comments. Investigation steps: (1) Verify package structure (has `__init__.py`, proper relative imports), (2) Test runtime imports to confirm they work, (3) Check type checker configuration (`pyproject.toml` for `[tool.basedpyright]` or `[tool.pyright]` sections with `extraPaths` or `executionEnvironments`), (4) Determine if configuration needs updating or if error is a false positive. Only consider type ignore after confirming configuration is correct or cannot be fixed.
+
+**✅ CORRECT - Type checker configuration check**:
+
+```python
+# Error: "Import 'outerm.palette' could not be resolved"
+# Runtime import works: from outerm.palette import Palette ✓
+
+# Step 1: Verify runtime import
+import outerm.palette  # ✓ Works
+
+# Step 2: Check pyproject.toml
+# [tool.basedpyright]
+# executionEnvironments = [
+#     {
+#         root = ".",
+#         extraPaths = ["___shared/shared-python"]  # ✓ Package directory included
+#     }
+# ]
+
+# Step 3: Configuration is correct, but type checker still can't resolve
+# This may be a false positive - investigate further or request approval for type ignore
+```
+
+## **ANTI-PATTERNS**
+
+### **❌ Error Investigation Violations**
+
+- ❌ **Fixing Symptoms Without Root Cause** - Don't add `# type: ignore` comments without investigating why the error exists
+- ❌ **Not Checking Helper Modules** - Don't fix errors locally without checking if helper modules have incorrect type definitions
+- ❌ **Not Tracing Import Chains** - Don't fix errors without understanding where types come from through import chains
+- ❌ **Skipping Upstream Investigation** - Don't apply fixes without checking helper modules, type definitions, and dependencies first
+- ❌ **Local Workarounds Instead of Source Fixes** - Don't add local workarounds when the fix should be in helper modules or type definitions
+- ❌ **Skipping Type Checker Configuration** - Don't assume errors are code issues without checking type checker configuration - type checker configuration is an upstream cause that must be investigated
+- ❌ **Adding Type Ignore Without Approval** - Don't add type ignore comments without explicit user approval after investigation
+- ❌ **Not Distinguishing Runtime vs Type Checker Resolution** - Don't treat runtime import resolution and type checker resolution as the same - they are separate concerns
+
+## **QUALITY GATES**
+
+- [ ] **Upstream Investigation**: Checked helper modules, type definitions, and import chains before fixing errors
+- [ ] **Root Cause Analysis**: Identified root cause of errors in upstream code rather than just fixing symptoms
+- [ ] **Source Fixes Applied**: Fixed type definitions in helper modules rather than adding local workarounds
+- [ ] **Type Checker Configuration Checked**: Investigated type checker configuration when imports work at runtime but fail in type checker - type checker configuration is an upstream cause
+- [ ] **User Approval Obtained**: Received explicit approval before adding type ignore comments
+- [ ] **Runtime Behavior Verified**: Tested that code works at runtime before investigating type checker errors
+- [ ] **Configuration vs Code Distinction**: Distinguished between runtime import resolution (works) and type checker resolution (fails) as separate concerns
+
+## **SUCCESS METRICS**
+
+After implementing proper error investigation:
+
+- ✅ **Upstream Issues Resolved** - Errors fixed at their source in helper modules and type definitions
+- ✅ **Configuration Issues Identified** - Type checker configuration problems identified and resolved
+- ✅ **No Unnecessary Suppressions** - Type ignore comments only used when necessary and approved
+- ✅ **Proper Root Cause Analysis** - Root causes identified before applying fixes
+- ✅ **Maintainable Solutions** - Fixes applied at the source, not as local workarounds
+
+## **EXECUTION PRIORITY MATRIX**
+
+### **CRITICAL PRIORITY (Execute immediately)**
+
+- **Investigate Root Cause**: Always investigate upstream causes before applying fixes
+- **Check Type Checker Configuration**: When imports work at runtime but fail in type checker, investigate configuration
+- **Request User Approval**: Get explicit approval before adding type ignore comments
+
+### **HIGH PRIORITY (Execute before proceeding)**
+
+- Verify helper modules and type definitions
+- Trace import chains to understand type sources
+- Test runtime behavior to distinguish code issues from configuration issues
+
+### **MEDIUM PRIORITY (Execute during normal operation)**
+
+- Document investigation findings
+- Update type definitions in helper modules
+- Verify fixes propagate correctly
+
+## **DYNAMIC MANAGEMENT NOTE**
+
+This document is optimized for AI agent internal processing and may be updated dynamically based on operational needs and pattern recognition. The structure prioritizes AI agent compliance and effectiveness over traditional documentation practices.

@@ -1,0 +1,87 @@
+---
+globs: **/*.md
+
+---
+# Markdown Formatting Rules
+
+## 1. :: Title Formatting
+
+### 1.1. :: Titles: Plain text, NEVER bold formatting <!-- Start Fold -->
+
+**✅ CORRECT - Use plain text for titles**:
+
+```markdown
+# Title Text
+
+## Title Text
+
+### Title Text
+```
+
+**❌ INCORRECT - Never use bold formatting for titles**:
+
+```markdown
+# **Title Text**
+
+## **Title Text**
+
+### **Title Text**
+```
+
+**ℹ️ Rationale**: <!-- Start Fold -->
+
+- Markdown titles (`#`, `##`, `###`) already provide semantic emphasis
+- Adding bold formatting (`**`) creates visual redundancy
+- Plain text titles are cleaner and more readable
+- Follows standard markdown conventions and best practices
+- Improves accessibility and semantic structure
+
+<!-- Close Fold: Rationale -->
+
+<!-- Close Fold: Plain text -->
+
+### 1.2. :: Section Numbering <!-- Start Fold -->
+
+**✅ CORRECT - Use numbered sections for titles**:
+
+```markdown
+## 1. :: [Title text]
+
+### 1.1. :: [Title text]
+
+### 1.2. :: [Title text]
+
+## 2. :: [Next Title text]
+
+### 2.1. :: [Next Title text]
+
+### 2.2. :: [Next Title text]
+```
+
+### ❌ INCORRECT - Don't use unnumbered sections:
+
+```markdown
+## Title text
+
+### Title text
+
+### Another Title text
+
+## Next Title text
+```
+
+<!-- Close Fold: Section Numbering -->
+
+### 1.3. :: Additional Guidelines <!-- Start Fold -->
+
+- Use bold (`**text**`) for emphasis within paragraph text, not for titles
+- Reserve bold formatting for highlighting important content in body text
+- Keep title hierarchy clear and consistent
+- Use descriptive, concise titles that clearly indicate content purpose
+- **All ## titles must be numbered sequentially (1., 2., 3., etc.)**
+- **All ### titles must be numbered with parent section number (1.1., 1.2., 2.1., etc.)**
+- Use `::` separator between number and title text
+- Maintain consistent numbering throughout the document
+
+<!-- Close Fold: Additional Guidelines -->
+

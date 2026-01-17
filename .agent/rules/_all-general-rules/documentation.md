@@ -1,0 +1,205 @@
+---
+trigger: always_on
+---
+
+# Documentation Rules
+
+## **CRITICAL EXECUTION DIRECTIVE**
+
+**AI Agent Directive**: Follow documentation rules exactly for all code documentation and breaking changes documentation tasks.
+
+**MANDATORY EXECUTION PROTOCOL**:
+
+1. **NO DEVIATION**: All documentation rules must be followed exactly as written
+2. **NO SKIPPING**: No steps may be skipped, abbreviated, or modified
+3. **NO SELECTIVE COMPLIANCE**: All rules apply to all documentation activities
+4. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
+
+## **BREAKING CHANGES DOCUMENTATION**
+
+### **1. :: Breaking Changes Documentation Format**
+
+**✅ CORRECT - Document breaking changes in comment block at top of module/package**:
+
+```python
+"""
+Git-py package for GitHub repository setup and management.
+
+BREAKING CHANGES (v2.0.0):
+- confirm_custom() removed → use confirm() instead
+- HAS_TERMINAL_MENU removed → use HAS_PROMPT_TOOLKIT instead
+- MENU_STYLE removed → no longer needed
+- All prompt functions now use prompt_toolkit directly
+
+MIGRATION GUIDE:
+- Replace confirm_custom() calls with confirm()
+- Replace HAS_TERMINAL_MENU checks with HAS_PROMPT_TOOLKIT
+- Remove style=MENU_STYLE parameters from prompt calls
+"""
+```
+
+**✅ CORRECT - Comment block format template**:
+
+```python
+"""
+[Package/Module Description]
+
+BREAKING CHANGES ([Version]):
+- [Old API] removed → use [New API] instead
+- [Old Pattern] deprecated → use [New Pattern] instead
+- [Old Behavior] changed → [New Behavior] description
+
+MIGRATION GUIDE:
+- [Step 1: How to migrate]
+- [Step 2: What to replace]
+- [Step 3: Additional notes]
+"""
+```
+
+**❌ INCORRECT - Missing breaking changes documentation**:
+
+```python
+"""
+Git-py package for GitHub repository setup and management.
+"""
+# Wrong: No breaking changes documented
+```
+
+**❌ INCORRECT - Breaking changes without migration guide**:
+
+```python
+"""
+Package description.
+
+BREAKING CHANGES (v2.0.0):
+- confirm_custom() removed
+"""
+# Wrong: No migration guide provided
+```
+
+### **2. :: Breaking Changes Documentation Requirements**
+
+**✅ CORRECT - Include version number**:
+
+```python
+"""
+BREAKING CHANGES (v2.0.0):  # Always include version number
+- API changes listed here
+"""
+```
+
+**✅ CORRECT - Include migration guide**:
+
+```python
+"""
+BREAKING CHANGES (v2.0.0):
+- Old API removed → use New API instead
+
+MIGRATION GUIDE:
+- Step-by-step migration instructions
+- Code examples showing old vs new usage
+"""
+```
+
+**✅ CORRECT - Place at top of module/package**:
+
+```python
+"""
+BREAKING CHANGES (v2.0.0):
+- Changes documented here
+
+MIGRATION GUIDE:
+- Migration steps here
+"""
+
+# Module code follows documentation
+import ...
+```
+
+**❌ INCORRECT - Breaking changes in wrong location**:
+
+```python
+# Module code here
+
+"""
+BREAKING CHANGES (v2.0.0):  # Wrong: Should be at top
+- Changes documented here
+"""
+```
+
+**❌ INCORRECT - Missing version number**:
+
+```python
+"""
+BREAKING CHANGES:  # Wrong: Missing version number
+- Changes documented here
+"""
+```
+
+### **3. :: Migration Guide Format**
+
+**✅ CORRECT - Step-by-step migration instructions**:
+
+```python
+"""
+MIGRATION GUIDE:
+- Replace confirm_custom() calls with confirm()
+- Replace HAS_TERMINAL_MENU checks with HAS_PROMPT_TOOLKIT
+- Remove style=MENU_STYLE parameters from prompt calls
+- Update imports: from ..core.prompts import confirm, HAS_PROMPT_TOOLKIT
+"""
+```
+
+**✅ CORRECT - Include code examples**:
+
+```python
+"""
+MIGRATION GUIDE:
+- Replace confirm_custom() calls with confirm()
+  Old: confirm_custom("Proceed?", default=True)
+  New: confirm("Proceed?", default=True, indent="")
+- Replace HAS_TERMINAL_MENU checks with HAS_PROMPT_TOOLKIT
+  Old: if HAS_TERMINAL_MENU:
+  New: if HAS_PROMPT_TOOLKIT:
+"""
+```
+
+**❌ INCORRECT - Vague migration instructions**:
+
+```python
+"""
+MIGRATION GUIDE:
+- Update your code  # Wrong: Too vague, no specific steps
+"""
+```
+
+## **ANTI-PATTERNS**
+
+### **❌ Documentation Violations**
+
+- ❌ **Missing Breaking Changes Docs** - Don't refactor without documenting breaking changes
+- ❌ **No Migration Guide** - Don't remove APIs without providing migration instructions
+- ❌ **Missing Version Number** - Always include version number in breaking changes documentation
+- ❌ **Wrong Location** - Don't place breaking changes documentation in middle or end of file
+- ❌ **Vague Instructions** - Don't provide vague migration steps without specific examples
+- ❌ **Breaking Changes Without Migration** - Don't document breaking changes without migration guide
+
+## **QUALITY GATES**
+
+- [ ] **Breaking Changes Documented**: Comment block at top of module/package documents breaking changes
+- [ ] **Version Number Included**: Breaking changes documentation includes version number
+- [ ] **Migration Guide Provided**: Clear migration instructions included in documentation
+- [ ] **Top Placement**: Breaking changes documentation is at top of module/package
+- [ ] **Specific Instructions**: Migration guide includes specific, actionable steps
+- [ ] **Code Examples**: Migration guide includes code examples showing old vs new usage
+
+## **SUCCESS METRICS**
+
+After implementing proper documentation:
+
+- ✅ **Clear Migration Path** - Breaking changes clearly documented with migration guide
+- ✅ **Version Tracking** - All breaking changes include version numbers
+- ✅ **Actionable Guidance** - Migration guides provide specific, step-by-step instructions
+- ✅ **Easy Discovery** - Breaking changes documentation is easily found at top of files
+- ✅ **Complete Information** - All breaking changes include both what changed and how to migrate
+- ✅ **No Confusion** - Developers know exactly what changed and how to update their code

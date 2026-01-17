@@ -1,0 +1,326 @@
+---
+globs: ['**/test_*.py', '**/*_test.py', '**/tests/**/*.py']
+
+---
+
+# Python Test Failure Correction Rules
+
+## **CRITICAL EXECUTION DIRECTIVE**
+
+**AI Agent Directive**: Follow test failure correction rules exactly for all Python test debugging and correction tasks.
+
+**MANDATORY EXECUTION PROTOCOL**:
+
+1. **NO DEVIATION**: All test failure correction rules must be followed exactly as written
+2. **NO SKIPPING**: No steps may be skipped, abbreviated, or modified
+3. **NO SELECTIVE COMPLIANCE**: All rules apply to all test failure correction activities
+4. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
+
+## **TEST FAILURE INVESTIGATION PROTOCOL**
+
+### **1. :: Root Cause Analysis Before Fixing**
+
+**✅ CORRECT - Investigate root cause before fixing tests**:
+
+When test failures occur after code changes:
+
+1. **Understand the Failure**: Read the test failure message and traceback completely
+2. **Identify the Change**: Determine what code change caused the test to fail
+3. **Analyze the Intent**: Understand what the test is verifying and why it's failing
+4. **Determine Fix Strategy**: Decide whether to:
+   - Fix the test (if test expectations are wrong)
+   - Fix the code (if code behavior is wrong)
+   - Update test mocks (if mocking is incorrect)
+   - Update test data (if test data is outdated)
+
+**✅ CORRECT - Example investigation process**:
+
+```python
+# Test failure: assert False is True
+# Investigation steps:
+# 1. Read test failure: "assert False is True" in test_sync_package
+# 2. Identify change: sync_package function was modified to set repo_status early
+# 3. Analyze intent: Test expects sync_package to return True on success
+# 4. Check mocks: sync_package_mapping is mocked - verify return values match expected structure
+# 5. Check logic: sync_package checks if any mapping succeeded - verify success determination logic
+# 6. Determine fix: Mock return values need to include all required fields for success determination
+```
+
+**❌ INCORRECT - Fixing tests without investigation**:
+
+```python
+# Wrong: Immediately changing test assertions without understanding why
+def test_sync_package():
+    result = sync_package(...)
+    assert result == True  # Changed from False without understanding why it's False
+```
+
+### **2. :: Mock Location Verification**
+
+**✅ CORRECT - Patch at actual import location**:
+
+When mocking functions in tests, patch them at their actual import location, not at the test's import location:
+
+```python
+# Correct: Patch at actual source location
+from unittest.mock import patch
+import lib.sync_ops
+
+@patch('lib.sync_ops.sync_package_mapping')
+@patch('lib.git_ops.is_git_repo')
+@patch('lib.git_ops.check_remote_exists')
+def test_sync_package(mock_check_remote, mock_is_repo, mock_sync_mapping):
+    # Mock at lib.sync_ops.sync_package_mapping (actual source)
+    # Not at scripts.sync.sync_package_mapping (import location)
+    mock_sync_mapping.return_value = (True, ['file1.txt'], {
+        'repo_status': {...},
+        '_from_synced_count': 1,
+        '_to_synced_count': 0,
+        '_from_synced_files': ['file1.txt'],
+        '_to_synced_files': []
+    })
+```
+
+**❌ INCORRECT - Patching at wrong location**:
+
+```python
+# Wrong: Patching at import location instead of source location
+from unittest.mock import patch
+from scripts import sync
+
+@patch('scripts.sync.sync_package_mapping')  # Wrong: This is import location
+def test_sync_package(mock_sync_mapping):
+    # This won't work if sync_package_mapping is imported from lib.sync_ops
+    pass
+```
+
+### **3. :: Mock Return Value Completeness**
+
+**✅ CORRECT - Include all required fields in mock return values**:
+
+When mocking functions that return complex data structures, ensure all fields required by the calling code are included:
+
+```python
+# Correct: Complete mock return value matching actual function signature
+mock_sync_mapping.return_value = (
+    True,  # success
+    ['file1.txt', 'file2.txt'],  # synced_files
+    {
+        'repo_status': {
+            'is_git_repo': 'True',
+            'has_remote': 'True',
+            'remote_url': 'https://github.com/user/repo'
+        },
+        '_from_synced_count': 1,
+        '_to_synced_count': 1,
+        '_from_synced_files': ['file1.txt'],
+        '_to_synced_files': ['file2.txt'],
+        'pulled_count': 0
+    }
+)
+```
+
+**❌ INCORRECT - Incomplete mock return values**:
+
+```python
+# Wrong: Missing required fields
+mock_sync_mapping.return_value = (
+    True,
+    ['file1.txt'],
+    {'repo_status': {...}}  # Missing _from_synced_count, _to_synced_count, etc.
+)
+# This causes failures when calling code tries to access missing fields
+```
+
+### **4. :: Test Data Alignment**
+
+**✅ CORRECT - Align test expectations with actual behavior**:
+
+When code behavior changes (e.g., case sensitivity, format changes), update test expectations to match:
+
+```python
+# Correct: Test expects lowercase inferred status (matching actual behavior)
+def test_format_file_display():
+    result = format_file_display('file.txt', 'a', 'to')
+    assert 'a🡩' in result  # Lowercase 'a' matches actual function behavior
+```
+
+**❌ INCORRECT - Outdated test expectations**:
+
+```python
+# Wrong: Test expects uppercase but function returns lowercase
+def test_format_file_display():
+    result = format_file_display('file.txt', 'a', 'to')
+    assert 'A🡩' in result  # Fails: function returns lowercase 'a🡩'
+```
+
+### **5. :: Success Determination Logic**
+
+**✅ CORRECT - Verify success determination matches actual logic**:
+
+When tests check for success/failure, ensure the success determination logic in tests matches the actual code:
+
+```python
+# Correct: Test checks success determination logic correctly
+def test_sync_package_success():
+    # Mock returns success=True for at least one mapping
+    mock_sync_mapping.return_value = (True, ['file.txt'], {...})
+    
+    result = sync_package(...)
+    
+    # Verify success is determined correctly
+    # sync_package returns True if any mapping succeeded
+    assert result is True
+```
+
+**❌ INCORRECT - Incorrect success determination**:
+
+```python
+# Wrong: Test assumes success based on wrong criteria
+def test_sync_package_success():
+    # Mock returns success but test checks wrong field
+    mock_sync_mapping.return_value = (True, [], {...})  # Empty synced_files
+    
+    result = sync_package(...)
+    
+    # Wrong: Checking synced_files count instead of success flag
+    assert len(result['synced_files']) > 0  # Fails: synced_files is empty
+```
+
+## **COMMON TEST FAILURE PATTERNS**
+
+### **1. :: AssertionError: assert False is True**
+
+**Root Cause**: Success determination logic mismatch or incomplete mock return values.
+
+**✅ CORRECT - Fix strategy**:
+
+1. Check if mocked function returns success=True
+2. Verify all required fields are in mock return value
+3. Check success determination logic in calling code
+4. Ensure mock is patched at correct location
+
+**Example Fix**:
+
+```python
+# Before: Incomplete mock
+mock_sync_mapping.return_value = (True, [], {'repo_status': {...}})
+
+# After: Complete mock with all required fields
+mock_sync_mapping.return_value = (
+    True,
+    ['file.txt'],
+    {
+        'repo_status': {...},
+        '_from_synced_count': 1,
+        '_to_synced_count': 0,
+        '_from_synced_files': ['file.txt'],
+        '_to_synced_files': []
+    }
+)
+```
+
+### **2. :: AssertionError: assert 0 == 2**
+
+**Root Cause**: Count assertions don't match actual counts from mocks.
+
+**✅ CORRECT - Fix strategy**:
+
+1. Verify mock return values include count fields
+2. Check aggregation logic in calling code
+3. Ensure multiple mappings are mocked correctly
+4. Verify count fields match expected values
+
+**Example Fix**:
+
+```python
+# Before: Missing count fields
+mock_sync_mapping.return_value = (True, ['file1.txt'], {'repo_status': {...}})
+
+# After: Include count fields
+mock_sync_mapping.return_value = (
+    True,
+    ['file1.txt', 'file2.txt'],
+    {
+        'repo_status': {...},
+        '_from_synced_count': 1,
+        '_to_synced_count': 1,
+        '_from_synced_files': ['file1.txt'],
+        '_to_synced_files': ['file2.txt']
+    }
+)
+```
+
+### **3. :: AssertionError: assert 'A🡩' in '• file.txt a🡩'**
+
+**Root Cause**: Test expects uppercase but function returns lowercase.
+
+**✅ CORRECT - Fix strategy**:
+
+1. Check actual function behavior (case sensitivity)
+2. Update test expectations to match actual behavior
+3. Verify if case change was intentional
+
+**Example Fix**:
+
+```python
+# Before: Test expects uppercase
+assert 'A🡩' in result
+
+# After: Test expects lowercase (matching actual behavior)
+assert 'a🡩' in result
+```
+
+## **ANTI-PATTERNS**
+
+### **❌ Test Failure Correction Violations**
+
+- ❌ **Fixing Without Investigation** - Don't change test assertions without understanding root cause
+- ❌ **Wrong Mock Location** - Don't patch at import location when source is different module
+- ❌ **Incomplete Mock Values** - Don't omit required fields from mock return values
+- ❌ **Outdated Expectations** - Don't keep test expectations that don't match actual behavior
+- ❌ **Incorrect Success Logic** - Don't check success based on wrong criteria
+- ❌ **Skipping Root Cause Analysis** - Don't fix tests without understanding why they fail
+
+## **QUALITY GATES**
+
+- [ ] **Root Cause Identified**: Understood why test is failing before making changes
+- [ ] **Mock Location Verified**: Patched functions at correct source location
+- [ ] **Mock Values Complete**: All required fields included in mock return values
+- [ ] **Test Expectations Aligned**: Test expectations match actual code behavior
+- [ ] **Success Logic Verified**: Success determination logic matches actual code
+- [ ] **All Tests Passing**: All related tests pass after fixes
+
+## **SUCCESS METRICS**
+
+After implementing proper test failure correction:
+
+- ✅ **Root Cause Understanding** - All test failures understood before fixing
+- ✅ **Correct Mock Locations** - Functions patched at actual source locations
+- ✅ **Complete Mock Values** - All required fields included in mocks
+- ✅ **Aligned Expectations** - Test expectations match actual behavior
+- ✅ **Verified Logic** - Success determination logic verified and correct
+- ✅ **All Tests Passing** - All tests pass after corrections
+
+## **EXECUTION PRIORITY MATRIX**
+
+### **CRITICAL PRIORITY (Execute immediately)**
+
+- **Root Cause Analysis**: Understand why test is failing before fixing
+- **Mock Location Verification**: Verify functions are patched at correct source location
+- **Mock Value Completeness**: Ensure all required fields are in mock return values
+
+### **HIGH PRIORITY (Execute before proceeding)**
+
+- **Test Expectation Alignment**: Update test expectations to match actual behavior
+- **Success Logic Verification**: Verify success determination logic matches code
+- **Test Execution**: Run tests to verify fixes work
+
+### **MEDIUM PRIORITY (Execute during normal operation)**
+
+- **Test Coverage Review**: Ensure new code paths are covered by tests
+- **Test Documentation**: Document test fixes and rationale
+
+## **DYNAMIC MANAGEMENT NOTE**
+
+This document is optimized for AI agent internal processing and may be updated dynamically based on operational needs and pattern recognition. The structure prioritizes AI agent compliance and effectiveness over traditional documentation practices.

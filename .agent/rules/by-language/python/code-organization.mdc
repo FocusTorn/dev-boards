@@ -1,0 +1,625 @@
+---
+globs: **/*.py
+
+---
+# Python Code Organization Rules
+
+## **CRITICAL EXECUTION DIRECTIVE**
+
+**AI Agent Directive**: Follow Python code organization rules exactly for all code refactoring and modularization tasks.
+
+**MANDATORY EXECUTION PROTOCOL**:
+
+1. **NO DEVIATION**: All organization rules must be followed exactly as written
+2. **NO SKIPPING**: No steps may be skipped, abbreviated, or modified
+3. **NO SELECTIVE COMPLIANCE**: All rules apply to all Python code organization activities
+4. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
+
+## **MONOLITHIC SCRIPT BREAKDOWN**
+
+### **1. :: Package Structure Creation**
+
+**✅ CORRECT - Break monolithic script into package structure**:
+
+```python
+# Before: Single monolithic file
+# script.py (2000+ lines)
+
+# After: Organized package structure
+package_name/
+    __init__.py
+    main.py  # Entry point/orchestrator
+    core/
+        __init__.py
+        module1.py  # Core functionality
+        module2.py  # Core utilities
+    operations/
+        __init__.py
+        operation1.py  # Business logic operations
+        operation2.py  # Business logic operations
+    commands/
+        __init__.py
+        command1.py  # Command handlers
+        command2.py  # Command handlers
+```
+
+**✅ CORRECT - Package root structure**:
+
+```python
+# Package root should contain minimal files
+package_name/
+    __init__.py  # Package initialization
+    __pycache__/  # Python cache (gitignored)
+    main.py  # Main orchestrator/entry point
+    # All implementation modules in subdirectories
+```
+
+**❌ INCORRECT - Flat package structure**:
+
+```python
+# Wrong: All modules at package root
+package_name/
+    __init__.py
+    main.py
+    module1.py  # Should be in subdirectory
+    module2.py  # Should be in subdirectory
+    operation1.py  # Should be in subdirectory
+    command1.py  # Should be in subdirectory
+```
+
+**❌ INCORRECT - Implementation modules at root**:
+
+```python
+# Wrong: Implementation modules mixed with orchestrator
+package_name/
+    __init__.py
+    main.py
+    terminal.py  # Should be in core/
+    prompts.py  # Should be in core/
+    checks.py  # Should be in core/
+```
+
+### **2. :: Subdirectory Organization**
+
+**✅ CORRECT - Logical subdirectory grouping**:
+
+```python
+package_name/
+    core/  # Core functionality, utilities, shared code
+        __init__.py
+        terminal.py  # Terminal output formatting
+        prompts.py  # Interactive prompts
+        checks.py  # System checks, validation
+        utils.py  # Utility functions
+    
+    operations/  # Business logic operations
+        __init__.py
+        operation1.py  # Specific operation implementation
+        operation2.py  # Specific operation implementation
+    
+    commands/  # Command handlers, CLI interface
+        __init__.py
+        command1.py  # Command handler implementation
+        command2.py  # Command handler implementation
+```
+
+**✅ CORRECT - Subdirectory naming conventions**:
+
+```python
+# Use lowercase, descriptive names
+core/  # Core/shared functionality
+operations/  # Business operations
+commands/  # Command handlers
+utils/  # Utility functions
+models/  # Data models
+services/  # Service layer
+```
+
+**❌ INCORRECT - Unclear subdirectory names**:
+
+```python
+# Wrong: Vague or unclear naming
+stuff/  # Too vague
+misc/  # Too vague
+lib/  # Unclear what it contains
+src/  # Redundant with package structure
+```
+
+### **3. :: Module Extraction Strategy**
+
+**✅ CORRECT - Extract by responsibility**:
+
+```python
+# Identify distinct responsibilities in monolithic file
+# Extract each into focused module
+
+# Example: Terminal-related functions → core/terminal.py
+# Example: Prompt functions → core/prompts.py
+# Example: System checks → core/checks.py
+# Example: Business operations → operations/operation_name.py
+# Example: Command handlers → commands/command_name.py
+```
+
+**✅ CORRECT - Single responsibility per module**:
+
+```python
+# Each module should have one clear purpose
+core/terminal.py  # Only terminal output formatting
+core/prompts.py  # Only interactive prompts
+core/checks.py  # Only system checks
+operations/repository.py  # Only repository operations
+commands/init.py  # Only init command handler
+```
+
+**❌ INCORRECT - Mixed responsibilities**:
+
+```python
+# Wrong: Multiple unrelated responsibilities in one module
+core/utils.py  # Contains terminal, prompts, checks, operations
+# Should be split into focused modules
+```
+
+## **COMMAND HANDLER MODULARIZATION**
+
+### **1. :: Command Handler Splitting**
+
+**✅ CORRECT - One command per file**:
+
+```python
+# Before: Single commands.py file
+commands/
+    commands.py  # Contains cmd_status, cmd_auth, cmd_init
+
+# After: Individual command files
+commands/
+    status.py  # Contains cmd_status
+    auth.py  # Contains cmd_auth
+    init.py  # Contains cmd_init
+```
+
+**✅ CORRECT - Command handler structure**:
+
+```python
+# commands/status.py
+def cmd_status(args):
+    """Handle status command."""
+    # Command-specific implementation
+    pass
+
+# commands/auth.py
+def cmd_auth(args):
+    """Handle auth command."""
+    # Command-specific implementation
+    pass
+```
+
+**❌ INCORRECT - Multiple commands in one file**:
+
+```python
+# Wrong: Multiple command handlers in single file
+commands/commands.py
+    def cmd_status(args): ...
+    def cmd_auth(args): ...
+    def cmd_init(args): ...
+    # Should be split into individual files
+```
+
+### **2. :: Command Handler Orchestration**
+
+**✅ CORRECT - Orchestrator delegates to handlers**:
+
+```python
+# main.py (orchestrator)
+from .commands.status import cmd_status
+from .commands.auth import cmd_auth
+from .commands.init import cmd_init
+
+def main():
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers()
+    
+    # Register commands
+    status_parser = subparsers.add_parser('status')
+    status_parser.set_defaults(func=cmd_status)
+    
+    auth_parser = subparsers.add_parser('auth')
+    auth_parser.set_defaults(func=cmd_auth)
+    
+    init_parser = subparsers.add_parser('init')
+    init_parser.set_defaults(func=cmd_init)
+    
+    args = parser.parse_args()
+    return args.func(args)
+```
+
+**✅ CORRECT - Commands __init__.py exports**:
+
+```python
+# commands/__init__.py
+from .status import cmd_status
+from .auth import cmd_auth
+from .init import cmd_init
+
+__all__ = ['cmd_status', 'cmd_auth', 'cmd_init']
+```
+
+**❌ INCORRECT - Orchestrator contains command logic**:
+
+```python
+# Wrong: Command logic in orchestrator
+def main():
+    if args.command == 'status':
+        # Status command logic here (should be in commands/status.py)
+        pass
+    elif args.command == 'auth':
+        # Auth command logic here (should be in commands/auth.py)
+        pass
+```
+
+## **COMPLEX COMMAND MODULARIZATION**
+
+### **1. :: Command Decomposition**
+
+**✅ CORRECT - Break complex commands into focused modules**:
+
+```python
+# Before: Single large command file
+commands/
+    auth.py  # 500+ lines, multiple responsibilities
+
+# After: Focused modules by responsibility
+commands/
+    auth.py  # Orchestrator (~50 lines)
+    auth_selection.py  # Selection/prompt logic
+    auth_operations.py  # Operation implementations
+    auth_steps.py  # Step-by-step workflow
+```
+
+**✅ CORRECT - Command orchestrator pattern**:
+
+```python
+# commands/auth.py (orchestrator)
+from .auth_selection import handle_selection
+from .auth_operations import perform_operations
+from .auth_steps import execute_steps
+
+def cmd_auth(args):
+    """Orchestrate auth command."""
+    selection = handle_selection(args)
+    operations = perform_operations(selection)
+    return execute_steps(operations)
+```
+
+**✅ CORRECT - Focused helper modules**:
+
+```python
+# commands/auth_selection.py
+def handle_selection(args):
+    """Handle user selection/prompts for auth command."""
+    # Selection-specific logic
+    pass
+
+# commands/auth_operations.py
+def perform_operations(selection):
+    """Perform auth operations."""
+    # Operation-specific logic
+    pass
+
+# commands/auth_steps.py
+def execute_steps(operations):
+    """Execute auth workflow steps."""
+    # Step-by-step workflow logic
+    pass
+```
+
+**❌ INCORRECT - Monolithic command handler**:
+
+```python
+# Wrong: All logic in single command file
+commands/auth.py  # 500+ lines with selection, operations, steps all mixed
+# Should be split into focused modules
+```
+
+### **2. :: Function Extraction**
+
+**✅ CORRECT - Extract related functionality into helper functions**:
+
+```python
+# Before: All logic in command handler
+def cmd_init(args):
+    # Prompt for local repository
+    local_path = prompt_text("Local path:")
+    # Check if exists
+    local_exists = check_exists(local_path)
+    # Display summary
+    print_summary(local_path)
+    # Prompt for confirmation
+    proceed = confirm("Proceed?")
+    # Setup local repository
+    setup_local(local_path)
+    # Prompt for remote repository
+    remote_url = prompt_text("Remote URL:")
+    # Setup remote repository
+    setup_remote(remote_url)
+
+# After: Extract into focused helper functions
+def cmd_init(args):
+    """Orchestrate init command."""
+    local_info = setup_local_repository(args)
+    remote_info = setup_remote_repository(args, local_info)
+    return execute_initialization(local_info, remote_info)
+
+def setup_local_repository(args):
+    """Handle all local repository setup."""
+    # All prompts for local repository
+    local_path = prompt_text("Local path:", indent="")
+    # All checks
+    local_exists = check_local_repo_exists(local_path)
+    # Summary display
+    if local_exists:
+        print()  # Blank line above warning
+        print(f"{COLOR_YELLOW}⚠ Local repository exists: {local_path}{COLOR_RESET}")
+    # Confirmation
+    proceed = confirm("Proceed with initialization?", default=True, indent="")
+    # Setup operations
+    if proceed:
+        setup_local(local_path)
+    return {'path': local_path, 'exists': local_exists, 'proceed': proceed}
+```
+
+**✅ CORRECT - Keep related logic together**:
+
+```python
+# All prompts, checks, summaries, and confirmations for a section
+# should be in the same helper function
+def setup_local_repository(args):
+    """Handle all local repository setup."""
+    # Prompts
+    local_path = prompt_text("Local path:", indent="")
+    
+    # Checks
+    local_exists = check_local_repo_exists(local_path)
+    
+    # Summary display
+    display_local_summary(local_path, local_exists)
+    
+    # Confirmation
+    proceed = confirm("Proceed?", default=True, indent="")
+    
+    # Operations
+    if proceed:
+        perform_local_setup(local_path)
+    
+    return {'path': local_path, 'exists': local_exists, 'proceed': proceed}
+```
+
+**❌ INCORRECT - Separated related logic**:
+
+```python
+# Wrong: Prompts separated from their operations
+def cmd_init(args):
+    local_path = prompt_text("Local path:")  # Prompt here
+    # ... other code ...
+    setup_local(local_path)  # Operation much later
+
+# Correct: Keep prompts and operations together
+def setup_local_repository(args):
+    local_path = prompt_text("Local path:")  # Prompt
+    setup_local(local_path)  # Operation immediately after
+```
+
+## **PACKAGE STRUCTURE PATTERNS**
+
+### **1. :: Core Module Organization**
+
+**✅ CORRECT - Core modules contain shared functionality**:
+
+```python
+core/
+    __init__.py
+    terminal.py  # Terminal output, formatting, colors
+    prompts.py  # Interactive prompts (text, select, confirm)
+    checks.py  # System checks, validation, prerequisites
+    utils.py  # General utility functions
+```
+
+**✅ CORRECT - Core module imports**:
+
+```python
+# core/__init__.py
+from .terminal import write_header, COLOR_GREEN, COLOR_RESET
+from .prompts import prompt_text, prompt_select, confirm
+from .checks import is_windows, check_prerequisite
+
+__all__ = [
+    'write_header', 'COLOR_GREEN', 'COLOR_RESET',
+    'prompt_text', 'prompt_select', 'confirm',
+    'is_windows', 'check_prerequisite',
+]
+```
+
+### **2. :: Operations Module Organization**
+
+**✅ CORRECT - Operations contain business logic**:
+
+```python
+operations/
+    __init__.py
+    repository.py  # Repository operations
+    authentication.py  # Authentication operations
+    configuration.py  # Configuration operations
+```
+
+**✅ CORRECT - Operation functions**:
+
+```python
+# operations/repository.py
+def setup_local_repository(args):
+    """Setup local repository with all prompts and operations."""
+    # All related functionality together
+    pass
+
+def setup_remote_repository(args, local_info):
+    """Setup remote repository with all prompts and operations."""
+    # All related functionality together
+    pass
+```
+
+### **3. :: Commands Module Organization**
+
+**✅ CORRECT - Commands contain CLI handlers**:
+
+```python
+commands/
+    __init__.py
+    status.py  # Status command handler
+    auth.py  # Auth command orchestrator
+    auth_selection.py  # Auth selection logic
+    auth_operations.py  # Auth operations
+    auth_steps.py  # Auth workflow steps
+    init.py  # Init command handler
+```
+
+## **REFACTORING METHODOLOGY**
+
+### **1. :: Complete Codebase Update**
+
+**✅ CORRECT - Update all references in single pass**:
+
+```python
+# 1. Search entire codebase for legacy names
+# 2. Replace all imports
+# 3. Replace all function calls
+# 4. Remove legacy definitions
+# 5. Update __init__.py exports
+# 6. Remove compatibility comments
+# All done in single refactoring pass
+```
+
+**✅ CORRECT - Systematic refactoring approach**:
+
+```python
+# Step 1: Search for all occurrences
+# Use grep/find to locate all references to legacy names
+# Document all files that need updates
+
+# Step 2: Update imports
+# Replace all import statements with new names
+# Update from statements: from ..core.prompts import confirm_custom
+# To: from ..core.prompts import confirm
+
+# Step 3: Update function calls
+# Replace all function invocations with new names
+# Update: confirm_custom("Proceed?", default=True)
+# To: confirm("Proceed?", default=True, indent="")
+
+# Step 4: Remove legacy definitions
+# Delete old function definitions and constants
+# Remove: def confirm_custom(...): ...
+# Remove: HAS_TERMINAL_MENU = ...
+
+# Step 5: Update __init__.py exports
+# Remove legacy names from __all__ list
+# Update exports to only include new names
+
+# Step 6: Remove compatibility comments
+# Clean up any temporary compatibility notes
+# Remove: # TODO: Remove after migration
+```
+
+**❌ INCORRECT - Partial updates**:
+
+```python
+# Wrong: Updating some files but not others
+# File 1: Updated to use confirm()
+# File 2: Still uses confirm_custom()  # Inconsistent
+```
+
+**❌ INCORRECT - Incremental refactoring**:
+
+```python
+# Wrong: Updating one file at a time over multiple commits
+# Commit 1: Update file1.py
+# Commit 2: Update file2.py
+# Commit 3: Update file3.py
+# This leaves codebase in inconsistent state
+
+# Correct: Update all files in single refactoring pass
+# All files updated together, codebase always consistent
+```
+
+### **2. :: Refactoring Checklist**
+
+**✅ CORRECT - Complete refactoring checklist**:
+
+```python
+# Refactoring Checklist:
+# [ ] Search entire codebase for legacy names
+# [ ] Update all import statements
+# [ ] Update all function calls
+# [ ] Update all constant references
+# [ ] Remove legacy function definitions
+# [ ] Remove legacy constant definitions
+# [ ] Update __init__.py exports
+# [ ] Remove compatibility comments
+# [ ] Verify no references to legacy names remain
+# [ ] Test all affected functionality
+# [ ] Update documentation if needed
+```
+
+**✅ CORRECT - Verification steps**:
+
+```python
+# After refactoring, verify completeness:
+# 1. Search for legacy names - should return no results
+# 2. Run tests - all tests should pass
+# 3. Check imports - no legacy imports should exist
+# 4. Review __init__.py - only new names exported
+# 5. Check documentation - breaking changes documented
+```
+
+## **ANTI-PATTERNS**
+
+### **❌ Code Organization Violations**
+
+- ❌ **Monolithic Files** - Don't keep large single files (1000+ lines) - break into modules
+- ❌ **Flat Structure** - Don't put all modules at package root - use subdirectories
+- ❌ **Mixed Responsibilities** - Don't mix unrelated functionality in one module
+- ❌ **Orchestrator Logic** - Don't put command logic in orchestrator - delegate to handlers
+- ❌ **Separated Related Logic** - Don't separate prompts from their operations - keep together
+- ❌ **Multiple Commands Per File** - Don't put multiple command handlers in one file
+- ❌ **Unclear Module Names** - Don't use vague names like `utils.py` or `misc.py` - be specific
+
+### **❌ Refactoring Violations**
+
+- ❌ **Partial Updates** - Don't update some files but leave others using legacy code
+- ❌ **Incremental Refactoring** - Don't update files one at a time over multiple commits
+- ❌ **Missing Verification** - Don't skip verification steps after refactoring
+- ❌ **Incomplete Updates** - Don't update imports but forget to update function calls
+
+## **QUALITY GATES**
+
+- [ ] **Package Structure**: Package has logical subdirectory organization (core/, operations/, commands/)
+- [ ] **Module Size**: No module exceeds 500 lines (ideally 200-300 lines)
+- [ ] **Single Responsibility**: Each module has one clear purpose
+- [ ] **Command Separation**: Each command handler is in its own file
+- [ ] **Complex Command Decomposition**: Complex commands (>200 lines) are split into focused modules
+- [ ] **Related Logic Together**: Prompts and their operations are in same function/module
+- [ ] **Clear Naming**: All modules and subdirectories have descriptive, clear names
+- [ ] **Orchestrator Pattern**: Main orchestrator delegates to handlers, doesn't contain logic
+- [ ] **Complete Refactoring**: All references updated in single pass, no partial updates
+- [ ] **Refactoring Verification**: All legacy names removed, tests pass, no broken imports
+
+## **SUCCESS METRICS**
+
+After implementing proper code organization:
+
+- ✅ **Maintainable Structure** - Easy to find and modify specific functionality
+- ✅ **Clear Separation** - Each module has clear, single responsibility
+- ✅ **Logical Grouping** - Related functionality grouped together
+- ✅ **Scalable Architecture** - Easy to add new commands, operations, or core functionality
+- ✅ **Reduced Complexity** - No single file exceeds 500 lines
+- ✅ **Better Testability** - Focused modules are easier to test
+- ✅ **Improved Readability** - Clear structure makes code easier to understand
+- ✅ **Consistent Refactoring** - All code uses new patterns consistently after refactoring
+- ✅ **Complete Updates** - All references updated in single pass, no legacy code remaining

@@ -241,21 +241,35 @@ When recommending rule changes, the AI Agent MUST:
 
 ### **6. :: Remediation Protocol**
 
+**CRITICAL ENFORCEMENT - MANDATORY PAUSE**: After generating a deviation executive summary, the AI agent MUST explicitly pause and state "Waiting for your approval before proceeding with remediation" or equivalent acknowledgment. The agent MUST NOT execute ANY commands (including `cargo build`, `cargo check`, or any terminal commands), make ANY file changes, or take ANY remediation actions until the user explicitly reviews and approves the recommendations. This pause applies to ALL remediation actions, including build verification commands, file modifications, and any other changes.
+
 **✅ CORRECT - Follow remediation protocol**:
 
 After generating executive summary, the AI Agent MUST:
 
 1. **Present Summary**: Display the executive summary for user review
-2. **Wait for User Input**: Do NOT implement changes until user reviews and approves
-3. **Collaborate on Remediation**: Work with user to refine recommendations
-4. **Implement Approved Changes**: Only implement changes after user approval
+2. **MANDATORY PAUSE**: Explicitly state "Waiting for your approval before proceeding with remediation" or equivalent acknowledgment
+3. **Wait for User Input**: Do NOT implement changes, execute commands, or take any actions until user reviews and approves
+4. **No Premature Actions**: Do NOT fix issues, modify files, run build commands, or take any remediation actions until approval
+5. **Collaborate on Remediation**: Work with user to refine recommendations if needed
+6. **Implement Approved Changes**: Only implement changes after explicit user approval
+
+**MANDATORY VERIFICATION CHECKPOINT**: Before implementing any remediation, the AI agent MUST be able to answer:
+- "Did the user explicitly approve the remediation recommendations?"
+- "Am I about to execute any commands or make changes without approval?"
+
+If the answer to the second question is YES and the first is NO, the agent MUST NOT proceed.
 
 **❌ INCORRECT - Implementing without approval**:
 
 - Implementing rule changes before user review
+- Executing commands (cargo build, cargo check, etc.) before user approval
 - Making assumptions about what user wants
 - Skipping collaboration step
 - Not waiting for explicit approval
+- Fixing issues immediately after generating summary
+- Taking any remediation actions without explicit user approval
+- Proceeding with changes "because they seem obvious"
 
 ## **ANTI-PATTERNS**
 

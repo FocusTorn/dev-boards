@@ -1,0 +1,136 @@
+    Checking dev-console v0.1.0 (D:\_dev\_Projects\dev-boards\projects\dev-console)
+error[E0425]: cannot find function `hex_color` in this scope
+   --> src\render\settings.rs:270:9
+    |
+270 |         hex_color(0x222222)
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+  3 + use tui_components::hex_color;
+    |
+
+error[E0425]: cannot find function `hex_color` in this scope
+   --> src\render\settings.rs:280:50
+    |
+280 |     let title_color = if dimming.modal_visible { hex_color(0x444444) } else { Color::White };
+    |                                                  ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+  3 + use tui_components::hex_color;
+    |
+
+error[E0425]: cannot find function `hex_color` in this scope
+   --> src\render\settings.rs:284:9
+    |
+284 |         hex_color(0x444444)
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+  3 + use tui_components::hex_color;
+    |
+
+error[E0425]: cannot find function `hex_color` in this scope
+   --> src\render\settings.rs:324:51
+    |
+324 |     let border_color = if dimming.modal_visible { hex_color(0x222222) } else { Color::Rgb(102, 102, 102) };
+    |                                                   ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+  3 + use tui_components::hex_color;
+    |
+
+error[E0425]: cannot find function `hex_color` in this scope
+   --> src\render\settings.rs:327:78
+    |
+327 |     let section_title_style = Style::default().fg(if dimming.modal_visible { hex_color(0x444444) } else { Color::White });
+    |                                                                              ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+  3 + use tui_components::hex_color;
+    |
+
+error[E0425]: cannot find function `hex_color` in this scope
+   --> src\render\settings.rs:452:50
+    |
+452 |     let label_color = if dimming.modal_visible { hex_color(0x444444) } else { Color::Rgb(153, 153, 153) };
+    |                                                  ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+  3 + use tui_components::hex_color;
+    |
+
+error[E0425]: cannot find function `hex_color` in this scope
+   --> src\render\settings.rs:456:9
+    |
+456 |         hex_color(0x444444)
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+  3 + use tui_components::hex_color;
+    |
+
+error[E0425]: cannot find function `hex_color` in this scope
+   --> src\render\settings.rs:465:9
+    |
+465 |         hex_color(0x444444)
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+  3 + use tui_components::hex_color;
+    |
+
+error[E0425]: cannot find function `hex_color` in this scope
+   --> src\render\settings.rs:510:9
+    |
+510 |         hex_color(0x222222)
+    |         ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+  3 + use tui_components::hex_color;
+    |
+
+error[E0425]: cannot find function `hex_color` in this scope
+   --> src\render\settings.rs:518:50
+    |
+518 |     let title_color = if dimming.modal_visible { hex_color(0x444444) } else { Color::White };
+    |                                                  ^^^^^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+  3 + use tui_components::hex_color;
+    |
+
+warning: unused import: `Paragraph`
+  --> src\ui_coordinator.rs:14:54
+   |
+14 |     widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
+   |                                                      ^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `profile_state`
+   --> src\render\dashboard.rs:184:5
+    |
+184 |     profile_state: &crate::profile_state::ProfileState,
+    |     ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_profile_state`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `registry`
+   --> src\render\dashboard.rs:185:5
+    |
+185 |     registry: &mut tui_components::RectRegistry,
+    |     ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_registry`
+
+For more information about this error, try `rustc --explain E0425`.
+warning: `dev-console` (bin "dev-console") generated 3 warnings
+error: could not compile `dev-console` (bin "dev-console") due to 10 previous errors; 3 warnings emitted

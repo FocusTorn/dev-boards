@@ -1,0 +1,287 @@
+---
+globs: **/*.py
+
+---
+
+# Type Annotations Rules
+
+## **CRITICAL EXECUTION DIRECTIVE**
+
+**AI Agent Directive**: Follow type annotation rules exactly for all Python type annotation and type handling tasks.
+
+**MANDATORY EXECUTION PROTOCOL**:
+
+1. **NO DEVIATION**: All type annotation rules must be followed exactly as written
+2. **NO SKIPPING**: No steps may be skipped, abbreviated, or modified
+3. **NO SELECTIVE COMPLIANCE**: All rules apply to all type annotation activities
+4. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
+
+## **PREVENTIVE RULES** (What NOT to Do)
+
+### **❌ NEVER Do These**
+
+- ❌ **NEVER use deprecated typing module types** - Don't use `List`, `Set`, `Dict`, `Tuple`, `Optional` from `typing` module (Python 3.9+)
+- ❌ **NEVER use bare generic types** - Don't use `tuple`, `list`, `dict`, `set` without type arguments
+- ❌ **NEVER use Optional instead of | None** - Don't use `Optional[T]` - use `T | None` instead (Python 3.10+)
+- ❌ **NEVER access argparse attributes directly** - Don't use `args.attribute` directly without `cast()`
+- ❌ **NEVER suppress argparse types without cast** - Don't use `# type: ignore` on argparse attributes without using `cast()` to provide correct types
+- ❌ **NEVER skip return type annotations** - Don't omit return type annotations (including `-> None`)
+
+## **CORRECTIVE REFERENCE** (How to Fix When Errors Occur)
+
+### **1. :: Modern Python Type Annotations (Python 3.9+)**
+
+**When you see**: Using `List`, `Dict`, `Set`, `Tuple`, `Optional` from `typing` module
+
+**Follow this protocol**:
+
+1. **Replace with built-in types**: Use `list`, `dict`, `set`, `tuple` instead
+2. **Use | None syntax**: Use `T | None` instead of `Optional[T]` (Python 3.10+)
+3. **Provide type arguments**: Always include type arguments for generic types
+
+**✅ CORRECT - Use built-in generic types instead of typing module**:
+
+```python
+# ✅ CORRECT - Python 3.9+ style
+from pathlib import Path
+from typing import cast  # Only import what's needed from typing
+
+def process_items(items: list[str], config: dict[str, int] | None = None) -> tuple[str, int]:
+    """Process items with optional config."""
+    if config is None:
+        config = {}
+    return ("result", len(items))
+```
+
+**✅ CORRECT - Use | None instead of Optional**:
+
+```python
+# ✅ CORRECT - Use | None instead of Optional
+def get_value(key: str) -> str | None:
+    """Get value or None."""
+    return data.get(key)
+```
+
+**❌ INCORRECT - Using deprecated typing module imports**:
+
+```python
+# ❌ WRONG - Deprecated in Python 3.9+
+from typing import List, Set, Optional, Dict, Tuple
+
+def process_items(items: List[str], config: Optional[Dict[str, int]] = None) -> Tuple[str, int]:
+    """Uses deprecated typing module types."""
+    pass
+```
+
+### **2. :: Generic Type Arguments**
+
+**When you see**: "Expected type arguments" for generic types
+
+**Follow this protocol**:
+
+1. **Add type arguments**: Always provide type arguments for `tuple`, `list`, `dict`, `set`
+2. **Use specific types**: Use concrete types like `tuple[str, int]` not bare `tuple`
+
+**✅ CORRECT - Always provide type arguments for generic types**:
+
+```python
+# ✅ CORRECT - Type arguments provided
+def get_file_info(file_path: Path) -> tuple[float | None, int, int]:
+    """Get file information: mtime, line count, size."""
+    stat = file_path.stat()
+    mtime: float = stat.st_mtime
+    size: int = stat.st_size
+    line_count: int = count_lines(file_path)
+    return mtime, line_count, size
+```
+
+**✅ CORRECT - List and set with type arguments**:
+
+```python
+# ✅ CORRECT - List and set with type arguments
+def process_data(items: list[str], exclude: set[str] | None = None) -> list[str]:
+    """Process items with optional exclusion set."""
+    if exclude is None:
+        exclude = set()
+    return [item for item in items if item not in exclude]
+```
+
+**❌ INCORRECT - Missing type arguments for generic types**:
+
+```python
+# ❌ WRONG - Missing type arguments
+def get_file_info(file_path: Path) -> tuple:  # Error: Expected type arguments
+    """Missing type arguments for tuple."""
+    return mtime, line_count, size
+
+def process_items(items: list) -> list:  # Error: Expected type arguments
+    """Missing type arguments for list."""
+    return items
+```
+
+### **3. :: Handling argparse Any Types**
+
+**When you see**: "Type of 'attribute' is Any" warnings for argparse attributes
+
+**Follow this protocol**:
+
+1. **Use cast() with explicit types**: Use `typing.cast()` to tell the type checker the correct types
+2. **Add pyright: ignore[reportAny]**: Suppress the unavoidable `Any` warnings from argparse
+3. **Handle optional arguments**: Use `getattr()` with default values for optional arguments
+
+**✅ CORRECT - Use typing.cast() with explicit type annotations**:
+
+```python
+from typing import cast
+import argparse
+
+parser = argparse.ArgumentParser()
+_ = parser.add_argument("directory", nargs="?", default=".")
+args = parser.parse_args()
+
+# Use cast() to tell type checker the correct type
+# argparse types are Any, but we know the runtime types
+directory: str = cast(str, args.directory) if args.directory else "."  # pyright: ignore[reportAny]
+root_dir = Path(directory).resolve()
+```
+
+**✅ CORRECT - Handle optional arguments with getattr()**:
+
+```python
+# Optional argument that might not be set
+exclude_patterns_str: str | None = cast(str | None, getattr(args, 'exclude_patterns', None))
+exclude_patterns: list[str] = []
+if exclude_patterns_str:
+    exclude_patterns = [p.strip() for p in exclude_patterns_str.split(',') if p.strip()]
+```
+
+**✅ CORRECT - Suppress unused return values**:
+
+```python
+_ = parser.add_argument(
+    "directory",
+    nargs="?",
+    default=".",
+    help="Directory to display (default: current directory)"
+)
+```
+
+**❌ INCORRECT - Using args attributes directly without cast**:
+
+```python
+# ❌ WRONG - Type checker sees Any types
+args = parser.parse_args()
+root_dir = Path(args.directory).resolve()  # Warning: Type of "directory" is Any
+```
+
+**❌ INCORRECT - Using type: ignore without cast**:
+
+```python
+# ❌ WRONG - Suppressing without fixing the type
+args = parser.parse_args()
+root_dir = Path(args.directory).resolve()  # type: ignore  # Don't do this
+```
+
+### **4. :: Return Type Annotations**
+
+**When you see**: Missing return type annotations on functions
+
+**Follow this protocol**:
+
+1. **Add explicit return types**: Add return type annotations to all functions
+2. **Include -> None**: Don't omit `-> None` for functions that don't return values
+3. **Use proper types**: Use specific types like `-> int`, `-> str | None`, not just `-> Any`
+
+**✅ CORRECT - All functions have explicit return type annotations**:
+
+```python
+def process_file(path: Path) -> str | None:
+    """Process file and return content or None."""
+    if not path.exists():
+        return None
+    return path.read_text()
+
+def print_message(msg: str) -> None:
+    """Print a message (no return value)."""
+    print(msg)
+
+def calculate_sum(numbers: list[int]) -> int:
+    """Calculate sum of numbers."""
+    return sum(numbers)
+```
+
+**❌ INCORRECT - Missing return type annotations**:
+
+```python
+# Wrong: Missing return type annotation
+def process_file(path: Path):  # Missing -> str | None
+    """Process file."""
+    return path.read_text()
+
+# Wrong: Missing -> None for functions that don't return
+def print_message(msg: str):  # Missing -> None
+    """Print a message."""
+    print(msg)
+```
+
+## **ANTI-PATTERNS**
+
+### **❌ Modern Type Annotation Violations**
+
+- ❌ **Using Deprecated typing Module** - Don't use `List`, `Set`, `Dict`, `Tuple`, `Optional` from `typing` module - use built-in `list`, `set`, `dict`, `tuple`, and `| None` instead (Python 3.9+)
+- ❌ **Missing Generic Type Arguments** - Don't use bare `tuple`, `list`, `dict`, `set` without type arguments - always provide type arguments like `tuple[str, int]`, `list[str]`, `dict[str, int]`, `set[str]`
+- ❌ **Using Optional Instead of | None** - Don't use `Optional[T]` - use `T | None` instead (Python 3.10+)
+
+### **❌ argparse Type Handling Violations**
+
+- ❌ **Using args Attributes Directly** - Don't use `args.attribute` directly without `cast()` - argparse returns `Any` types
+- ❌ **Suppressing Without cast()** - Don't use `# type: ignore` on argparse attributes without using `cast()` to provide correct types
+- ❌ **Missing Type Annotations** - Don't access argparse attributes without explicit type annotations using `cast()`
+
+### **❌ Return Type Violations**
+
+- ❌ **Missing Return Type Annotations** - Don't omit return type annotations (including `-> None` for functions that don't return)
+- ❌ **Using Any Return Types** - Don't use `-> Any` when specific return types are known
+- ❌ **Inconsistent Return Types** - Don't declare return types that don't match actual return values
+
+## **QUALITY GATES**
+
+- [ ] **Modern Type Annotations**: Using built-in generic types (`list`, `set`, `dict`, `tuple`) instead of `typing` module types
+- [ ] **Generic Type Arguments**: All generic types have type arguments (e.g., `tuple[str, int]` not `tuple`)
+- [ ] **Union Syntax**: Using `| None` instead of `Optional` (Python 3.10+)
+- [ ] **argparse Type Handling**: Using `cast()` with explicit type annotations for argparse attributes
+- [ ] **Return Type Annotations**: All functions have explicit return type annotations (including `-> None`)
+
+## **SUCCESS METRICS**
+
+After implementing proper type annotations:
+
+- ✅ **Modern Type Annotations** - Code uses Python 3.9+ built-in generic types instead of deprecated `typing` module types
+- ✅ **Complete Generic Types** - All generic types have proper type arguments (e.g., `tuple[str, int]` not `tuple`)
+- ✅ **argparse Types Handled** - argparse attributes are properly typed using `cast()` with explicit annotations
+- ✅ **Complete Return Types** - All functions have explicit return type annotations
+- ✅ **Type Safety** - Type checker correctly infers types throughout the codebase
+
+## **EXECUTION PRIORITY MATRIX**
+
+### **CRITICAL PRIORITY (Execute immediately)**
+
+- **Modern type annotations** - Use built-in generic types (`list`, `set`, `dict`, `tuple`) instead of `typing` module types (Python 3.9+)
+- **Generic type arguments** - Always provide type arguments for generic types (e.g., `tuple[str, int]` not `tuple`)
+- **argparse type handling** - Use `cast()` with explicit type annotations when accessing argparse attributes
+- **Return type annotations** - Add explicit return type annotations (including `-> None`) to all functions
+
+### **HIGH PRIORITY (Execute before proceeding)**
+
+- Replace all deprecated `typing` module imports with built-in types
+- Verify all generic types have type arguments
+- Check all argparse attribute access uses `cast()`
+
+### **MEDIUM PRIORITY (Execute during normal operation)**
+
+- Update type annotations as code evolves
+- Maintain consistency in type annotation style
+
+## **DYNAMIC MANAGEMENT NOTE**
+
+This document is optimized for AI agent internal processing and may be updated dynamically based on operational needs and pattern recognition. The structure prioritizes AI agent compliance and effectiveness over traditional documentation practices.

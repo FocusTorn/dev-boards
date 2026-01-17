@@ -1,0 +1,392 @@
+---
+globs: **/*.py
+
+---
+
+# Code Cleanup Rules
+
+## **CRITICAL EXECUTION DIRECTIVE**
+
+**AI Agent Directive**: Follow code cleanup rules exactly for all code cleanup, unused import removal, and code quality maintenance tasks.
+
+**MANDATORY EXECUTION PROTOCOL**:
+
+1. **NO DEVIATION**: All code cleanup rules must be followed exactly as written
+2. **NO SKIPPING**: No steps may be skipped, abbreviated, or modified
+3. **NO SELECTIVE COMPLIANCE**: All rules apply to all code cleanup activities
+4. **FAILURE TO COMPLY**: Violating these rules constitutes a critical protocol violation
+
+## **PREVENTIVE RULES** (What NOT to Do)
+
+### **❌ NEVER Do These**
+
+- ❌ **NEVER keep unused imports** - Don't leave unused imports in code
+- ❌ **NEVER ignore unused return value warnings** - Don't skip suppressing unused return values
+- ❌ **NEVER use sys.stdout.reconfigure() directly** - Don't access `reconfigure` directly - use `getattr()` pattern
+- ❌ **NEVER use functions from helper modules without runtime checks** - Don't call functions without checking they're not None
+- ❌ **NEVER use list comprehensions with None values in join()** - Don't use lists that may contain None in `str.join()` without filtering
+- ❌ **NEVER use local_imports when packages are installed** - Don't use `local_imports` when packages are installed with `-e` or regular installation
+
+## **CORRECTIVE REFERENCE** (How to Fix When Errors Occur)
+
+### **1. :: Unused Imports and Return Values**
+
+**When you see**: `reportUnusedImport` warnings or unused return value warnings
+
+**Follow this protocol**:
+
+1. **Remove unused imports**: Delete imports that aren't used anywhere in the file
+2. **Suppress unused return values**: Assign unused return values to `_` to suppress warnings
+
+**✅ CORRECT - Remove unused imports**:
+
+```python
+# ✅ CORRECT - Only import what's used
+import sys
+import argparse
+from pathlib import Path
+from datetime import datetime
+from typing import cast
+```
+
+**✅ CORRECT - Suppress unused return values**:
+
+```python
+# ✅ CORRECT - Suppress unused return value
+_ = parser.add_argument(
+    "directory",
+    nargs="?",
+    default=".",
+    help="Directory to display"
+)
+```
+
+**❌ INCORRECT - Keeping unused imports**:
+
+```python
+# ❌ WRONG - Unused import
+import sys
+import os  # Not used anywhere
+import argparse
+```
+
+**❌ INCORRECT - Ignoring unused return value warnings**:
+
+```python
+# Wrong: Unused return value warning
+parser.add_argument(
+    "directory",
+    nargs="?",
+    default=".",
+    help="Directory to display"
+)  # Warning: Return value not used
+```
+
+### **2. :: Windows Console Encoding with sys.stdout.reconfigure**
+
+**When you see**: `reportAttributeAccessIssue` errors for `sys.stdout.reconfigure()` or `sys.stderr.reconfigure()`
+
+**Follow this protocol**:
+
+1. **Use getattr() pattern**: Use `getattr()` with `None` as default to safely access `reconfigure`
+2. **Check for None before calling**: Verify the result is not `None` before calling
+3. **Provide fallback**: Use `io.TextIOWrapper` as fallback for older Python versions
+
+**✅ CORRECT - Use getattr() to safely access reconfigure attribute**:
+
+```python
+# Fix Windows console encoding
+if sys.platform == "win32":
+    import io
+    # Type narrowing: use getattr after hasattr check
+    reconfigure_stdout = getattr(sys.stdout, 'reconfigure', None)  # type: ignore[attr-defined]
+    reconfigure_stderr = getattr(sys.stderr, 'reconfigure', None)  # type: ignore[attr-defined]
+    if reconfigure_stdout is not None:
+        reconfigure_stdout(encoding='utf-8')
+    if reconfigure_stderr is not None:
+        reconfigure_stderr(encoding='utf-8')
+    if reconfigure_stdout is None or reconfigure_stderr is None:
+        # Fallback for older Python versions
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+```
+
+**❌ INCORRECT - Direct attribute access**:
+
+```python
+# Wrong: Direct attribute access causes type checker errors
+if sys.platform == "win32":
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')  # Type error
+        sys.stderr.reconfigure(encoding='utf-8')  # Type error
+```
+
+**❌ INCORRECT - Using type: ignore on direct access**:
+
+```python
+# Wrong: Suppressing errors instead of using safe access pattern
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding='utf-8')  # type: ignore  # Don't do this
+```
+
+### **3. :: Runtime Checks for Imported Functions**
+
+**When you see**: `reportOptionalCall` errors for functions from helper modules
+
+**Follow this protocol**:
+
+1. **Check dependencies first**: Check boolean flags like `HAS_PROMPT_TOOLKIT` first
+2. **Group related checks**: Group functions by category (prompt functions, output functions, header functions)
+3. **Exit early on failure**: Use `sys.exit(1)` if required functions are missing
+4. **Add assertions for type narrowing**: After runtime checks, add assertions to help the type checker understand functions are not None
+
+**✅ CORRECT - Add runtime checks that exit early if functions are None**:
+
+```python
+from local_imports import (
+    error, warning, success, info, action, dim,
+    select, confirm, text,
+    write_header, write_header_double, write_boxed_header,
+    HAS_PROMPT_TOOLKIT,
+)
+
+# Check required dependencies first
+if not HAS_PROMPT_TOOLKIT:
+    print("Error: prompt_toolkit is required but not available", file=sys.stderr)
+    sys.exit(1)
+
+# Type guards: ensure functions are available (satisfies type checker)
+if select is None or confirm is None or text is None:
+    print("Error: Required prompt functions not available", file=sys.stderr)
+    sys.exit(1)
+
+if error is None or warning is None or success is None or info is None or action is None or dim is None:
+    print("Error: Required output functions not available", file=sys.stderr)
+    sys.exit(1)
+
+if write_header is None or write_header_double is None or write_boxed_header is None:
+    print("Error: Required header functions not available", file=sys.stderr)
+    sys.exit(1)
+
+# Type narrowing: use assertions to help type checker understand these are not None
+# These assertions are safe because we've verified the functions exist above
+assert select is not None
+assert confirm is not None
+assert text is not None
+assert error is not None
+assert warning is not None
+assert success is not None
+assert info is not None
+assert action is not None
+assert dim is not None
+assert write_header is not None
+assert write_header_double is not None
+assert write_boxed_header is not None
+
+# Now all function calls work without type errors
+print(error('', "Error message"))
+selected = select("Choose:", choices=choices)
+```
+
+**❌ INCORRECT - Not checking functions before use**:
+
+```python
+# Wrong: No runtime checks, functions might be None
+from local_imports import error, select
+
+print(error('', "Error"))  # Runtime error if error is None
+selected = select("Choose:", choices=[])  # Runtime error if select is None
+```
+
+**❌ INCORRECT - Using type: ignore on every call**:
+
+```python
+# Wrong: Suppressing errors instead of checking at runtime
+print(error('', "Error"))  # type: ignore[reportOptionalCall]  # Don't do this
+selected = select("Choose:", choices=[])  # type: ignore[reportOptionalCall]  # Don't do this
+```
+
+### **4. :: List Comprehensions with Potentially None Values**
+
+**When you see**: "Argument of type 'list[Unknown | None]' cannot be assigned to parameter 'iterable' of type 'Iterable[str]'" for `str.join()`
+
+**Follow this protocol**:
+
+1. **Use explicit type annotation**: Use `list[str]` to tell type checker the list contains only strings
+2. **Filter None values**: Use `if name:` or `if p.get('name')` to filter None values
+3. **Provide defaults**: Use `.get('name', 'unknown')` to provide default values for missing keys
+
+**✅ CORRECT - Use explicit type annotation and filter None values**:
+
+```python
+enabled_packages = [{"name": "package1"}, {"name": None}, {"name": "package2"}]
+
+# Explicit type annotation and None filtering
+package_names: list[str] = []
+for p in enabled_packages:
+    name = p.get('name')
+    if name:
+        package_names.append(name)
+    else:
+        package_names.append('unknown')
+
+package_names_str = ', '.join(package_names)
+```
+
+**✅ CORRECT - Alternative: List comprehension with explicit filtering**:
+
+```python
+enabled_packages = [{"name": "package1"}, {"name": None}, {"name": "package2"}]
+
+# Filter None values and provide default
+package_names = [p.get('name', 'unknown') for p in enabled_packages if p.get('name')]
+package_names_str = ', '.join(package_names)
+```
+
+**❌ INCORRECT - List comprehension without None filtering**:
+
+```python
+# Wrong: May contain None values
+package_names = [p.get('name') for p in enabled_packages]  # Type: list[str | None]
+package_names_str = ', '.join(package_names)  # Type error
+```
+
+**❌ INCORRECT - Using type: ignore on join**:
+
+```python
+# Wrong: Suppressing errors instead of filtering None values
+package_names = [p.get('name') for p in enabled_packages]
+package_names_str = ', '.join(package_names)  # type: ignore  # Don't do this
+```
+
+**❌ INCORRECT - Missing type annotation**:
+
+```python
+# Wrong: Type checker can't infer correct type
+package_names = []  # Type: list[Unknown]
+for p in enabled_packages:
+    name = p.get('name')
+    if name:
+        package_names.append(name)
+```
+
+### **5. :: Direct Imports for Installed Packages**
+
+**When you see**: Using `local_imports` when packages are installed with `-e` or regular installation
+
+**Follow this protocol**:
+
+1. **Use direct imports**: Import directly from installed packages
+2. **Remove sys.path modifications**: Remove unnecessary sys.path manipulation
+3. **Remove type ignore**: Direct imports don't need `# type: ignore`
+4. **Remove runtime checks**: Direct imports don't need None checks or assertions
+
+**✅ CORRECT - Use direct imports from installed packages**:
+
+```python
+# Packages are installed with -e or regular installation
+from outerm import error, warning, info, success, write_header, write_header_fat
+from pyprompt import select, confirm, text
+
+# No type: ignore needed - these are proper imports
+# No runtime checks needed - packages are guaranteed to exist
+print(error('Error message', ''))
+selected = select("Choose:", choices=choices)
+```
+
+**❌ INCORRECT - Using local_imports when packages are installed**:
+
+```python
+# Wrong: Using local_imports when packages are installed
+import sys
+from pathlib import Path
+
+_workspace_root = Path(os.environ.get('WORKSPACE_ROOT'))
+_shared_python_dir = _workspace_root / "___shared" / "shared-python"
+if str(_shared_python_dir) not in sys.path:
+    sys.path.insert(0, str(_shared_python_dir))
+
+from local_imports import error, warning, info, success  # type: ignore
+
+# Type checker reports: Object of type "None" cannot be called
+print(error('Error message', ''))  # Error: reportOptionalCall
+```
+
+## **ANTI-PATTERNS**
+
+### **❌ Windows Console Encoding Violations**
+
+- ❌ **Direct Attribute Access** - Don't use `sys.stdout.reconfigure()` directly - use `getattr()` pattern instead
+- ❌ **Missing Fallback** - Don't skip fallback to `io.TextIOWrapper` for older Python versions
+- ❌ **Type Ignore on Direct Access** - Don't suppress errors with `# type: ignore` on direct attribute access
+
+### **❌ Runtime Function Check Violations**
+
+- ❌ **No Runtime Checks** - Don't use functions from helper modules without checking they're not None
+- ❌ **Missing Dependency Checks** - Don't skip checking boolean flags like `HAS_PROMPT_TOOLKIT` before using functions
+- ❌ **Type Ignore on Every Call** - Don't add `# type: ignore[reportOptionalCall]` on every function call - add runtime checks instead
+
+### **❌ List Comprehension Violations**
+
+- ❌ **List Comprehension Without None Filtering** - Don't use list comprehensions that may contain None values in `str.join()` without filtering
+- ❌ **Missing Type Annotations** - Don't use lists in `join()` operations without explicit type annotations
+- ❌ **Using type: ignore on join** - Don't suppress errors with `# type: ignore` on `join()` operations - filter None values instead
+
+### **❌ Code Cleanup Violations**
+
+- ❌ **Keeping Unused Imports** - Don't leave unused imports in code
+- ❌ **Ignoring Unused Return Values** - Don't skip suppressing unused return value warnings
+- ❌ **Using local_imports When Packages Are Installed** - Don't use `local_imports` when packages are installed with `-e` or regular installation
+
+## **QUALITY GATES**
+
+- [ ] **Unused Imports Removed**: All unused imports have been removed
+- [ ] **Unused Return Values Suppressed**: Unused return values assigned to `_`
+- [ ] **Windows Encoding Pattern**: Using `getattr()` pattern for `sys.stdout.reconfigure()` and `sys.stderr.reconfigure()` access
+- [ ] **Runtime Function Checks**: Runtime checks that exit early if imported functions from helper modules are None
+- [ ] **Type Narrowing Assertions**: Assertions after runtime checks to help type checker understand functions are not None
+- [ ] **List Type Annotations**: Explicit type annotations for lists used in `join()` operations
+- [ ] **None Value Filtering**: None values filtered from lists before using in `join()` operations
+- [ ] **Direct Imports for Installed Packages**: When packages are installed with `-e` or regular installation, use direct imports instead of `local_imports`
+- [ ] **No Unnecessary sys.path Manipulation**: Removed `sys.path` modifications when packages are properly installed
+- [ ] **No Type Ignore on Direct Imports**: Direct imports from installed packages don't have unnecessary `# type: ignore` comments
+- [ ] **No Runtime Checks for Installed Packages**: Direct imports from installed packages don't have unnecessary None checks or assertions
+
+## **SUCCESS METRICS**
+
+After implementing proper code cleanup:
+
+- ✅ **Clean Imports** - No unused imports in code
+- ✅ **Suppressed Warnings** - Unused return values properly suppressed with `_`
+- ✅ **Windows Encoding Fixed** - Windows console encoding uses safe `getattr()` pattern to avoid `reportAttributeAccessIssue` errors
+- ✅ **Runtime Function Safety** - Functions from helper modules checked at runtime before use, preventing `reportOptionalCall` errors
+- ✅ **Type Narrowing Applied** - Assertions after runtime checks help type checker understand functions are not None
+- ✅ **Safe List Operations** - Lists used in `join()` operations have explicit type annotations and None values filtered
+- ✅ **Direct Imports Used** - When packages are installed, direct imports are used instead of `local_imports`
+- ✅ **Clean Codebase** - No unnecessary sys.path modifications or type ignore comments for installed packages
+
+## **EXECUTION PRIORITY MATRIX**
+
+### **CRITICAL PRIORITY (Execute immediately)**
+
+- **Remove unused imports** - Remove all unused imports to avoid `reportUnusedImport` warnings
+- **Suppress unused return values** - Assign unused return values to `_` to suppress warnings
+- **Windows console encoding** - Use `getattr()` pattern for `sys.stdout.reconfigure()` and `sys.stderr.reconfigure()` to avoid `reportAttributeAccessIssue` errors
+- **Runtime function checks** - Add runtime checks that exit early if imported functions from helper modules are None, followed by assertions for type narrowing
+- **List comprehensions with None** - Use explicit type annotations and filter None values from lists before using in `join()` operations
+- **Direct imports for installed packages** - When packages are installed with `-e` or regular installation, use direct imports instead of `local_imports`
+
+### **HIGH PRIORITY (Execute before proceeding)**
+
+- Verify all unused imports are removed
+- Check all unused return values are suppressed
+- Ensure Windows encoding uses safe access pattern
+
+### **MEDIUM PRIORITY (Execute during normal operation)**
+
+- Maintain clean imports as code evolves
+- Keep runtime checks up to date as dependencies change
+
+## **DYNAMIC MANAGEMENT NOTE**
+
+This document is optimized for AI agent internal processing and may be updated dynamically based on operational needs and pattern recognition. The structure prioritizes AI agent compliance and effectiveness over traditional documentation practices.

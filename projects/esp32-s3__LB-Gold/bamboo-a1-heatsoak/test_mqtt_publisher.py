@@ -35,9 +35,11 @@ except ImportError:
 class SHT21Simulator:
     """Simulates SHT21 sensor publishing temperature data."""
     
-    def __init__(self, mqtt_host="localhost", mqtt_port=1883, topic="sensors/sht21/readings"):
+    def __init__(self, mqtt_host="localhost", mqtt_port=1883, topic="sensors/sht21/readings",
+                 mqtt_username="mqtt", mqtt_password="mqtt"):
         """Initialize MQTT client."""
         self.mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, "sht21-simulator")
+        self.mqtt_client.username_pw_set(mqtt_username, mqtt_password)
         self.mqtt_host = mqtt_host
         self.mqtt_port = mqtt_port
         self.topic = topic
@@ -223,6 +225,10 @@ Examples:
                        help='MQTT broker port (default: 1883)')
     parser.add_argument('--topic', default='sensors/sht21/readings',
                        help='MQTT topic (default: sensors/sht21/readings)')
+    parser.add_argument('--mqtt-username', default='mqtt',
+                       help='MQTT username (default: mqtt)')
+    parser.add_argument('--mqtt-password', default='mqtt',
+                       help='MQTT password (default: mqtt)')
     
     # Single reading
     parser.add_argument('--temp', type=float, default=None,
@@ -263,7 +269,9 @@ Examples:
     simulator = SHT21Simulator(
         mqtt_host=args.mqtt_host,
         mqtt_port=args.mqtt_port,
-        topic=args.topic
+        topic=args.topic,
+        mqtt_username=args.mqtt_username,
+        mqtt_password=args.mqtt_password
     )
     
     if not simulator.connect():

@@ -2,14 +2,25 @@
 
 use crate::settings::Settings;
 use crate::field_editor::{FieldEditorState, SettingsFields};
+use crate::profile_state::ProfileState;
 use crate::constants::*;
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
 };
+use tui_components::{RectRegistry, DimmingContext, hex_color};
+
+/// Helper function to register or update a HWND element
+fn register_or_update(registry: &mut RectRegistry, hwnd_name: &str, rect: Rect) {
+    if let Some(handle) = registry.get_handle(hwnd_name) {
+        registry.update(handle, rect);
+    } else {
+        registry.register(Some(hwnd_name), rect);
+    }
+}
 
 /// Render settings panel
 pub fn render_settings(
@@ -18,6 +29,9 @@ pub fn render_settings(
     settings: &Settings,
     fields: &SettingsFields,
     editor_state: &FieldEditorState,
+    profile_state: &ProfileState,
+    registry: &mut RectRegistry,
+    dimming: &DimmingContext,
 ) {
     // Check if terminal is too small (minimum size requirements)
     let min_width_pixels = MIN_WIDTH_PIXELS;
@@ -94,41 +108,95 @@ pub fn render_settings(
         return;
     }
     
-    // Split into top section (Sketch Directory, Sketch Name) and bottom section (Device/Connection)
-    let main_chunks = Layout::default()
+    // Calculate profile box width based on longest profile name + 2 spaces
+    // Also account for title and minimum width for instructions
+    let profile_state_guard = profile_state.profiles.lock().unwrap();
+    let max_profile_name_len = profile_state_guard.iter()
+        .map(|name| name.len())
+        .max()
+        .unwrap_or(0);
+    drop(profile_state_guard);
+    
+    // Calculate profile box width based on longest profile name
+    // Account for: "> " (highlight, 2 chars) + "  " (padding, 2 chars) + name + 1 space + borders (2)
+    // Total: 2 + 2 + name_len + 1 + 2 = name_len + 7
+    let profile_box_width = max_profile_name_len + 7;
+    
+    // Split into left (Profiles) and right (Configuration) sections - NO CENTERING, like dashboard
+    let columns = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Length(profile_box_width as u16), // Profile box (fixed width)
+            Constraint::Min(0),                            // Configuration section (remaining)
+        ])
+        .split(area);
+    
+    let profile_area = columns[0];
+    let config_area = columns[1];
+    
+    // Split configuration: Sketch boxes (full width) at top, then 3-column bottom (Device | Connection | MQTT)
+    let config_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(6), // Top section: 2 boxes (3 lines each)
-            Constraint::Min(0),   // Bottom section: Device/Connection
+            Constraint::Length(6), // Sketch boxes (2 x 3 lines)
+            Constraint::Min(0),    // Bottom sections
         ])
-        .split(content_area);
+        .split(config_area);
     
-    // Render top section: Sketch Directory and Sketch Name
-    let top_chunks = Layout::default()
+    // Sketch boxes - FULL WIDTH like dashboard status box
+    let sketch_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3), // Sketch Directory
             Constraint::Length(3), // Sketch Name
         ])
-        .split(main_chunks[0]);
+        .split(config_chunks[0]);
     
-    render_full_width_field(f, top_chunks[0], settings, fields, editor_state, 0, "Sketch Directory");
-    render_full_width_field(f, top_chunks[1], settings, fields, editor_state, 1, "Sketch Name");
+    register_or_update(registry, HWND_SETTINGS_FIELD_SKETCH_DIR, sketch_chunks[0]);
+    render_full_width_field(f, sketch_chunks[0], settings, fields, editor_state, 0, "Sketch Directory", dimming);
     
-    // Render bottom section: Device and Connection columns
-    let bottom_chunks = Layout::default()
+    register_or_update(registry, HWND_SETTINGS_FIELD_SKETCH_NAME, sketch_chunks[1]);
+    render_full_width_field(f, sketch_chunks[1], settings, fields, editor_state, 1, "Sketch Name", dimming);
+    
+    // Bottom section: 3 columns - Device | Connection | MQTT (2 sub-columns)
+    let bottom_columns = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(50), // Device column
-            Constraint::Percentage(50), // Connection column
+            Constraint::Percentage(25), // Device
+            Constraint::Percentage(25), // Connection  
+            Constraint::Percentage(50), // MQTT (will be split into 2 sub-columns)
         ])
-        .split(main_chunks[1]);
+        .split(config_chunks[1]);
     
-    // Device section: Environment, Board Model, FQBN
-    let device_height = render_section(f, bottom_chunks[0], settings, fields, editor_state, "Device", &[2, 3, 4], None);
+    // Device section: Environment, Board Model, FQBN - FULL HEIGHT
+    render_section(f, bottom_columns[0], settings, fields, editor_state, "Device", &[2, 3, 4], None, registry, dimming);
+    register_or_update(registry, HWND_SETTINGS_SECTION_DEVICE, bottom_columns[0]);
     
-    // Connection section: Port, Baud Rate - match Device height
-    render_section(f, bottom_chunks[1], settings, fields, editor_state, "Connection", &[5, 6], Some(device_height));
+    // Connection section: Port, Baud Rate - FULL HEIGHT
+    render_section(f, bottom_columns[1], settings, fields, editor_state, "Connection", &[5, 6], None, registry, dimming);
+    register_or_update(registry, HWND_SETTINGS_SECTION_CONNECTION, bottom_columns[1]);
+
+    // MQTT section: 2 sub-columns (Credentials | Topics)
+    let mqtt_columns = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(50), // Credentials: Host, Port, Username, Password
+            Constraint::Percentage(50), // Topics: Command, State, Status
+        ])
+        .split(bottom_columns[2]);
+    
+    // MQTT Credentials column - FULL HEIGHT
+    render_section(f, mqtt_columns[0], settings, fields, editor_state, "MQTT", &[7, 8, 9, 10], None, registry, dimming);
+    
+    // MQTT Topics column - FULL HEIGHT
+    render_section(f, mqtt_columns[1], settings, fields, editor_state, "Topics", &[11, 12, 13], None, registry, dimming);
+    
+    // Register combined MQTT section (full height)
+    register_or_update(registry, HWND_SETTINGS_SECTION_MQTT, bottom_columns[2]);
+    
+    // Render profile box - FULL HEIGHT on the left (top-aligned, like dashboard commands)
+    register_or_update(registry, HWND_PROFILE_BOX, profile_area);
+    render_profile_box(f, profile_area, profile_state, registry, dimming);
 }
 
 /// Render a full-width field (for Sketch Directory and Sketch Name)
@@ -140,6 +208,7 @@ fn render_full_width_field(
     editor_state: &FieldEditorState,
     field_index: usize,
     title: &str,
+    dimming: &DimmingContext,
 ) {
     // Ensure area is valid
     if area.width == 0 || area.height == 0 {
@@ -171,24 +240,27 @@ fn render_full_width_field(
         (value, 0)
     };
     
-    // Border color: #666666 (RGB 102, 102, 102) for box characters by default
-    // Title color: white for text
-    let border_color = if is_editing {
-        Color::Rgb(255, 215, 0) // Gold when editing
+    // Border color: #666666 (RGB 102, 102, 102) for box characters
+    let border_color = if dimming.modal_visible {
+        hex_color(0x222222)
+    } else if is_editing {
+        Color::Cyan // Cyan when editing
     } else if is_selected {
-        Color::Cyan // Cyan when selected
+        Color::White // White when selected but not editing
     } else {
-        Color::Rgb(102, 102, 102) // #666666 by default
+        Color::Rgb(102, 102, 102) // Gray when inactive
     };
     
-    let title_color = Color::White;
+    // Title color: white for text
+    let title_color = if dimming.modal_visible { hex_color(0x444444) } else { Color::White };
     
-    let text_color = if is_editing {
-        Color::Rgb(255, 215, 0) // Gold when editing
-    } else if is_selected {
-        Color::Cyan // Cyan when selected
+    // Value color: cyan when editing, white when not
+    let text_color = if dimming.modal_visible {
+        hex_color(0x444444)
+    } else if is_editing {
+        Color::Cyan
     } else {
-        Color::White // White by default
+        Color::White
     };
     
     let block = Block::default()
@@ -215,48 +287,30 @@ fn render_section(
     section_title: &str,
     field_indices: &[usize],
     target_height: Option<u16>,
+    registry: &mut RectRegistry,
+    dimming: &DimmingContext,
 ) -> u16 {
     // Ensure area is valid
     if area.width == 0 || area.height == 0 {
         return 0;
     }
-    
+
     // Border color: #666666 (RGB 102, 102, 102) for box characters
-    let border_color = Color::Rgb(102, 102, 102);
+    let border_color = if dimming.modal_visible { hex_color(0x222222) } else { Color::Rgb(102, 102, 102) };
     
-    // Title color: white for text
-    let title_color = Color::White;
+    // Section title style
+    let section_title_style = Style::default().fg(if dimming.modal_visible { hex_color(0x444444) } else { Color::Cyan });
     
     // Calculate field height (3 lines per field)
     let field_height = FIELD_HEIGHT;
     let spacing = FIELD_SPACING; // Spacing between fields
-    let total_fields = field_indices.len();
     
-    // Calculate exact height needed: (field_height * total_fields) + (spacing * (total_fields - 1)) + borders (2)
-    let mut needed_height = (field_height * total_fields as u16) + (spacing * total_fields.saturating_sub(1) as u16) + 2;
-    
-    // If target_height is provided (for matching heights), use it
-    // Otherwise, if this is Device section, add 1 extra row
-    let final_height = if let Some(target) = target_height {
-        target
-    } else if section_title == "Device" {
-        needed_height += 1; // Device box needs 1 extra row
-        needed_height as u16
-    } else {
-        needed_height as u16
-    };
-    
-    // Use the calculated height, not the full area
-    let section_area = Rect {
-        x: area.x,
-        y: area.y,
-        width: area.width,
-        height: final_height.min(area.height),
-    };
+    // Use the full area height (sections now span to bottom)
+    let section_area = area;
     
     // Outer section block with white title and gray border
     let section_block = Block::default()
-        .title(Span::styled(format!(" {} ", section_title), Style::default().fg(title_color)))
+        .title(Span::styled(format!(" {} ", section_title), section_title_style))
         .borders(Borders::ALL)
         .padding(ratatui::widgets::Padding::new(1, 1, 0, 0))
         .border_style(Style::default().fg(border_color));
@@ -264,7 +318,23 @@ fn render_section(
     // Inner area for nested fields
     let inner_area = section_block.inner(section_area);
     
-    let mut y_offset = 1; // Start after top border
+    let mut y_offset = 0; // Start at top of inner area
+    
+    // Map field indices to HWND constants
+    let field_hwnds = [
+        HWND_SETTINGS_FIELD_ENV,
+        HWND_SETTINGS_FIELD_BOARD_MODEL,
+        HWND_SETTINGS_FIELD_FQBN,
+        HWND_SETTINGS_FIELD_PORT,
+        HWND_SETTINGS_FIELD_BAUDRATE,
+        HWND_SETTINGS_FIELD_MQTT_HOST,
+        HWND_SETTINGS_FIELD_MQTT_PORT,
+        HWND_SETTINGS_FIELD_MQTT_USERNAME,
+        HWND_SETTINGS_FIELD_MQTT_PASSWORD,
+        HWND_SETTINGS_FIELD_MQTT_TOPIC_COMMAND,
+        HWND_SETTINGS_FIELD_MQTT_TOPIC_STATE,
+        HWND_SETTINGS_FIELD_MQTT_TOPIC_STATUS,
+    ];
     
     for &field_index in field_indices {
         if field_index >= fields.count() {
@@ -272,13 +342,21 @@ fn render_section(
         }
         
         let field_area = Rect {
-            x: inner_area.x + 1,
+            x: inner_area.x,
             y: inner_area.y + y_offset,
-            width: inner_area.width.saturating_sub(2),
+            width: inner_area.width,
             height: field_height as u16,
         };
         
-        render_nested_field(f, field_area, settings, fields, editor_state, field_index);
+        // Register field with HWND (field_index 2-13 map to hwnds 0-11)
+        if field_index >= 2 && field_index <= 13 {
+            let hwnd_index = field_index - 2;
+            if hwnd_index < field_hwnds.len() {
+                register_or_update(registry, field_hwnds[hwnd_index], field_area);
+            }
+        }
+        
+        render_nested_field(f, field_area, settings, fields, editor_state, field_index, dimming);
         y_offset += field_height as u16 + spacing as u16; // Add spacing between fields
     }
     
@@ -297,6 +375,7 @@ fn render_nested_field(
     fields: &SettingsFields,
     editor_state: &FieldEditorState,
     field_index: usize,
+    dimming: &DimmingContext,
 ) {
     // Ensure area is valid
     if area.width == 0 || area.height == 0 {
@@ -307,7 +386,7 @@ fn render_nested_field(
     let value = fields.get_value(settings, field_index);
     let is_selected = matches!(editor_state, FieldEditorState::Selected { field_index: idx } if *idx == field_index);
     let is_editing = matches!(editor_state, FieldEditorState::Editing { field_index: idx, .. } if *idx == field_index);
-    let is_selecting = matches!(editor_state, FieldEditorState::Selecting { field_index: idx, .. } if *idx == field_index);
+    let _is_selecting = matches!(editor_state, FieldEditorState::Selecting { field_index: idx, .. } if *idx == field_index);
     
     // Get inner area for text (accounting for borders)
     let inner_area = Block::default().borders(Borders::ALL).inner(area);
@@ -331,38 +410,122 @@ fn render_nested_field(
         (value.clone(), 0)
     };
     
-    // Border color: #666666 (RGB 102, 102, 102) for box characters by default
-    // Title color: white for text
-    let border_color = if is_editing || is_selecting {
-        Color::Rgb(255, 215, 0) // Gold when editing or selecting
-    } else if is_selected {
-        Color::Cyan // Cyan when selected
+    // Label color: grey
+    let label_color = if dimming.modal_visible { hex_color(0x444444) } else { Color::Rgb(153, 153, 153) };
+    
+    // Value color: white, but cyan when editing
+    let value_color = if dimming.modal_visible {
+        hex_color(0x444444)
+    } else if is_editing {
+        Color::Cyan
     } else {
-        Color::Rgb(102, 102, 102) // #666666 by default
+        Color::White
     };
     
-    let title_color = Color::White;
-    
-    let text_color = if is_editing || is_selecting {
-        Color::Rgb(255, 215, 0) // Gold when editing or selecting
+    // Selection highlight color (for the '>' symbol or bracket)
+    let highlight_color = if dimming.modal_visible {
+        hex_color(0x222222)
+    } else if is_editing {
+        Color::Cyan
     } else if is_selected {
-        Color::Cyan // Cyan when selected
+        Color::White
     } else {
-        Color::White // White by default
+        Color::White // Match title bar style (bright when undimmed)
     };
     
     let block = Block::default()
-        .title(Span::styled(format!(" {} ", label), Style::default().fg(title_color)))
+        .title(Span::styled(format!(" {} ", label), Style::default().fg(label_color)))
         .borders(Borders::ALL)
         .padding(ratatui::widgets::Padding::new(1, 1, 0, 0))
-        .border_style(Style::default().fg(border_color));
+        .border_style(Style::default().fg(highlight_color));
     
     let para = Paragraph::new(display_value)
-        .style(Style::default().fg(text_color))
+        .style(Style::default().fg(value_color))
         .block(block);
     
     f.render_widget(para, area);
     
     // Note: Dropdown overlay is rendered in main loop after all widgets
     // to ensure it appears on top
+}
+
+/// Render the profile box
+fn render_profile_box(
+    f: &mut Frame,
+    area: Rect,
+    profile_state: &ProfileState,
+    registry: &mut RectRegistry,
+    dimming: &DimmingContext,
+) {
+    // Ensure area is valid
+    if area.width == 0 || area.height == 0 {
+        return;
+    }
+    
+    // Get profile list and state
+    let profiles = profile_state.profiles.lock().unwrap();
+    let selected_index = profile_state.selected_index.lock().unwrap();
+    let is_active = profile_state.is_active.lock().unwrap();
+    
+    // Border color: #666666 (RGB 102, 102, 102) for box characters
+    let border_color = if dimming.modal_visible {
+        hex_color(0x222222)
+    } else if *is_active {
+        Color::White          // White when focused
+        .add_modifier(Modifier::BOLD)
+    } else {
+        hex_color(0x777777)  // Brighter grey when unfocused (match title bar style)
+    };
+    
+    // Title color: white for text
+    let title_color = if dimming.modal_visible { hex_color(0x444444) } else { Color::White };
+    
+    // Create profile list items
+    let list_items: Vec<ListItem> = profiles.iter()
+        .map(|name| {
+            ListItem::new(Span::styled(
+                format!("  {}", name),
+                Style::default().fg(Color::White),
+            ))
+        })
+        .collect();
+    
+    // Create list state with selected index
+    let mut list_state = ListState::default();
+    if let Some(idx) = *selected_index {
+        if idx < list_items.len() {
+            list_state.select(Some(idx));
+        }
+    }
+    
+    // Create title with active indicator
+    let title = if *is_active {
+        " Profiles [Active] "
+    } else {
+        " Profiles "
+    };
+    
+    // Create the list widget
+    let list = List::new(list_items)
+        .block(
+            Block::default()
+                .title(Span::styled(title, Style::default().fg(title_color)))
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(border_color))
+                .padding(ratatui::widgets::Padding::new(1, 1, 0, 0))
+        )
+        .highlight_style(
+            Style::default()
+                .fg(Color::Rgb(255, 215, 0)) // Gold for selected
+                .add_modifier(Modifier::BOLD)
+        )
+        .highlight_symbol("> ");
+    
+    // Render the list using full height (top-aligned)
+    let list_area = area;
+    
+    // Register profile list
+    register_or_update(registry, HWND_PROFILE_LIST, list_area);
+    
+    f.render_stateful_widget(list, list_area, &mut list_state);
 }

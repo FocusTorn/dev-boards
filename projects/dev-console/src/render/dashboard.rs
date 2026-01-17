@@ -8,6 +8,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
+use tui_components::DimmingContext;
 
 /// Parse a line with ANSI color codes and convert to ratatui Line
 fn parse_ansi_line(line: &str) -> Line<'static> {
@@ -180,6 +181,9 @@ pub fn render_dashboard(
     f: &mut Frame,
     area: Rect,
     dashboard_state: &mut DashboardState,
+    _profile_state: &crate::profile_state::ProfileState,
+    _registry: &mut tui_components::RectRegistry,
+    dimming: &DimmingContext,
 ) {
     // Ensure area is valid
     if area.width == 0 || area.height == 0 {
@@ -210,11 +214,11 @@ pub fn render_dashboard(
         .map(|(idx, cmd)| {
             let style = if idx == dashboard_state.selected_command {
                 Style::default()
-                    .fg(Color::Cyan)
+                    .fg(dimming.dim_color(Color::Cyan))
                     .add_modifier(Modifier::BOLD)
             } else {
                 Style::default()
-                    .fg(Color::White)
+                    .fg(dimming.text_color(false))
             };
             ListItem::new(Line::from(Span::styled(cmd.clone(), style)))
         })
@@ -223,8 +227,8 @@ pub fn render_dashboard(
     let command_list = List::new(command_items)
         .block(Block::default()
             .borders(Borders::ALL)
-            .title(Span::styled(" Commands ", Style::default().fg(Color::White)))
-            .border_style(Style::default().fg(Color::Rgb(102, 102, 102)))
+            .title(Span::styled(" Commands ", Style::default().fg(dimming.text_color(true))))
+            .border_style(Style::default().fg(dimming.border_color(false)))
             .padding(ratatui::widgets::Padding::new(1, 1, 0, 0)));
     
     f.render_widget(command_list, columns[0]);
@@ -233,35 +237,32 @@ pub fn render_dashboard(
     let column2_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(4), // Status bar (4 lines: border + text + progress bar + border)
-            Constraint::Min(0),     // Output (remaining space)
+            Constraint::Length(4), // Status bar
+            Constraint::Min(0),     // Output
         ])
         .split(columns[1]);
     
     // Status bar box - show progress bar if running progress command
     let status_block = Block::default()
         .borders(Borders::ALL)
-        .title(Span::styled(" Status ", Style::default().fg(Color::White)))
-        .border_style(Style::default().fg(Color::Rgb(102, 102, 102)))
+        .title(Span::styled(" Status ", Style::default().fg(dimming.text_color(true))))
+        .border_style(Style::default().fg(dimming.border_color(false)))
         .padding(ratatui::widgets::Padding::new(1, 1, 0, 0));
     
     let status_inner = status_block.inner(column2_chunks[0]);
     
+    // NOTE: Profile selector is now rendered in ui_coordinator.rs as a top-right tab
+    // to integrate it into the main navigation area.
+    
     if dashboard_state.is_running && !dashboard_state.progress_stage.is_empty() {
-        // Show progress with time estimates in the proposed format
-        // Format: 
-        // Line 1: Compiling: 45.2% | Elapsed: 2m 15s | ETA: 2m 45s
-        // Line 2: [████████████████░░░░░░░░░░░░░░░░] 45.2%
-        // Line 3: Current file: main.cpp
-        // Line 4: Files compiled: 12/27
-        
+        // ... (progress calculation) ...
         let (line1, line2, line3, line4) = if let Some(ref tracker) = dashboard_state.progress_tracker {
+            // ... (tracker logic) ...
             let elapsed = tracker.format_elapsed();
             let eta = tracker.format_estimated_remaining()
                 .map(|r| format!(" | ETA: {}", r))
                 .unwrap_or_default();
             
-            // Line 1: Compiling: 45.2% | Elapsed: 2m 15s | ETA: 2m 45s
             let line1 = format!("{}: {:.1}% | Elapsed: {}{}", 
                 tracker.current_stage_name(), 
                 tracker.progress_percent, 
@@ -269,27 +270,19 @@ pub fn render_dashboard(
                 eta
             );
             
-            // Line 2: [████████████████░░░░░░░░░░░░░░░░] 45.2%
-            // Calculate width: reserve space for brackets, percentage text, and padding
             let percent_text = format!("{:.1}%", tracker.progress_percent);
             let percent_text_width = percent_text.len();
-            let progress_width = (status_inner.width as usize).saturating_sub(percent_text_width + 3); // [ ] + space + percentage
+            let progress_width = (status_inner.width as usize).saturating_sub(percent_text_width + 4).max(10);
             let filled_width = ((progress_width as f64 * tracker.progress_percent / 100.0) as usize).min(progress_width);
             let empty_width = progress_width.saturating_sub(filled_width);
-            let line2 = format!("[{}{}] {}",
-                "█".repeat(filled_width),
-                "░".repeat(empty_width),
-                percent_text
-            );
+            let line2 = format!("[{}{}] {}", "█".repeat(filled_width), "░".repeat(empty_width), percent_text);
             
-            // Line 3: Current file: main.cpp (if available)
             let line3 = if !dashboard_state.current_file.is_empty() {
                 format!("Current file: {}", dashboard_state.current_file.as_ref())
             } else {
                 String::new()
             };
             
-            // Line 4: Files compiled: 12/27 (if available from tracker)
             let line4 = if let Some(total) = tracker.total_items {
                 if total > 0 {
                     format!("Files compiled: {}/{}", tracker.items_processed, total)
@@ -302,78 +295,71 @@ pub fn render_dashboard(
             
             (line1, line2, line3, line4)
         } else {
-            // Fallback to basic progress display
-            let line1 = format!("{}: {:.1}%", 
-                dashboard_state.progress_stage.as_ref(), 
-                dashboard_state.progress_percent
-            );
-            
+            // Fallback ...
+            let line1 = format!("{}: {:.1}%", dashboard_state.progress_stage.as_ref(), dashboard_state.progress_percent);
             let percent_text = format!("{:.1}%", dashboard_state.progress_percent);
             let percent_text_width = percent_text.len();
-            let progress_width = (status_inner.width as usize).saturating_sub(percent_text_width + 3);
+            let progress_width = (status_inner.width as usize).saturating_sub(percent_text_width + 4).max(10);
             let filled_width = ((progress_width as f64 * dashboard_state.progress_percent / 100.0) as usize).min(progress_width);
             let empty_width = progress_width.saturating_sub(filled_width);
-            let line2 = format!("[{}{}] {}",
-                "█".repeat(filled_width),
-                "░".repeat(empty_width),
-                percent_text
-            );
-            
+            let line2 = format!("[{}{}] {}", "█".repeat(filled_width), "░".repeat(empty_width), percent_text);
             let line3 = if !dashboard_state.current_file.is_empty() {
                 format!("Current file: {}", dashboard_state.current_file.as_ref())
             } else {
                 String::new()
             };
-            
             (line1, line2, line3, String::new())
         };
         
-        // Build progress lines - exactly as proposed
         let mut progress_lines = vec![
             Line::from(Span::styled(
                 line1,
-                Style::default().fg(Color::Cyan),
+                Style::default().fg(dimming.dim_color(Color::Cyan)),
             )),
             Line::from(Span::styled(
                 line2,
-                Style::default().fg(Color::Green),
+                Style::default().fg(dimming.dim_color(Color::Green)),
             )),
         ];
         
         if !line3.is_empty() {
             progress_lines.push(Line::from(Span::styled(
                 line3,
-                Style::default().fg(Color::White),
+                Style::default().fg(dimming.dim_color(Color::White)),
             )));
         }
         
         if !line4.is_empty() {
             progress_lines.push(Line::from(Span::styled(
                 line4,
-                Style::default().fg(Color::White),
+                Style::default().fg(dimming.dim_color(Color::White)),
             )));
         }
         
-        let status_para = Paragraph::new(progress_lines)
-            .block(status_block)
-            .style(Style::default().fg(Color::White));
+        // Render the main status block border first
+        f.render_widget(status_block, column2_chunks[0]);
         
-        f.render_widget(status_para, column2_chunks[0]);
+        let status_para = Paragraph::new(progress_lines)
+            .style(Style::default().fg(dimming.dim_color(Color::White)));
+        
+        f.render_widget(status_para, status_inner);
     } else {
         // Show regular status text
-        let status_para = Paragraph::new(dashboard_state.status_text.as_ref())
-            .block(status_block)
-            .style(Style::default().fg(Color::White));
+        // Render the main status block border first
+        f.render_widget(status_block.clone(), column2_chunks[0]);
         
-        f.render_widget(status_para, column2_chunks[0]);
+        let status_para = Paragraph::new(dashboard_state.status_text.as_ref())
+            .style(Style::default().fg(dimming.dim_color(Color::White)));
+        
+        f.render_widget(status_para, status_inner);
     }
     
     // Output box with scrolling
     let output_area = column2_chunks[1];
     let output_block = Block::default()
         .borders(Borders::ALL)
-        .title(Span::styled(" Output ", Style::default().fg(Color::White)))
-        .border_style(Style::default().fg(Color::Rgb(102, 102, 102)))
+        .title(Span::styled(" Output ", Style::default().fg(dimming.text_color(true))))
+        .border_style(Style::default().fg(dimming.border_color(false)))
         .padding(ratatui::widgets::Padding::new(1, 1, 0, 0));
     let output_inner = output_block.inner(output_area);
     
@@ -448,10 +434,10 @@ pub fn render_dashboard(
         // The scrollbar should extend the full height from top to bottom of inner area
         // output_inner already accounts for padding, so use its full height
         let scrollbar_area = Rect {
-            x: output_inner.x + output_inner.width.saturating_sub(1),
-            y: output_inner.y,  // Start at top of inner area (after top padding)
+            x: output_area.x + output_area.width.saturating_sub(2),
+            y: output_inner.y,
             width: 1,
-            height: output_inner.height,  // Full height of inner area (no gap at bottom)
+            height: output_inner.height,
         };
         
         // Scrollbar calculation for ratatui ScrollbarState:
@@ -482,6 +468,7 @@ pub fn render_dashboard(
             .orientation(ScrollbarOrientation::VerticalRight)
             .begin_symbol(Some("↑"))
             .end_symbol(Some("↓"))
+            .style(Style::default().fg(dimming.border_color(false)))
             .thumb_symbol("█")
             .track_symbol(Some("│"));
         

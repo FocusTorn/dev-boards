@@ -99,6 +99,11 @@ tab_bars:
               content:
                   type: "text"
                   value: "ESP32-S3 Development Settings"
+tab_content:
+    - tab_id: "dashboard"
+      bindings:
+        - key: "[q]"
+          description: "Quit"
 "#;
     
     // Parse the default YAML
@@ -121,6 +126,7 @@ tab_bars:
                     },
                 },
                 tab_bars: HashMap::new(),
+                tab_content: vec![],
             }
         }
     }

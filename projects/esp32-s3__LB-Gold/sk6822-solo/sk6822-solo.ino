@@ -15,12 +15,12 @@
  * - SK6812 RGBW LED strip on GPIO pin
  * 
  * Libraries Required:
- * - MQTT_RPi_Client (included in libraries folder)
+ * - MQTT_Win_Client (included in libraries folder)
  * - Adafruit NeoPixel (for SK6812)
  * - ArduinoJson (for JSON parsing)
  */
 
-#include <MQTT_RPi_Client.h>
+#include <MQTT_Win_Client.h>
 #include <Adafruit_NeoPixel.h>
 #include <ArduinoJson.h>
 
@@ -29,24 +29,49 @@
 // ============================================================================
 
 // MQTT Configuration
-const char* mqtt_client_id = "esp32-s3-led-controller";
+// Note: Client ID must be unique per ESP32 device and max 23 characters (MQTT 3.1 limit)
+// Other ESP32: "esp32-s3-sht21" (SHT21 sensor)
+const char* mqtt_client_id = "esp32-s3-led";  // Unique client ID (13 chars, within 23 char limit)
 
-const char* mqtt_topic_command = "sensors/esp32-s3-led/command";  // Subscribe to commands
-const char* mqtt_topic_state = "sensors/esp32-s3-led/state";      // Publish state
-const char* mqtt_topic_status = "sensors/esp32-s3-led/status";    // Publish status
+// MQTT Broker Configuration (override library defaults if needed)
+// Set to nullptr to use library defaults, or specify custom values
+const char* mqtt_server = nullptr;  // nullptr = use library default (Windows hostname: "Acer-Lappy")
+const int mqtt_port = -1;            // -1 = use library default (1883)
+const char* mqtt_username = nullptr; // nullptr = use library default ("mqtt")
+const char* mqtt_password = nullptr; // nullptr = use library default ("mqtt")
+const char* wifi_ssid = nullptr;     // nullptr = use library default
+const char* wifi_password = nullptr; // nullptr = use library default
+
+// MQTT Topics (unique per device - no conflict with SHT21 topics)
+const char* mqtt_topic_command = "controller/esp32-s3-led/command";  // Subscribe to commands
+const char* mqtt_topic_state = "controller/esp32-s3-led/state";      // Publish state
+const char* mqtt_topic_status = "controller/esp32-s3-led/status";    // Publish status
 
 // SK6812 LED Strip Configuration
-#define LED_PIN 6        // GPIO pin for LED data line (change as needed)
+
+#define LED_PIN 12        // GPIO pin for LED data line (change as needed)
 #define LED_COUNT 31     // Number of LEDs in strip
 #define LED_BRIGHTNESS 50  // 0-255 (default brightness)
 
+#define STATE_LED_PIN 3        // GPIO pin for LED data line (change as needed)
+#define STATE_LED_COUNT 30     // Number of LEDs in strip
+#define STATE_LED_BRIGHTNESS 50  // 0-255 (default brightness)
+
+
+
+
+
+
+
+
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRBW + NEO_KHZ800);
+Adafruit_NeoPixel stateStrip(STATE_LED_COUNT, STATE_LED_PIN, NEO_GRBW + NEO_KHZ800);
 
 // ============================================================================
 // GLOBAL VARIABLES
 // ============================================================================
 
-MQTT_RPi_Client mqtt;
+MQTT_Win_Client mqtt;
 
 // LED state
 uint8_t current_brightness = LED_BRIGHTNESS;
@@ -86,8 +111,16 @@ void setup() {
   strip.show();
   Serial.println("✓ SK6812 LED strip initialized");
   
-  // Initialize MQTT client (uses default WiFi and MQTT settings from library)
-  mqtt.begin(mqtt_client_id);  // Only client_id required, uses defaults for rest
+  // Initialize state LED strip
+  stateStrip.begin();
+  stateStrip.setBrightness(STATE_LED_BRIGHTNESS);
+  stateStrip.clear();
+  stateStrip.show();
+  Serial.println("✓ State LED strip initialized");
+  
+  // Initialize MQTT client
+  // Pass nullptr for parameters to use library defaults
+  mqtt.begin(mqtt_client_id, wifi_ssid, wifi_password, mqtt_server, mqtt_port, mqtt_username, mqtt_password);
   
   // Set status topic for automatic status publishing
   mqtt.setStatusTopic(mqtt_topic_status);
@@ -118,6 +151,15 @@ void setup() {
 void loop() {
   // Maintain MQTT connection and process messages
   mqtt.loop();
+  
+  // Re-subscribe if connection was reset
+  static bool last_connected = false;
+  bool now_connected = mqtt.connected();
+  if (now_connected && !last_connected) {
+    mqtt.subscribe(mqtt_topic_command);
+    Serial.println("✓ Re-subscribed to command topic");
+  }
+  last_connected = now_connected;
   
   // Update running patterns
   if (pattern_running) {
@@ -257,6 +299,18 @@ void handleCommand(String action, JsonDocument& doc) {
     publishState();
     Serial.println("Pattern stopped");
     
+  } else if (action == "progress") {
+    uint8_t percent = doc["value"] | 0;
+    if (percent > 100) percent = 100;
+    
+    // Get color from command (default to white if not specified)
+    uint8_t r = doc["r"] | 255;
+    uint8_t g = doc["g"] | 255;
+    uint8_t b = doc["b"] | 255;
+    uint8_t w = doc["w"] | 255;
+    
+    setProgress(percent, r, g, b, w);
+    
   } else {
     Serial.print("Unknown action: ");
     Serial.println(action);
@@ -345,6 +399,26 @@ void setLEDPixel(int index, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
   if (index >= 0 && index < LED_COUNT) {
     strip.setPixelColor(index, strip.Color(r, g, b, w));
   }
+}
+
+void setProgress(uint8_t percent, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
+  // Clamp percent to 0-100
+  if (percent > 100) percent = 100;
+  
+  // Calculate how many LEDs should be lit
+  int ledsToLight = (percent * STATE_LED_COUNT) / 100;
+  
+  // Clear the strip first
+  stateStrip.clear();
+  
+  // Light up the calculated number of LEDs
+  for (int i = 0; i < ledsToLight; i++) {
+    stateStrip.setPixelColor(i, stateStrip.Color(r, g, b, w));
+  }
+  
+  stateStrip.show();
+  
+  Serial.printf("Progress set: %d%% (%d/%d LEDs)\n", percent, ledsToLight, STATE_LED_COUNT);
 }
 
 // ============================================================================

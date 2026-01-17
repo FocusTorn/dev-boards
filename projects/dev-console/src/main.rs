@@ -5,6 +5,8 @@
 
 mod settings;
 mod settings_manager;
+mod profile_manager;
+mod profile_state;
 mod field_editor;
 mod dashboard;
 mod dashboard_batch;
@@ -43,8 +45,8 @@ use tui_components::{
     BindingConfig, StatusBarConfig,
     DimmingContext, RectRegistry, Popup,
     TabBar, TabBarStyle, RectHandle,
-    Toast,
-    TabBarManager,
+    Toast, ToastType,
+    TabBarManager, get_box_by_name,
 };
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind, MouseEventKind},
@@ -60,11 +62,13 @@ use event_handler::{
     handle_dashboard_key_event,
     handle_dashboard_scroll,
     handle_field_editor_key_event,
+    handle_profile_key_event,
     handle_editing_input,
     handle_dropdown_navigation,
     handle_settings_field_click,
     handle_tab_click,
     FieldEditorEventResult,
+    ProfileEventResult,
 };
 use ui_coordinator::{render_ui, handle_cursor_positioning};
 use field_editor::FieldEditorState;
@@ -138,16 +142,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut original_anchor_metrics: Option<Rect> = None;
     let mut layout_manager = LayoutManager::new();
     
+    // Find active profile on startup
+    {
+        let current_settings = app_state.settings.get();
+        if let Ok(profiles) = crate::profile_manager::list_profiles() {
+            for (idx, profile_name) in profiles.iter().enumerate() {
+                if let Ok(profile_settings) = crate::profile_manager::load_profile(profile_name) {
+                    if profile_settings == current_settings {
+                        let mut active_name = app_state.profile_state.active_profile_name.lock().unwrap();
+                        *active_name = Some(profile_name.clone());
+                        let mut selected = app_state.profile_state.selected_index.lock().unwrap();
+                        *selected = Some(idx);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     // ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
     // │                                           MAIN LOOP                                            │
     // └────────────────────────────────────────────────────────────────────────────────────────────────┘ 
           
     loop {
+        // Clear expired toasts (keep for 5 seconds)
+        toasts.retain(|t| {
+            t.shown_at.elapsed()
+                .map(|duration| duration.as_secs() < 5)
+                .unwrap_or(true)
+        });
+
         terminal.draw(|f| {
             let area = f.area();
             
             // Create dimming context based on popup state or dropdown selection
-            let is_selecting = matches!(app_state.field_editor_state, FieldEditorState::Selecting { .. });
+            let is_selecting = matches!(app_state.field_editor_state, FieldEditorState::Selecting { .. } | FieldEditorState::ProfileSelecting { .. });
             let dimming = DimmingContext::new(popup.is_some() || is_selecting);
             
             // Render UI using coordinator
@@ -165,10 +194,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &app_state.settings,
                 &app_state.settings_fields,
                 &app_state.field_editor_state,
+                &app_state.profile_state,
                 &app_state.dashboard,
                 &popup,
                 &toasts,
                 &mut current_tab_bar,
+                &app_config.tab_content,
             );
             
             // Handle cursor positioning for editing fields
@@ -194,21 +225,112 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             continue;
                         }
                         
-                        // Handle dashboard navigation
-                        if let Some(active_tab_idx) = registry.get_active_tab(main_content_tab_bar.handle()) {
-                            if let Some(tab_bar_state) = registry.get_tab_bar_state(main_content_tab_bar.handle()) {
-                                if let Some(tab_config) = tab_bar_state.tab_configs.get(active_tab_idx) {
-                                    if tab_config.id == "dashboard" {
-                                        // SettingsManager always has latest values - no reload needed
-                                        if handle_dashboard_key_event(
-                                            key.code,
-                                            &app_state.dashboard,
-                                            &app_state.settings,
-                                            app_state.process_manager.clone(),
-                                        ) {
-                                            continue;
+                        // ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+                        // │                              Check for modal-like states                             │
+                        // └──────────────────────────────────────────────────────────────────────────────────────────────┘
+                        let is_editing = matches!(app_state.field_editor_state, FieldEditorState::Editing { .. });
+                        let is_selecting = matches!(app_state.field_editor_state, FieldEditorState::Selecting { .. } | FieldEditorState::ProfileSelecting { .. });
+                        let has_popup = popup.is_some();
+                        let is_modal = is_editing || is_selecting || has_popup;
+                        
+                        // Handle dashboard navigation (only if not in a modal state)
+                        if !is_modal {
+                            if let Some(active_tab_idx) = registry.get_active_tab(main_content_tab_bar.handle()) {
+                                if let Some(tab_bar_state) = registry.get_tab_bar_state(main_content_tab_bar.handle()) {
+                                    if let Some(tab_config) = tab_bar_state.tab_configs.get(active_tab_idx) {
+                                        if tab_config.id == "dashboard" {
+                                            // SettingsManager always has latest values - no reload needed
+                                            if handle_dashboard_key_event(
+                                                key.code,
+                                                &app_state.dashboard,
+                                                &app_state.settings,
+                                                app_state.process_manager.clone(),
+                                            ) {
+                                                continue;
+                                            }
                                         }
                                     }
+                                }
+                            }
+                        }
+                        
+                        // Handle profile events (only if not in a modal state)
+                        if !is_modal {
+                            match handle_profile_key_event(
+                                key.code,
+                                key.modifiers,
+                                &app_state.profile_state,
+                                &app_state.settings,
+                            ) {
+                                ProfileEventResult::SaveProfile(profile_name) => {
+                                    let settings = app_state.settings.get();
+                                    match crate::profile_manager::save_profile(&profile_name, &settings) {
+                                        Ok(_) => {
+                                            toasts.push(Toast::new(
+                                                format!("Profile '{}' saved", profile_name),
+                                                ToastType::Success,
+                                            ));
+                                            // Set active profile name
+                                            {
+                                                let mut active_name = app_state.profile_state.active_profile_name.lock().unwrap();
+                                                *active_name = Some(profile_name.clone());
+                                            }
+                                            let _ = app_state.profile_state.refresh_profiles();
+                                        }
+                                        Err(e) => {
+                                            toasts.push(Toast::new(
+                                                format!("Failed to save profile: {}", e),
+                                                ToastType::Error,
+                                            ));
+                                        }
+                                    }
+                                    continue;
+                                }
+                                ProfileEventResult::LoadProfile(profile_name) => {
+                                    match crate::profile_manager::load_profile(&profile_name) {
+                                        Ok(loaded_settings) => {
+                                            // Update all settings fields
+                                            match app_state.settings.update(|settings| {
+                                                *settings = loaded_settings.clone();
+                                            }) {
+                                                Ok(_) => {
+                                                    toasts.push(Toast::new(
+                                                        format!("Profile '{}' loaded", profile_name),
+                                                        ToastType::Success,
+                                                    ));
+                                                    // Set active profile name
+                                                    {
+                                                        let mut active_name = app_state.profile_state.active_profile_name.lock().unwrap();
+                                                        *active_name = Some(profile_name.clone());
+                                                    }
+                                                }
+                                                Err(e) => {
+                                                    toasts.push(Toast::new(
+                                                        format!("Failed to save loaded profile: {}", e),
+                                                        ToastType::Error,
+                                                    ));
+                                                }
+                                            }
+                                        }
+                                        Err(e) => {
+                                            toasts.push(Toast::new(
+                                                format!("Failed to load profile: {}", e),
+                                                ToastType::Error,
+                                            ));
+                                        }
+                                    }
+                                    continue;
+                                }
+                                ProfileEventResult::RefreshProfiles => {
+                                    let _ = app_state.profile_state.refresh_profiles();
+                                    continue;
+                                }
+                                ProfileEventResult::Toast(toast) => {
+                                    toasts.push(toast);
+                                    continue;
+                                }
+                                ProfileEventResult::Continue => {
+                                    // Continue to field editor handling
                                 }
                             }
                         }
@@ -222,6 +344,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     &app_state.field_editor_state,
                                     &app_state.settings,
                                     &app_state.settings_fields,
+                                    &app_state.profile_state,
                                     &mut registry,
                                     &main_content_tab_bar,
                                     tab_style,
@@ -245,6 +368,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     &app_state.field_editor_state,
                                     &app_state.settings,
                                     &app_state.settings_fields,
+                                    &app_state.profile_state,
                                     &mut registry,
                                     &main_content_tab_bar,
                                     tab_style,
@@ -261,22 +385,65 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     _ => {}
                                 }
                             }
+                            KeyCode::Enter | KeyCode::Esc if matches!(app_state.field_editor_state, FieldEditorState::ProfileSelecting { .. }) => {
+                                if let FieldEditorState::ProfileSelecting { selected_index, options } = &app_state.field_editor_state {
+                                    if key.code == KeyCode::Enter && *selected_index < options.len() {
+                                        let profile_name = options[*selected_index].clone();
+                                        // Load the selected profile logic (copied from above for now, or I should refactor)
+                                        match crate::profile_manager::load_profile(&profile_name) {
+                                            Ok(loaded_settings) => {
+                                                match app_state.settings.update(|settings| {
+                                                    *settings = loaded_settings.clone();
+                                                }) {
+                                                    Ok(_) => {
+                                                        toasts.push(Toast::new(
+                                                            format!("Profile '{}' loaded", profile_name),
+                                                            ToastType::Success,
+                                                        ));
+                                                        // Set active profile name
+                                                        {
+                                                            let mut active_name = app_state.profile_state.active_profile_name.lock().unwrap();
+                                                            *active_name = Some(profile_name.clone());
+                                                        }
+                                                    }
+                                                    Err(e) => {
+                                                        toasts.push(Toast::new(
+                                                            format!("Failed to save loaded profile: {}", e),
+                                                            ToastType::Error,
+                                                        ));
+                                                    }
+                                                }
+                                            }
+                                            Err(e) => {
+                                                toasts.push(Toast::new(
+                                                    format!("Failed to load profile: {}", e),
+                                                    ToastType::Error,
+                                                ));
+                                            }
+                                        }
+                                    }
+                                }
+                                // Back to selected state (in this case, just keep current field editor state which is likely Selected(0) or whatever it was)
+                                app_state.field_editor_state = FieldEditorState::Selected { field_index: 0 };
+                            }
                             _ => {
                                 match &mut app_state.field_editor_state {
                                     FieldEditorState::Editing { ref mut input, .. } => {
                                         handle_editing_input(key.code, key.modifiers, input);
                                     }
                                     FieldEditorState::Selected { .. } => {
-                                        match handle_field_editor_key_event(
+                                         let result = handle_field_editor_key_event(
                                             key.code,
                                             key.modifiers,
                                             &app_state.field_editor_state,
                                             &app_state.settings,
                                             &app_state.settings_fields,
+                                            &app_state.profile_state,
                                             &mut registry,
                                             &main_content_tab_bar,
                                             tab_style,
-                                        ) {
+                                        );
+                                        match result {
                                             FieldEditorEventResult::Exit => {
                                                 break;
                                             }
@@ -290,6 +457,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         }
                                     }
                                     FieldEditorState::Selecting { ref mut selected_index, ref options, .. } => {
+                                        handle_dropdown_navigation(key.code, selected_index, options);
+                                    }
+                                    FieldEditorState::ProfileSelecting { ref mut selected_index, ref options } => {
                                         handle_dropdown_navigation(key.code, selected_index, options);
                                     }
                                 }
@@ -332,8 +502,39 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 &mut layout_manager,
                             ) {
                                 app_state.field_editor_state = new_state;
+                            }
+                            
+                            // Handle mouse clicks on profile selector
+                            let active_profile_name = app_state.profile_state.active_profile_name.lock().unwrap().clone();
+                            // Only if tab is dashboard
+                            if let Some(active_tab_idx) = registry.get_active_tab(main_content_tab_bar.handle()) {
+                                if let Some(tab_bar_state) = registry.get_tab_bar_state(main_content_tab_bar.handle()) {
+                                    if let Some(tab_config) = tab_bar_state.tab_configs.get(active_tab_idx) {
+                                        if tab_config.id == "dashboard" {
+                                            if let Some(box_manager) = get_box_by_name(&registry, HWND_PROFILE_SELECTOR) {
+                                                if let Some(metrics) = box_manager.metrics(&registry) {
+                                                    let rect: Rect = metrics.into();
+                                                    if mouse_event.column >= rect.x && mouse_event.column < rect.x + rect.width &&
+                                                       mouse_event.row >= rect.y && mouse_event.row < rect.y + rect.height {
+                                                        // Trigger profile selection
+                                                        let profiles = app_state.profile_state.profiles.lock().unwrap().clone();
+                                                        let selected_index = if let Some(name) = active_profile_name {
+                                                            profiles.iter().position(|p| p == &name).unwrap_or(0)
+                                                        } else {
+                                                            0
+                                                        };
+                                                        app_state.field_editor_state = FieldEditorState::ProfileSelecting {
+                                                            selected_index,
+                                                            options: profiles,
+                                                        };
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
-                    }
                     }
                     Event::Resize(_, _) => {
                         // Terminal resize - will be handled on next draw

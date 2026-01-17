@@ -5,6 +5,7 @@ use crate::render::{render_content, render_settings, render_dashboard};
 use crate::field_editor::{FieldEditorState, SettingsFields};
 use crate::dashboard::DashboardState;
 use crate::layout_manager::LayoutManager;
+use crate::profile_state::ProfileState;
 
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
@@ -20,6 +21,7 @@ use tui_components::{
     Toast, render_toasts,
     TabBarManager,
     get_box_by_name,
+    TabBarItem, TabBarAlignment, TabBarPosition,
 };
 use std::sync::{Arc, Mutex};
 
@@ -38,15 +40,41 @@ pub fn render_ui(
     settings_manager: &crate::settings_manager::SettingsManager,
     settings_fields: &SettingsFields,
     field_editor_state: &FieldEditorState,
+    profile_state: &ProfileState,
     dashboard_arc: &Arc<Mutex<DashboardState>>,
     popup: &Option<Popup>,
     toasts: &Vec<Toast>,
     current_tab_bar: &mut Option<(TabBar, RectHandle)>,
+    tab_content_configs: &Vec<crate::config::TabContentConfigYaml>,
 ) {
-    // Render base layout
+    // Find active tab ID to inject contextual bindings
+    let active_tab_id = if let Some(active_tab_idx) = registry.get_active_tab(main_content_tab_bar.handle()) {
+        if let Some(tab_bar_state) = registry.get_tab_bar_state(main_content_tab_bar.handle()) {
+            tab_bar_state.tab_configs.get(active_tab_idx).map(|t| t.id.clone())
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+    
+    // Create contextual config with tab-specific bindings
+    let mut contextual_config = config.clone();
+    if let Some(ref tab_id) = active_tab_id {
+        if let Some(content_config) = tab_content_configs.iter().find(|c| &c.tab_id == tab_id) {
+            for b in &content_config.bindings {
+                contextual_config.global_bindings.push(tui_components::BindingConfig {
+                    key: b.key.clone(),
+                    description: b.description.clone(),
+                });
+            }
+        }
+    }
+    
+    // Render base layout with contextual config
     let base_layout = BaseLayout::new(
-        config,
-        None,
+        &contextual_config,
+        active_tab_id.as_deref(),
         dimming,
     );
     let result: BaseLayoutResult = base_layout.render(f, area, registry);
@@ -102,11 +130,11 @@ pub fn render_ui(
                 
                 if tab_config.id == "settings" {
                     let settings = settings_manager.get(); // Get current settings
-                    render_settings(f, nested_area, &settings, settings_fields, field_editor_state);
+                    render_settings(f, nested_area, &settings, settings_fields, field_editor_state, profile_state, registry, dimming);
                 } else if tab_config.id == "dashboard" {
                     // Render dashboard directly from Arc to avoid cloning
                     if let Ok(mut state) = dashboard_arc.lock() {
-                        render_dashboard(f, nested_area, &mut *state);
+                        render_dashboard(f, nested_area, &mut *state, profile_state, registry, dimming);
                     }
                 }
             }
@@ -119,6 +147,35 @@ pub fn render_ui(
         
         // Store tab bar for click detection
         *current_tab_bar = Some((tab_bar, anchor_handle));
+
+        // Render Profile Selector as a boxed static tab bar component aligned to the top right
+        if let Some(metrics) = registry.get_metrics(anchor_handle) {
+            let anchor_rect: Rect = metrics.into();
+            let profile_name_opt = profile_state.active_profile_name.lock().unwrap().clone();
+            let display_name = match profile_name_opt {
+                Some(ref name) => name.clone(),
+                None => "No Profile".to_string(),
+            };
+            
+            let is_active = profile_name_opt.is_some();
+            let color = if is_active { Color::Cyan } else { Color::White };
+            
+            let profile_item = TabBarItem {
+                name: display_name,
+                active: is_active,
+                state: None,
+            };
+            
+            let profile_tab_bar = TabBar::new(
+                vec![profile_item],
+                TabBarStyle::BoxStatic,
+                TabBarAlignment::Right,
+            )
+            .with_position(TabBarPosition::TopOf(anchor_rect))
+            .with_color(color);
+            
+            profile_tab_bar.render_with_registry_and_handle(f, Some(registry), Some(crate::constants::HWND_PROFILE_SELECTOR), Some(dimming));
+        }
     }
     
     // Render dropdown overlay if selecting
@@ -149,123 +206,146 @@ fn render_dropdown_overlay(
     main_content_box_handle_name: &str,
     layout_manager: &mut LayoutManager,
 ) {
-    if let FieldEditorState::Selecting { field_index, selected_index, options } = field_editor_state {
-        if let Some(box_manager) = get_box_by_name(registry, main_content_box_handle_name) {
-            if let Some(content_rect) = box_manager.metrics(registry) {
-                let content_rect: Rect = content_rect.into();
-                
-                // Use LayoutManager for cached content area calculation
-                if let Some(content_area) = layout_manager.get_content_area(content_rect) {
-                    // Split into top section (Sketch Directory, Sketch Name) and bottom section (Device/Connection)
-                    let main_chunks = Layout::default()
-                        .direction(Direction::Vertical)
-                        .constraints([
-                            Constraint::Length(6), // Top section: 2 boxes (3 lines each)
-                            Constraint::Min(0),   // Bottom section: Device/Connection
-                        ])
-                        .split(content_area);
+    // Render dropdown overlay if selecting
+    match field_editor_state {
+        FieldEditorState::Selecting { field_index, selected_index, options } => {
+            if let Some(box_manager) = get_box_by_name(registry, main_content_box_handle_name) {
+                if let Some(content_rect) = box_manager.metrics(registry) {
+                    let content_rect: Rect = content_rect.into();
                     
-                    // Calculate field area based on field_index
-                    let field_area = if *field_index < 2 {
-                        // Top full-width fields
-                        let top_chunks = Layout::default()
+                    // Use LayoutManager for cached content area calculation
+                    if let Some(content_area) = layout_manager.get_content_area(content_rect) {
+                        // Split into top section (Sketch Directory, Sketch Name) and bottom section (Device/Connection)
+                        let main_chunks = Layout::default()
                             .direction(Direction::Vertical)
                             .constraints([
-                                Constraint::Length(3), // Sketch Directory
-                                Constraint::Length(3), // Sketch Name
+                                Constraint::Length(6), // Top section: 2 boxes (3 lines each)
+                                Constraint::Min(0),   // Bottom section: Device/Connection
                             ])
-                            .split(main_chunks[0]);
-                        top_chunks[*field_index]
-                    } else if *field_index < 5 {
-                        // Device column (left)
-                        let bottom_chunks = Layout::default()
-                            .direction(Direction::Horizontal)
-                            .constraints([
-                                Constraint::Percentage(50), // Device column
-                                Constraint::Percentage(50), // Connection column
-                            ])
-                            .split(main_chunks[1]);
+                            .split(content_area);
                         
-                        // Device section: Environment (2), Board Model (3), FQBN (4)
-                        let section_inner = Block::default().borders(Borders::ALL).inner(bottom_chunks[0]);
-                        let field_height = 3;
-                        let field_offset = (*field_index - 2) as u16 * (field_height + 1);
-                        Rect {
-                            x: section_inner.x + 1,
-                            y: section_inner.y + 1 + field_offset,
-                            width: section_inner.width.saturating_sub(2),
-                            height: field_height as u16,
-                        }
-                    } else {
-                        // Connection column (right)
-                        let bottom_chunks = Layout::default()
-                            .direction(Direction::Horizontal)
-                            .constraints([
-                                Constraint::Percentage(50), // Device column
-                                Constraint::Percentage(50), // Connection column
-                            ])
-                            .split(main_chunks[1]);
-                        
-                        // Connection section: Port (5), Baudrate (6)
-                        let section_inner = Block::default().borders(Borders::ALL).inner(bottom_chunks[1]);
-                        let field_height = 3;
-                        let field_offset = (*field_index - 5) as u16 * (field_height + 1);
-                        Rect {
-                            x: section_inner.x + 1,
-                            y: section_inner.y + 1 + field_offset,
-                            width: section_inner.width.saturating_sub(2),
-                            height: field_height as u16,
-                        }
-                    };
-                    
-                    // Calculate dropdown position (below the field)
-                    let dropdown_height = (options.len() + 2).min(10) as u16;
-                    let dropdown_area = Rect {
-                        x: field_area.x,
-                        y: field_area.y + field_area.height,
-                        width: field_area.width,
-                        height: dropdown_height,
-                    };
-                    
-                    // Make sure dropdown fits in the frame
-                    let adjusted_dropdown_area = if dropdown_area.y + dropdown_area.height > area.height {
-                        // If doesn't fit below, show above
-                        Rect {
-                            x: dropdown_area.x,
-                            y: field_area.y.saturating_sub(dropdown_area.height),
-                            width: dropdown_area.width,
-                            height: dropdown_height,
-                        }
-                    } else {
-                        dropdown_area
-                    };
-                    
-                    // Render dropdown
-                    let mut items = Vec::new();
-                    for (i, option) in options.iter().enumerate() {
-                        let style = if i == *selected_index {
-                            Style::default()
-                                .fg(Color::Rgb(255, 215, 0))
-                                .add_modifier(Modifier::BOLD | Modifier::REVERSED)
+                        // Calculate field area based on field_index
+                        let field_area = if *field_index < 2 {
+                            // Top full-width fields
+                            let top_chunks = Layout::default()
+                                .direction(Direction::Vertical)
+                                .constraints([
+                                    Constraint::Length(3), // Sketch Directory
+                                    Constraint::Length(3), // Sketch Name
+                                ])
+                                .split(main_chunks[0]);
+                            top_chunks[*field_index]
+                        } else if *field_index < 5 {
+                            // Device column (left)
+                            let bottom_chunks = Layout::default()
+                                .direction(Direction::Horizontal)
+                                .constraints([
+                                    Constraint::Percentage(50), // Device column
+                                    Constraint::Percentage(50), // Connection column
+                                ])
+                                .split(main_chunks[1]);
+                            
+                            // Device section: Environment (2), Board Model (3), FQBN (4)
+                            let section_inner = Block::default().borders(Borders::ALL).inner(bottom_chunks[0]);
+                            let field_height = 3;
+                            let field_offset = (*field_index - 2) as u16 * (field_height + 1);
+                            Rect {
+                                x: section_inner.x + 1,
+                                y: section_inner.y + 1 + field_offset,
+                                width: section_inner.width.saturating_sub(2),
+                                height: field_height as u16,
+                            }
                         } else {
-                            Style::default()
-                                .fg(Color::White)
+                            // Connection column (right)
+                            let bottom_chunks = Layout::default()
+                                .direction(Direction::Horizontal)
+                                .constraints([
+                                    Constraint::Percentage(50), // Device column
+                                    Constraint::Percentage(50), // Connection column
+                                ])
+                                .split(main_chunks[1]);
+                            
+                            // Connection section: Port (5), Baudrate (6)
+                            let section_inner = Block::default().borders(Borders::ALL).inner(bottom_chunks[1]);
+                            let field_height = 3;
+                            let field_offset = (*field_index - 5) as u16 * (field_height + 1);
+                            Rect {
+                                x: section_inner.x + 1,
+                                y: section_inner.y + 1 + field_offset,
+                                width: section_inner.width.saturating_sub(2),
+                                height: field_height as u16,
+                            }
                         };
-                        items.push(ListItem::new(Line::from(vec![
-                            Span::styled(option.clone(), style),
-                        ])));
+                        
+                        render_dropdown(f, area, field_area, options, *selected_index);
                     }
-                    
-                    let list = List::new(items)
-                        .block(Block::default()
-                            .borders(Borders::ALL)
-                            .border_style(Style::default().fg(Color::Rgb(255, 215, 0))));
-                    f.render_widget(Clear, adjusted_dropdown_area);
-                    f.render_widget(list, adjusted_dropdown_area);
                 }
             }
         }
+        FieldEditorState::ProfileSelecting { selected_index, options } => {
+            if let Some(box_manager) = get_box_by_name(registry, crate::constants::HWND_PROFILE_SELECTOR) {
+                if let Some(rect) = box_manager.metrics(registry) {
+                    let field_area: Rect = rect.into();
+                    render_dropdown(f, area, field_area, options, *selected_index);
+                }
+            }
+        }
+        _ => {}
     }
+}
+
+/// Helper to render a dropdown list
+fn render_dropdown(
+    f: &mut Frame,
+    area: Rect,
+    anchor_area: Rect,
+    options: &[String],
+    selected_index: usize,
+) {
+    // Calculate dropdown position (below the field)
+    let dropdown_height = (options.len() + 2).min(10) as u16;
+    let dropdown_area = Rect {
+        x: anchor_area.x,
+        y: anchor_area.y + anchor_area.height,
+        width: anchor_area.width,
+        height: dropdown_height,
+    };
+    
+    // Make sure dropdown fits in the frame
+    let adjusted_dropdown_area = if dropdown_area.y + dropdown_area.height > area.height {
+        // If doesn't fit below, show above
+        Rect {
+            x: dropdown_area.x,
+            y: anchor_area.y.saturating_sub(dropdown_area.height),
+            width: dropdown_area.width,
+            height: dropdown_height,
+        }
+    } else {
+        dropdown_area
+    };
+    
+    // Render dropdown
+    let mut items = Vec::new();
+    for (i, option) in options.iter().enumerate() {
+        let style = if i == selected_index {
+            Style::default()
+                .fg(Color::Rgb(255, 215, 0))
+                .add_modifier(Modifier::BOLD | Modifier::REVERSED)
+        } else {
+            Style::default()
+                .fg(Color::White)
+        };
+        items.push(ListItem::new(Line::from(vec![
+            Span::styled(option.clone(), style),
+        ])));
+    }
+    
+    let list = List::new(items)
+        .block(Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Rgb(255, 215, 0))));
+    f.render_widget(Clear, adjusted_dropdown_area);
+    f.render_widget(list, adjusted_dropdown_area);
 }
 
 /// Handle cursor positioning for editing fields
@@ -292,6 +372,44 @@ pub fn handle_cursor_positioning(
                                 
                                 // Only position cursor if terminal is large enough
                                 if content_rect.width >= min_width_pixels && content_rect.height >= min_height_pixels {
+                                    // Get field position from HWND registry
+                                    let field_hwnds = [
+                                        crate::constants::HWND_SETTINGS_FIELD_SKETCH_DIR,
+                                        crate::constants::HWND_SETTINGS_FIELD_SKETCH_NAME,
+                                        crate::constants::HWND_SETTINGS_FIELD_ENV,
+                                        crate::constants::HWND_SETTINGS_FIELD_BOARD_MODEL,
+                                        crate::constants::HWND_SETTINGS_FIELD_FQBN,
+                                        crate::constants::HWND_SETTINGS_FIELD_PORT,
+                                        crate::constants::HWND_SETTINGS_FIELD_BAUDRATE,
+                                    ];
+                                    
+                                    if let Some(field_hwnd) = field_hwnds.get(*field_index) {
+                                        if let Some(field_box) = get_box_by_name(registry, field_hwnd) {
+                                            if let Some(field_rect) = field_box.metrics(registry) {
+                                                let field_rect: Rect = field_rect.into();
+                                                // Get inner area for text (accounting for borders and padding)
+                                                let inner_area = Block::default()
+                                                    .borders(Borders::ALL)
+                                                    .padding(ratatui::widgets::Padding { left: 1, right: 1, top: 0, bottom: 0 })
+                                                    .inner(field_rect);
+                                                let text_width = inner_area.width as usize;
+                                                
+                                                // Calculate scroll offset and visual cursor position
+                                                let scroll_offset = input.visual_scroll(text_width);
+                                                let visual_cursor = input.visual_cursor();
+                                                let cursor_pos_in_view = visual_cursor.saturating_sub(scroll_offset);
+                                                
+                                                // Calculate cursor position relative to field's inner area
+                                                let cursor_x = inner_area.x + cursor_pos_in_view as u16;
+                                                let cursor_y = inner_area.y;
+                                                
+                                                f.set_cursor_position((cursor_x, cursor_y));
+                                                return; // Successfully positioned cursor using HWND
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Fallback to old method if HWND lookup fails
                                     // Use LayoutManager for cached content area calculation
                                     if let Some(content_area) = layout_manager.get_content_area(content_rect) {
                                         // Get inner area width for scroll calculation

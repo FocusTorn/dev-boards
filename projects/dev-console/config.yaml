@@ -87,8 +87,8 @@ tab_content:
 
     - tab_id: "settings"
       bindings:
-        - key: "[🡘 🡙]"
-          description: "Navigate"
+        - key: "[🡙]"
+          description: "Navigate Profiles"
         - key: "[Tab]"
           description: "Next field"
         - key: "[Shift+Tab]"

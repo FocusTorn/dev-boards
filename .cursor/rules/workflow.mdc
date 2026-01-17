@@ -135,6 +135,10 @@ Only after this verification is explicitly stated can the task proceed.
 - `.cursor/rules/dev-boards/` - Check for dev-boards project-specific rules
 - Other project directories as needed
 
+**Command System**:
+- `.cursor/commands/` - SOURCE OF TRUTH for Slash Commands (e.g., `/create-command`).
+- If user invokes a command, you MUST read the corresponding file in this directory.
+
 ## **ANTI-PATTERNS**
 
 ### **❌ Workflow Violations**
