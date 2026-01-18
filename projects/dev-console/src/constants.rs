@@ -60,3 +60,6 @@ pub const HWND_PROFILE_LIST: &str = "hwndProfileList";
 
 /// Profile selector HWND constant (for dashboard)
 pub const HWND_PROFILE_SELECTOR: &str = "hwndProfileSelector";
+
+
+

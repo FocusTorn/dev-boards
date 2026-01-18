@@ -184,8 +184,6 @@ pub fn render_ui(
         area,
         field_editor_state,
         registry,
-        main_content_box_handle_name,
-        layout_manager,
     );
     
     // Render popup
@@ -203,81 +201,38 @@ fn render_dropdown_overlay(
     area: Rect,
     field_editor_state: &FieldEditorState,
     registry: &RectRegistry,
-    main_content_box_handle_name: &str,
-    layout_manager: &mut LayoutManager,
 ) {
     // Render dropdown overlay if selecting
     match field_editor_state {
         FieldEditorState::Selecting { field_index, selected_index, options } => {
-            if let Some(box_manager) = get_box_by_name(registry, main_content_box_handle_name) {
-                if let Some(content_rect) = box_manager.metrics(registry) {
-                    let content_rect: Rect = content_rect.into();
-                    
-                    // Use LayoutManager for cached content area calculation
-                    if let Some(content_area) = layout_manager.get_content_area(content_rect) {
-                        // Split into top section (Sketch Directory, Sketch Name) and bottom section (Device/Connection)
-                        let main_chunks = Layout::default()
-                            .direction(Direction::Vertical)
-                            .constraints([
-                                Constraint::Length(6), // Top section: 2 boxes (3 lines each)
-                                Constraint::Min(0),   // Bottom section: Device/Connection
-                            ])
-                            .split(content_area);
-                        
-                        // Calculate field area based on field_index
-                        let field_area = if *field_index < 2 {
-                            // Top full-width fields
-                            let top_chunks = Layout::default()
-                                .direction(Direction::Vertical)
-                                .constraints([
-                                    Constraint::Length(3), // Sketch Directory
-                                    Constraint::Length(3), // Sketch Name
-                                ])
-                                .split(main_chunks[0]);
-                            top_chunks[*field_index]
-                        } else if *field_index < 5 {
-                            // Device column (left)
-                            let bottom_chunks = Layout::default()
-                                .direction(Direction::Horizontal)
-                                .constraints([
-                                    Constraint::Percentage(50), // Device column
-                                    Constraint::Percentage(50), // Connection column
-                                ])
-                                .split(main_chunks[1]);
-                            
-                            // Device section: Environment (2), Board Model (3), FQBN (4)
-                            let section_inner = Block::default().borders(Borders::ALL).inner(bottom_chunks[0]);
-                            let field_height = 3;
-                            let field_offset = (*field_index - 2) as u16 * (field_height + 1);
-                            Rect {
-                                x: section_inner.x + 1,
-                                y: section_inner.y + 1 + field_offset,
-                                width: section_inner.width.saturating_sub(2),
-                                height: field_height as u16,
-                            }
-                        } else {
-                            // Connection column (right)
-                            let bottom_chunks = Layout::default()
-                                .direction(Direction::Horizontal)
-                                .constraints([
-                                    Constraint::Percentage(50), // Device column
-                                    Constraint::Percentage(50), // Connection column
-                                ])
-                                .split(main_chunks[1]);
-                            
-                            // Connection section: Port (5), Baudrate (6)
-                            let section_inner = Block::default().borders(Borders::ALL).inner(bottom_chunks[1]);
-                            let field_height = 3;
-                            let field_offset = (*field_index - 5) as u16 * (field_height + 1);
-                            Rect {
-                                x: section_inner.x + 1,
-                                y: section_inner.y + 1 + field_offset,
-                                width: section_inner.width.saturating_sub(2),
-                                height: field_height as u16,
-                            }
-                        };
-                        
-                        render_dropdown(f, area, field_area, options, *selected_index);
+            // Use registry to get the field's registered rectangle
+            let field_hwnds = [
+                crate::constants::HWND_SETTINGS_FIELD_SKETCH_DIR,
+                crate::constants::HWND_SETTINGS_FIELD_SKETCH_NAME,
+                crate::constants::HWND_SETTINGS_FIELD_ENV,
+                crate::constants::HWND_SETTINGS_FIELD_BOARD_MODEL,
+                crate::constants::HWND_SETTINGS_FIELD_FQBN,
+                crate::constants::HWND_SETTINGS_FIELD_PORT,
+                crate::constants::HWND_SETTINGS_FIELD_BAUDRATE,
+                crate::constants::HWND_SETTINGS_FIELD_MQTT_HOST,
+                crate::constants::HWND_SETTINGS_FIELD_MQTT_PORT,
+                crate::constants::HWND_SETTINGS_FIELD_MQTT_USERNAME,
+                crate::constants::HWND_SETTINGS_FIELD_MQTT_PASSWORD,
+                crate::constants::HWND_SETTINGS_FIELD_MQTT_TOPIC_COMMAND,
+                crate::constants::HWND_SETTINGS_FIELD_MQTT_TOPIC_STATE,
+                crate::constants::HWND_SETTINGS_FIELD_MQTT_TOPIC_STATUS,
+            ];
+            
+            // Get field label
+            let field_label = crate::field_editor::SettingsField::from_index(*field_index)
+                .map(|f| f.label())
+                .unwrap_or("");
+            
+            if let Some(hwnd) = field_hwnds.get(*field_index) {
+                if let Some(field_box) = get_box_by_name(registry, hwnd) {
+                    if let Some(field_rect) = field_box.metrics(registry) {
+                        let field_area: Rect = field_rect.into();
+                        render_dropdown(f, area, field_area, options, *selected_index, field_label);
                     }
                 }
             }
@@ -286,7 +241,7 @@ fn render_dropdown_overlay(
             if let Some(box_manager) = get_box_by_name(registry, crate::constants::HWND_PROFILE_SELECTOR) {
                 if let Some(rect) = box_manager.metrics(registry) {
                     let field_area: Rect = rect.into();
-                    render_dropdown(f, area, field_area, options, *selected_index);
+                    render_dropdown(f, area, field_area, options, *selected_index, "Profiles");
                 }
             }
         }
@@ -301,22 +256,23 @@ fn render_dropdown(
     anchor_area: Rect,
     options: &[String],
     selected_index: usize,
+    field_label: &str,
 ) {
-    // Calculate dropdown position (below the field)
-    let dropdown_height = (options.len() + 2).min(10) as u16;
+    // Calculate dropdown position - 3 lines up from the bottom of the field
+    let dropdown_height = (options.len() + 2).min(10) as u16; // +2 for top and bottom borders
     let dropdown_area = Rect {
         x: anchor_area.x,
-        y: anchor_area.y + anchor_area.height,
+        y: (anchor_area.y + anchor_area.height).saturating_sub(3),
         width: anchor_area.width,
         height: dropdown_height,
     };
     
     // Make sure dropdown fits in the frame
     let adjusted_dropdown_area = if dropdown_area.y + dropdown_area.height > area.height {
-        // If doesn't fit below, show above
+        // If doesn't fit below, adjust position
         Rect {
             x: dropdown_area.x,
-            y: anchor_area.y.saturating_sub(dropdown_area.height),
+            y: area.height.saturating_sub(dropdown_area.height),
             width: dropdown_area.width,
             height: dropdown_height,
         }
@@ -340,8 +296,10 @@ fn render_dropdown(
         ])));
     }
     
+    // Create list with all borders and field label as title
     let list = List::new(items)
         .block(Block::default()
+            .title(Span::styled(format!(" {} ", field_label), Style::default().fg(Color::Rgb(255, 215, 0))))
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Rgb(255, 215, 0))));
     f.render_widget(Clear, adjusted_dropdown_area);
@@ -381,6 +339,22 @@ pub fn handle_cursor_positioning(
                                         crate::constants::HWND_SETTINGS_FIELD_FQBN,
                                         crate::constants::HWND_SETTINGS_FIELD_PORT,
                                         crate::constants::HWND_SETTINGS_FIELD_BAUDRATE,
+                                        crate::constants::HWND_SETTINGS_FIELD_MQTT_HOST,
+                                        
+                                        
+                                        
+                                        crate::constants::HWND_SETTINGS_FIELD_MQTT_PORT,
+                                        crate::constants::HWND_SETTINGS_FIELD_MQTT_USERNAME,
+                                        crate::constants::HWND_SETTINGS_FIELD_MQTT_PASSWORD,
+                                        crate::constants::HWND_SETTINGS_FIELD_MQTT_TOPIC_COMMAND,
+                                        crate::constants::HWND_SETTINGS_FIELD_MQTT_TOPIC_STATE,
+                                        crate::constants::HWND_SETTINGS_FIELD_MQTT_TOPIC_STATUS,
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
                                     ];
                                     
                                     if let Some(field_hwnd) = field_hwnds.get(*field_index) {

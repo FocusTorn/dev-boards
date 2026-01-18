@@ -17,12 +17,12 @@ use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use std::sync::{Arc, Mutex};
 
 /// Handle dashboard keyboard events
-pub fn handle_dashboard_key_event(
+pub fn handle_dashboard_key_event( //>
     key_code: crossterm::event::KeyCode,
     dashboard: &Arc<Mutex<DashboardState>>,
     settings_manager: &SettingsManager,
     process_manager: Arc<ProcessManager>,
-) -> bool {
+) -> bool { //>
     // Returns true if event was handled, false otherwise
     match key_code {
         crossterm::event::KeyCode::Esc => {
@@ -88,23 +88,23 @@ pub fn handle_dashboard_key_event(
 
 /// Result of handling a field editor event
 #[derive(Debug)]
-pub enum FieldEditorEventResult {
+pub enum FieldEditorEventResult { //>
     Continue,
     Exit,
     Toast(Toast),
     StateChanged(FieldEditorState),
-}
+} //<
 
 /// Result of handling a profile event
 #[derive(Debug)]
-pub enum ProfileEventResult {
+pub enum ProfileEventResult { //>
     Continue,
     Toast(Toast),
     #[allow(dead_code)]
     RefreshProfiles,
     SaveProfile(String),
     LoadProfile(String),
-}
+} //<
 
 /// Handle profile keyboard events
 pub fn handle_profile_key_event(
@@ -112,7 +112,7 @@ pub fn handle_profile_key_event(
     key_modifiers: KeyModifiers,
     profile_state: &ProfileState,
     settings_manager: &SettingsManager,
-) -> ProfileEventResult {
+) -> ProfileEventResult { //>
     let is_active = *profile_state.is_active.lock().unwrap();
     
     match key_code {
@@ -172,7 +172,14 @@ pub fn handle_profile_key_event(
         }
         _ => ProfileEventResult::Continue,
     }
-}
+    
+} //<
+
+
+┌───┐  └──┘
+
+
+
 
 /// Handle field editor keyboard events
 pub fn handle_field_editor_key_event(
@@ -498,124 +505,58 @@ pub fn handle_settings_field_click(
     settings_fields: &SettingsFields,
     registry: &RectRegistry,
     main_content_tab_bar: &TabBarManager,
-    layout_manager: &mut LayoutManager,
 ) -> Option<FieldEditorState> {
     let settings = settings_manager.get(); // Get current settings
     if let Some(active_tab_idx) = registry.get_active_tab(main_content_tab_bar.handle()) {
         if let Some(tab_bar_state) = registry.get_tab_bar_state(main_content_tab_bar.handle()) {
             if let Some(tab_config) = tab_bar_state.tab_configs.get(active_tab_idx) {
                 if tab_config.id == "settings" {
-                    if let Some(box_manager) = get_box_by_name(registry, HWND_MAIN_CONTENT_BOX) {
-                        if let Some(content_rect) = box_manager.metrics(registry) {
-                            let content_rect: Rect = content_rect.into();
-                            
-                            // Use LayoutManager for cached content area calculation
-                            if let Some(content_area) = layout_manager.get_content_area(content_rect) {
-                                let content_x = content_area.x;
-                                let content_y = content_area.y;
-                                let content_width = content_area.width;
-                                
-                                // Check if click is within content area
-                                if mouse_event.column >= content_x && mouse_event.column < content_x + content_width &&
-                                   mouse_event.row >= content_y && mouse_event.row < content_y + content_area.height {
-                                    
-                                    // Check top section (Sketch Directory, Sketch Name)
-                                    if mouse_event.row >= content_y && mouse_event.row < content_y + 6 {
-                                        let field_index = if mouse_event.row < content_y + 3 { 0 } else { 1 };
-                                        // Check if dropdown field
-                                        if settings_fields.is_dropdown(field_index) {
-                                            let options = settings_fields.get_dropdown_options(field_index, &settings);
-                                            let current_value = settings_fields.get_value(&settings, field_index);
-                                            let selected_index = options.iter()
-                                                .position(|opt| opt == &current_value)
-                                                .unwrap_or(0);
-                                            return Some(FieldEditorState::Selecting {
-                                                field_index,
-                                                selected_index,
-                                                options,
-                                            });
-                                        } else {
-                                            // Start editing directly on click
-                                            let current_value = settings_fields.get_value(&settings, field_index);
-                                            let mut input = Input::new(current_value);
-                                            let _ = input.handle(InputRequest::GoToEnd);
-                                            return Some(FieldEditorState::Editing {
-                                                field_index,
-                                                input,
-                                            });
-                                        }
-                                    } else {
-                                        // Check bottom section (Device | Connection | MQTT with 2 sub-columns)
-                                        let section_y = content_y + 6;
-                                        
-                                        let bottom_columns = Layout::default()
-                                            .direction(Direction::Horizontal)
-                                            .constraints([
-                                                Constraint::Percentage(25), // Device
-                                                Constraint::Percentage(25), // Connection
-                                                Constraint::Percentage(50), // MQTT (2 sub-columns)
-                                            ])
-                                            .split(Rect {
-                                                x: content_x,
-                                                y: section_y,
-                                                width: content_width,
-                                                height: content_area.height.saturating_sub(6),
-                                            });
-                                        
-                                        // Helper to find which field in a section was clicked
-                                        let find_field = |mouse_x: u16, mouse_y: u16, area: Rect, indices: &[usize]| -> Option<usize> {
-                                            if mouse_x >= area.x && mouse_x < area.x + area.width &&
-                                               mouse_y >= area.y && mouse_y < area.y + area.height {
-                                                let relative_y = mouse_y.saturating_sub(area.y + 1); // +1 for top border
-                                                let field_offset = (relative_y / 4) as usize; // 3 lines per field + 1 spacing
-                                                if field_offset < indices.len() {
-                                                    return Some(indices[field_offset]);
-                                                }
-                                            }
-                                            None
-                                        };
-
-                                        // Check Device and Connection columns
-                                        let clicked_field = find_field(mouse_event.column, mouse_event.row, bottom_columns[0], &[2, 3, 4])
-                                            .or_else(|| find_field(mouse_event.column, mouse_event.row, bottom_columns[1], &[5, 6]));
-                                        
-                                        // Check MQTT section (2 sub-columns)
-                                        let clicked_field = clicked_field.or_else(|| {
-                                            let mqtt_columns = Layout::default()
-                                                .direction(Direction::Horizontal)
-                                                .constraints([
-                                                    Constraint::Percentage(50), // Credentials
-                                                    Constraint::Percentage(50), // Topics
-                                                ])
-                                                .split(bottom_columns[2]);
-                                            
-                                            find_field(mouse_event.column, mouse_event.row, mqtt_columns[0], &[7, 8, 9, 10])
-                                                .or_else(|| find_field(mouse_event.column, mouse_event.row, mqtt_columns[1], &[11, 12, 13]))
+                    // Use registry to check which field was clicked
+                    // Field HWNDs in order: Sketch Dir (0), Sketch Name (1), then fields 2-13
+                    let field_hwnds = [
+                        crate::constants::HWND_SETTINGS_FIELD_SKETCH_DIR,
+                        crate::constants::HWND_SETTINGS_FIELD_SKETCH_NAME,
+                        crate::constants::HWND_SETTINGS_FIELD_ENV,
+                        crate::constants::HWND_SETTINGS_FIELD_BOARD_MODEL,
+                        crate::constants::HWND_SETTINGS_FIELD_FQBN,
+                        crate::constants::HWND_SETTINGS_FIELD_PORT,
+                        crate::constants::HWND_SETTINGS_FIELD_BAUDRATE,
+                        crate::constants::HWND_SETTINGS_FIELD_MQTT_HOST,
+                        crate::constants::HWND_SETTINGS_FIELD_MQTT_PORT,
+                        crate::constants::HWND_SETTINGS_FIELD_MQTT_USERNAME,
+                        crate::constants::HWND_SETTINGS_FIELD_MQTT_PASSWORD,
+                        crate::constants::HWND_SETTINGS_FIELD_MQTT_TOPIC_COMMAND,
+                        crate::constants::HWND_SETTINGS_FIELD_MQTT_TOPIC_STATE,
+                        crate::constants::HWND_SETTINGS_FIELD_MQTT_TOPIC_STATUS,
+                    ];
+                    
+                    // Check each field to see if click is within its bounds
+                    for (field_index, hwnd) in field_hwnds.iter().enumerate() {
+                        if let Some(field_box) = get_box_by_name(registry, hwnd) {
+                            if let Some(field_rect) = field_box.metrics(registry) {
+                                let rect: Rect = field_rect.into();
+                                if mouse_event.column >= rect.x && mouse_event.column < rect.x + rect.width &&
+                                   mouse_event.row >= rect.y && mouse_event.row < rect.y + rect.height {
+                                    // Click is within this field
+                                    if settings_fields.is_dropdown(field_index) {
+                                        let options = settings_fields.get_dropdown_options(field_index, &settings);
+                                        let current_value = settings_fields.get_value(&settings, field_index);
+                                        let selected_index = options.iter()
+                                            .position(|opt| opt == &current_value)
+                                            .unwrap_or(0);
+                                        return Some(FieldEditorState::Selecting {
+                                            field_index,
+                                            selected_index,
+                                            options,
                                         });
-
-                                        if let Some(field_index) = clicked_field {
-                                            // Check if dropdown field
-                                            if settings_fields.is_dropdown(field_index) {
-                                                let options = settings_fields.get_dropdown_options(field_index, &settings);
-                                                let current_value = settings_fields.get_value(&settings, field_index);
-                                                let selected_index = options.iter()
-                                                    .position(|opt| opt == &current_value)
-                                                    .unwrap_or(0);
-                                                return Some(FieldEditorState::Selecting {
-                                                    field_index,
-                                                    selected_index,
-                                                    options,
-                                                });
-                                            } else {
-                                                let current_value = settings_fields.get_value(&settings, field_index);
-                                                let mut input = Input::new(current_value);
-                                                let _ = input.handle(InputRequest::GoToEnd);
-                                                return Some(FieldEditorState::Editing {
-                                                    field_index,
-                                                    input,
-                                                });
-                                            }
-                                        }
+                                    } else {
+                                        let current_value = settings_fields.get_value(&settings, field_index);
+                                        let mut input = Input::new(current_value);
+                                        let _ = input.handle(InputRequest::GoToEnd);
+                                        return Some(FieldEditorState::Editing {
+                                            field_index,
+                                            input,
+                                        });
                                     }
                                 }
                             }

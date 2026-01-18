@@ -152,6 +152,17 @@ pub fn render_settings(
         ])
         .split(config_chunks[0]);
     
+        
+        // eprintln!("[DEBUG] Sketch Dir Rect after creation: {:?}", sketch_chunks[0]);
+        
+        
+        
+        
+        
+        
+        
+        
+        
     register_or_update(registry, HWND_SETTINGS_FIELD_SKETCH_DIR, sketch_chunks[0]);
     render_full_width_field(f, sketch_chunks[0], settings, fields, editor_state, 0, "Sketch Directory", dimming);
     
@@ -472,7 +483,7 @@ fn render_profile_box(
         hex_color(0x222222)
     } else if *is_active {
         Color::White          // White when focused
-        .add_modifier(Modifier::BOLD)
+        // .add_modifier(Modifier::BOLD)
     } else {
         hex_color(0x777777)  // Brighter grey when unfocused (match title bar style)
     };

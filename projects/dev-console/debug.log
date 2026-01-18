@@ -1,0 +1,128 @@
+warning: unused variable: `target_height`
+   --> src\render\settings.rs:300:5
+    |
+300 |     target_height: Option<u16>,
+    |     ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_target_height`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `dev-console` (bin "dev-console") generated 1 warning (run `cargo fix --bin "dev-console" -p dev-console` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.25s
+     Running `target\debug\dev-console.exe`
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Click handler using Rect: RectMetrics { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }
+[DEBUG] Sketch Dir Rect after creation: Rect { x: 31, y: 5, width: 182, height: 3 }

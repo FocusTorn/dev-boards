@@ -499,7 +499,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 &app_state.settings_fields,
                                 &registry,
                                 &main_content_tab_bar,
-                                &mut layout_manager,
                             ) {
                                 app_state.field_editor_state = new_state;
                             }
