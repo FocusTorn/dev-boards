@@ -176,7 +176,6 @@ pub fn handle_profile_key_event(
 } //<
 
 
-┌───┐  └──┘
 
 
 
