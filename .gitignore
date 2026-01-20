@@ -136,6 +136,8 @@ lib/esp32-s3
 
 
 projects/dev-console/target/
+projects/dev-console2/target/
+
 
 **/.cursor/
 

@@ -1,0 +1,15 @@
+
+
+
+
+{
+  "mcpServers": {
+//     "carrot-pm": {
+//       "command": "node",
+//       "args": ["D:/_dev/_Projects/dev-boards/carrot-ai-pm/dist/src/server.js"],
+//       "env": {
+//         "CARROT_PROJECT_ROOT": "D:/_dev/_Projects/dev-boards"
+//       }
+//     }
+  }
+}

@@ -11,9 +11,6 @@ application:
     bindings:
         - key: "[q]"
           description: "Quit"
-        
-          
-            
 
     # Status bar configuration
     status_bar:
