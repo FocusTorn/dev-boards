@@ -1,7 +1,7 @@
 // UI rendering coordination module
 // Handles UI rendering logic and layout management
 
-use crate::render::{render_content, render_settings, render_dashboard};
+use crate::render::{render_content, render_settings, render_dashboard, render_settings2_standalone};
 use crate::field_editor::{FieldEditorState, SettingsFields};
 use crate::dashboard::DashboardState;
 use crate::layout_manager::LayoutManager;
@@ -131,6 +131,11 @@ pub fn render_ui(
                 if tab_config.id == "settings" {
                     let settings = settings_manager.get(); // Get current settings
                     render_settings(f, nested_area, &settings, settings_fields, field_editor_state, profile_state, registry, dimming);
+                } else if tab_config.id == "settings2" {
+                    let settings = settings_manager.get(); // Get current settings
+                    render_settings2_standalone(f, nested_area, &settings, settings_fields, field_editor_state, profile_state);
+                
+                
                 } else if tab_config.id == "dashboard" {
                     // Render dashboard directly from Arc to avoid cloning
                     if let Ok(mut state) = dashboard_arc.lock() {
