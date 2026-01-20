@@ -128,8 +128,16 @@ lib/esp32-s3
 #     - Delete remote branch: `git push origin --delete branch-name`
 
 
+
+# git rm --cached <file> 
+# git rm -r --cached <folder>
+
+
+
+
 projects/dev-console/target/
 
 **/.cursor/
 
 .dev-console/compile_output.log
+carrot-ai-pm
