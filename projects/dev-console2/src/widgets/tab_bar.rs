@@ -78,6 +78,8 @@ impl<'a> TabBarWidget<'a> {
         let style = match tab_config.style.as_deref() {
             Some("tabbed") => TabBarStyle::Tab,
             Some("boxed") => TabBarStyle::Boxed,
+            Some("box_static") => TabBarStyle::BoxStatic,
+            Some("text_static") => TabBarStyle::TextStatic,
             _ => TabBarStyle::Text,
         };
 
@@ -100,42 +102,71 @@ impl<'a> TabBarWidget<'a> {
         let mut width = 0;
         for (idx, item) in self.items.iter().enumerate() {
             if idx > 0 { width += 1; } // Separator "─"
-            width += match (item.active, self.style) {
-                (true, TabBarStyle::Tab) | (true, TabBarStyle::Boxed) => item.name.len() as u16 + 4,
-                _ => item.name.len() as u16 + 2,
+            width += match self.style {
+                TabBarStyle::Tab | TabBarStyle::Boxed => {
+                    if item.active {
+                        item.name.len() as u16 + 4 // "╯ Name ╰" or "[ Name ]" for active
+                    } else {
+                        item.name.len() as u16 + 2 // " Name " for inactive
+                    }
+                }
+                TabBarStyle::BoxStatic => item.name.len() as u16 + 4, // "[ Name ]"
+                TabBarStyle::Text | TabBarStyle::TextStatic => item.name.len() as u16 + 2, // " Name "
             };
         }
         width
     } //<
 
     fn build_tab_line(&self) -> Line<'a> { //>
-        let mut spans = Vec::new();
-        let active_style = Style::default().fg(self.color).add_modifier(Modifier::BOLD);
-        let inactive_style = Style::default().fg(Color::White);
-
-        for (idx, item) in self.items.iter().enumerate() {
-            if idx > 0 {
-                spans.push(Span::styled("─", inactive_style));
-            }
-            if item.active {
+                let mut spans = Vec::new();
+                let active_style = Style::default().fg(self.color).add_modifier(Modifier::BOLD);
+                let inactive_style = Style::default().fg(Color::White);
+        
                 match self.style {
-                    TabBarStyle::Tab => {
-                        spans.push(Span::styled("╯ ", inactive_style));
-                        spans.push(Span::styled(item.name.clone(), active_style));
-                        spans.push(Span::styled(" ╰", inactive_style));
+                    TabBarStyle::BoxStatic => {
+                        for (idx, item) in self.items.iter().enumerate() {
+                            if idx > 0 {
+                                spans.push(Span::styled("─", inactive_style));
+                            }
+                            spans.push(Span::styled("[ ", inactive_style));
+                            spans.push(Span::styled(item.name.clone(), inactive_style));
+                            spans.push(Span::styled(" ]", inactive_style));
+                        }
                     }
-                    TabBarStyle::Boxed => {
-                        spans.push(Span::styled("[ ", inactive_style));
-                        spans.push(Span::styled(item.name.clone(), active_style));
-                        spans.push(Span::styled(" ]", inactive_style));
+                    TabBarStyle::TextStatic => {
+                        for (idx, item) in self.items.iter().enumerate() {
+                            if idx > 0 {
+                                spans.push(Span::styled("─", inactive_style));
+                            }
+                            spans.push(Span::styled(format!(" {} ", item.name), inactive_style));
+                        }
                     }
-                    _ => spans.push(Span::styled(format!(" {} ", item.name), active_style)),
+                    _ => { // For Tab, Text, Boxed styles (dynamic/interactive)
+                        for (idx, item) in self.items.iter().enumerate() {
+                            if idx > 0 {
+                                spans.push(Span::styled("─", inactive_style));
+                            }
+                            if item.active {
+                                match self.style {
+                                    TabBarStyle::Tab => {
+                                        spans.push(Span::styled("╯ ", inactive_style));
+                                        spans.push(Span::styled(item.name.clone(), active_style));
+                                        spans.push(Span::styled(" ╰", inactive_style));
+                                    }
+                                    TabBarStyle::Boxed => {
+                                        spans.push(Span::styled("[ ", inactive_style));
+                                        spans.push(Span::styled(item.name.clone(), active_style));
+                                        spans.push(Span::styled(" ]", inactive_style));
+                                    }
+                                    _ => spans.push(Span::styled(format!(" {} ", item.name), active_style)),
+                                }
+                            } else {
+                                spans.push(Span::styled(format!(" {} ", item.name), inactive_style));
+                            }
+                        }
+                    }
                 }
-            } else {
-                spans.push(Span::styled(format!(" {} ", item.name), inactive_style));
-            }
-        }
-        Line::from(spans)
+                Line::from(spans)
     } //<
 
     fn build_top_line(&self) -> Line<'a> { //>

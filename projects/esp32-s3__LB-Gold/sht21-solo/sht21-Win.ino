@@ -28,7 +28,7 @@
 // MQTT Configuration
 // Note: MQTT server, port, username, and password are handled by MQTT_Win_Client library defaults
 // Defaults: Server=192.168.1.10, Port=1883, Username=mqtt, Password=mqtt
-const char* mqtt_client_id = "esp32-s3-sht21";
+const char* mqtt_client_id = "esp32-s3-sht21.2";
 
 const char* mqtt_topic = "sensors/sht21/readings";
 const char* mqtt_topic_status = "sensors/esp32-s3-sht21/status";

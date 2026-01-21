@@ -7,7 +7,7 @@ application:
 
     # Global keyboard bindings
     bindings:
-        - id: "quit" 
+        - id: "quit"
           key: "[q]"
           display: "[q] Quit"
           onPress: "actionToTake"
@@ -15,6 +15,22 @@ application:
     # Status bar configuration
     status_bar:
         default_text: "Status: Ready"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -48,10 +64,10 @@ tab_bars:
     - id: "MainContentTabBar"
       style: "tabbed" # Options: tabbed, boxed, text, box_static, text_static
       color: "cyan" # Color for active tab (ratatui color name)
-      
+
       min_tab_width: 8 # OPTIONAL: Minimum width per tab
       tab_tooltips: true # Show tooltips on hover
-      
+
       alignment:
         vertical: "top" # Options: "top", "bottom"
         horizontal: "center" # Options: "left", "center", "right"
@@ -63,11 +79,11 @@ tab_bars:
         right: ["PgDown"]
 
       tabs:
-        
+
         - id: "dashboard"
           name: "Dashboard"
           default: "active"
-          
+
         - id: "tab2"
           name: "Tab 2"
 
@@ -78,7 +94,7 @@ tab_bars:
             description: "Navigate"
           - key: "[Enter]"
             description: "Execute Command"
-            
+
         tab2:
           - key: "[🡙]"
             description: "Navigate Profiles"
@@ -87,20 +103,20 @@ tab_bars:
           - key: "[Shift+Tab]"
             description: "Previous field"
           - key: "[Enter/Click]"
-            description: "Confirm/Edit field"  
-            
-            
-            
-            
-            
-            
-        
-        
+            description: "Confirm/Edit field"
+
+
+
+
+
+
+
+
     # # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
     # # │                   MAIN CONTENT STATIC TAB BAR (MainContentStaticTabBar)                        │
     # # └────────────────────────────────────────────────────────────────────────────────────────────────┘
     # - id: "MainContentStaticTabBar"
-      
+
     #   alignment:
     #     vertical: "top" # Options: "top", "bottom"
     #     horizontal: "right" # Options: "left", "center", "right"
@@ -108,20 +124,20 @@ tab_bars:
     #     offset_y: 0 # Vertical offset in lines
 
     #   style: "box_static" # Options: tabbed, boxed, text, box_static, text_static
-      
-    # #   type: state # state, button, 
+
+    # #   type: state # state, button,
     # #   colors:
     # #     active: "green"
     # #     negate: "red"
     # #     disabled: null
-      
-      
-    #   type: button # state, button, 
-    #   on_click: "functionToExecute"  
+
+
+    #   type: button # state, button,
+    #   on_click: "functionToExecute"
     #   colors:
     #     active: null
     #     hover: "cyan"
-        
+
     #     # negate: "red"
     #     # disabled: null
 

@@ -47,19 +47,19 @@ pub enum Message {
 }
 
 impl App {
-    pub fn update(&mut self, msg: Message) -> Option<Message> {
+    pub fn update(&mut self, msg: Message) -> Option<Message> { //>
         match msg {
             Message::Quit => self.running = false,
         }
         None
-    }
+    } //<
 
-    pub fn check_terminal_size(&mut self, area: Rect) {
+    pub fn check_terminal_size(&mut self, area: Rect) { //>
         self.terminal_too_small = area.width < self.config.application.min_width || 
                                  area.height < self.config.application.min_height;
-    }
+    } //<
 
-    pub fn view(&mut self, frame: &mut Frame) {
+    pub fn view(&mut self, frame: &mut Frame) { //>
         // Check terminal size first
         self.check_terminal_size(frame.area());
         
@@ -82,9 +82,9 @@ impl App {
         self.render_main_content(frame, main_area);
         self.render_bindings(frame, bindings_area);
         self.render_status_bar(frame, status_area);
-    }
+    } //<
 
-    fn render_title_bar(&self, frame: &mut Frame, area: Rect) {
+    fn render_title_bar(&self, frame: &mut Frame, area: Rect) { //>
         // Create bordered block
         let block = Block::bordered();
         frame.render_widget(block, area);
@@ -98,9 +98,9 @@ impl App {
             .style(Style::default().fg(Color::White));
         
         frame.render_widget(title, inner_area);
-    }
+    } //<
 
-    fn render_terminal_too_small(&self, frame: &mut Frame) {
+    fn render_terminal_too_small(&self, frame: &mut Frame) { //>
         // Clear the entire area
         frame.render_widget(Clear, frame.area());
         
@@ -117,7 +117,7 @@ impl App {
             .style(Style::default().fg(Color::Red).add_modifier(ratatui::style::Modifier::BOLD));
         
         frame.render_widget(paragraph, frame.area());
-    }
+    } //<
 
     
     
@@ -131,14 +131,70 @@ impl App {
             frame.buffer_mut()
         );
 
-        let content = ratatui::widgets::Paragraph::new("Your content here...");
-        frame.render_widget(content, inner_area);
+        let [commands_area, right_col_area] = Layout::horizontal([
+            Constraint::Length(18),
+            Constraint::Min(0),
+        ])
+        .areas(inner_area);
+
+        let [status_area, output_area] = Layout::vertical([
+            Constraint::Length(4),
+            Constraint::Min(0),
+        ])
+        .areas(right_col_area);
+        
+        
+        
+
+
+
+
+        let commands_block = Block::bordered().title(" Commands ");
+        let status_block = Block::bordered().title(" Status ");
+        frame.render_widget(&status_block, status_area);
+        
+        let output_block = Block::bordered().title(" Output ");
+        frame.render_widget(&output_block, output_area);
+        
+        // Get the inner area of the commands box by creating a new block for calculation
+        let inner_commands_area = Block::bordered().title(" Commands ").inner(commands_area);
+        frame.render_widget(&commands_block, commands_area);
+        
+        let commands_list = vec![
+
+            "Compile".to_string(),
+            "Ready".to_string(),
+            "Upload".to_string(),
+            "Monitor-Serial".to_string(),
+            "Monitor-MQTT".to_string(),
+            "Clean".to_string(),
+            "All".to_string(),
+            "Help".to_string(),
+
+        ];
+
+
+
+        let commands_text: String = commands_list.join("\n");
+
+        let commands_paragraph = ratatui::widgets::Paragraph::new(commands_text);
+
+
+
+        // Render the paragraph inside the commands box
+        frame.render_widget(commands_paragraph, inner_commands_area);
+
+
+
+        // Render existing content into the remaining area
+        // let content = ratatui::widgets::Paragraph::new("Your content here...");
+        // frame.render_widget(content, remaining_content_area);
     }
 
     
     
     
-    fn render_bindings(&self, frame: &mut Frame, area: Rect) {
+    fn render_bindings(&self, frame: &mut Frame, area: Rect) { //>
         let mut spans = Vec::new();
         
         // Find active tab and get its specific bindings
@@ -167,16 +223,10 @@ impl App {
         
         let paragraph = Paragraph::new(Line::from(spans));
         frame.render_widget(paragraph, area);
-    }
-
+    } //<
     
     
-    
-    
-    
-    
-    
-    fn render_status_bar(&self, frame: &mut Frame, area: Rect) {
+    fn render_status_bar(&self, frame: &mut Frame, area: Rect) { //>
         
         // Create a block with only white top border
         let block = Block::new()
@@ -247,7 +297,7 @@ impl App {
             let bindings_paragraph = Paragraph::new(Line::from(bindings_spans));
             frame.render_widget(bindings_paragraph, bindings_area);
         }
-    }
+    } //<
     
     
 }
