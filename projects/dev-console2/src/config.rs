@@ -4,9 +4,46 @@ use std::io::Read;
 use color_eyre::eyre::Result;
 
 #[derive(Debug, Deserialize, Default)]
+pub struct ApplicationConfig {
+    pub title: String,
+    #[serde(default = "default_min_width")]
+    pub min_width: u16,
+    #[serde(default = "default_min_height")]
+    pub min_height: u16,
+    #[serde(default)]
+    pub bindings: Vec<BindingConfig>,
+    #[serde(default)]
+    pub status_bar: StatusBarConfig,
+}
+
+fn default_min_width() -> u16 { 80 }
+fn default_min_height() -> u16 { 21 }
+
+#[derive(Debug, Deserialize, Default)]
+pub struct BindingConfig {
+    pub id: String,
+    pub key: String,
+    pub display: String,
+    pub on_press: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+pub struct StatusBarConfig {
+    pub default_text: String,
+}
+
+#[derive(Debug, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
+    pub application: ApplicationConfig,
+    #[serde(default)]
     pub tab_bars: Vec<TabBarConfig>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+pub struct TabBindingConfig {
+    pub key: String,
+    pub description: String,
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -24,6 +61,8 @@ pub struct TabBarConfig {
     pub navigation: Navigation,
     #[serde(default)]
     pub tabs: Vec<TabConfig>,
+    #[serde(default)]
+    pub tab_bindings: std::collections::HashMap<String, Vec<TabBindingConfig>>,
 }
 
 #[derive(Debug, Deserialize, Default)]

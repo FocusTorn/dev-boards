@@ -1,4 +1,21 @@
 
+application:
+    title: "ESP32-S3 Dev Console"
+
+    min_width: 80
+    min_height: 21
+
+    # Global keyboard bindings
+    bindings:
+        - id: "quit" 
+          key: "[q]"
+          display: "[q] Quit"
+          onPress: "actionToTake"
+
+    # Status bar configuration
+    status_bar:
+        default_text: "Status: Ready"
+
 
 
 # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -50,44 +67,33 @@ tab_bars:
         - id: "dashboard"
           name: "Dashboard"
           default: "active"
-          bindings:
-        
-            - key: "[🡘 🡙]"
-              description: "Navigate"
-            - key: "[Enter]"
-              description: "Execute Command"
           
         - id: "tab2"
           name: "Tab 2"
-            
-            
-            
-            
-            
-            
-            
-            
-tab_content:
 
-    - tab_id: "dashboard"
-      bindings:
-        - key: "[🡘 🡙]"
-          description: "Navigate"
-        - key: "[Enter]"
-          description: "Execute Command"
-
-
-    - tab_id: "settings"
-      bindings:
-        - key: "[🡙]"
-          description: "Navigate Profiles"
-        - key: "[Tab]"
-          description: "Next field"
-        - key: "[Shift+Tab]"
-          description: "Previous field"
-        - key: "[Enter/Click]"
-          description: "Confirm/Edit field"
-        
+      # Tab-specific bindings for each tab
+      tab_bindings:
+        dashboard:
+          - key: "[🡘 🡙]"
+            description: "Navigate"
+          - key: "[Enter]"
+            description: "Execute Command"
+            
+        tab2:
+          - key: "[🡙]"
+            description: "Navigate Profiles"
+          - key: "[Tab]"
+            description: "Next field"
+          - key: "[Shift+Tab]"
+            description: "Previous field"
+          - key: "[Enter/Click]"
+            description: "Confirm/Edit field"  
+            
+            
+            
+            
+            
+            
         
         
     # # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
