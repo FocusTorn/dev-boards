@@ -1,17 +1,18 @@
 
     
     
+use crate::commands::{self, ProgressUpdate};
 use crate::config::{Config};
 use crate::widgets::tab_bar::{TabBarItem, TabBarWidget};
+use crate::widgets::progress_bar::ProgressBarWidget;
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect, Margin},
+    style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Paragraph, Clear},
+    widgets::{Block, Clear, List, ListItem, Paragraph},
     Frame,
-    style::{Color, Style},
 };
-
-
+use std::sync::mpsc;
 
 #[derive(Debug)]
 pub struct App {
@@ -19,6 +20,15 @@ pub struct App {
     pub tabs: Vec<TabBarItem>,
     pub config: Config,
     pub terminal_too_small: bool,
+    pub commands: Vec<String>,
+    pub selected_command_index: usize,
+    pub output_lines: Vec<String>,
+    pub progress_is_running: bool,
+    pub progress_percentage: f64,
+    pub progress_stage: String,
+    pub command_tx: mpsc::Sender<ProgressUpdate>,
+    command_rx: mpsc::Receiver<ProgressUpdate>,
+    pub status_text: String,
 }
 
 impl Default for App {
@@ -32,27 +42,146 @@ impl Default for App {
             }).collect())
             .unwrap_or_default();
 
+        let commands = vec![
+            "Compile".to_string(),
+            "Ready".to_string(),
+            "Upload".to_string(),
+            "Monitor-Serial".to_string(),
+            "Monitor-MQTT".to_string(),
+            "Clean".to_string(),
+            "All".to_string(),
+            "Help".to_string(),
+        ];
+
+        let (command_tx, command_rx) = mpsc::channel();
+
         Self {
             running: true,
             tabs,
             config,
             terminal_too_small: false,
+            commands,
+            selected_command_index: 0,
+            output_lines: Vec::new(),
+            progress_is_running: false,
+            progress_percentage: 0.0,
+            progress_stage: String::new(),
+            command_tx,
+            command_rx,
+            status_text: "Ready".to_string(),
         }
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Message {
     Quit,
+    SelectPreviousCommand,
+    SelectNextCommand,
+    ExecuteCommand,
 }
 
 impl App {
-    pub fn update(&mut self, msg: Message) -> Option<Message> { //>
+    pub fn update(&mut self, msg: Message) -> Option<Message> {
         match msg {
             Message::Quit => self.running = false,
+            Message::SelectNextCommand => {
+                self.selected_command_index = (self.selected_command_index + 1) % self.commands.len();
+            }
+            Message::SelectPreviousCommand => {
+                self.selected_command_index = if self.selected_command_index > 0 {
+                    self.selected_command_index - 1
+                } else {
+                    self.commands.len() - 1
+                };
+            }
+            Message::ExecuteCommand => {
+                let command = self.commands[self.selected_command_index].clone();
+                self.dispatch_command(&command);
+            }
         }
         None
-    } //<
+    }
+
+    pub fn handle_command_updates(&mut self) {
+        while let Ok(update) = self.command_rx.try_recv() {
+            match update {
+                ProgressUpdate::Status(status) => {
+                    self.status_text = status;
+                }
+                ProgressUpdate::OutputLine(line) => {
+                    self.output_lines.push(line);
+                }
+                ProgressUpdate::Percentage(p) => self.progress_percentage = p,
+                ProgressUpdate::Stage(s) => self.progress_stage = s,
+                ProgressUpdate::Completed => {
+                    self.progress_is_running = false;
+                    self.progress_percentage = 100.0;
+                    self.status_text = "Command completed successfully.".to_string();
+                    self.output_lines.push("Command completed successfully.".to_string());
+                }
+                ProgressUpdate::Failed(e) => {
+                    self.progress_is_running = false;
+                    self.status_text = format!("[Error] {}", e);
+                    self.output_lines.push(format!("[Error] Command failed: {}", e));
+                }
+            }
+        }
+    }
+
+    fn dispatch_command(&mut self, command: &str) {
+        self.output_lines.push(format!("Executing '{}'...", command));
+        
+        // Default to not running progress
+        self.progress_is_running = false;
+
+        match command {
+            "Compile" => {
+                self.progress_is_running = true;
+                self.progress_percentage = 0.0;
+                self.progress_stage = "Initializing...".to_string();
+                self.output_lines.clear(); // Clear previous output
+                
+                let tx = self.command_tx.clone();
+                let settings = crate::config::load_command_settings(); // Get settings
+
+                std::thread::spawn(move || {
+                    let callback = move |update| {
+                        if tx.send(update).is_err() {
+                            // Main thread has likely shut down, exit thread
+                            return;
+                        }
+                    };
+                    commands::run_compile(&settings, callback);
+                });
+            }
+            "Upload" => {
+                // To be implemented
+            }
+            "Monitor-Serial" => {
+                // To be implemented
+            }
+            "Monitor-MQTT" => {
+                // To be implemented
+            }
+            "Clean" => {
+                self.output_lines.push("Cleaning project...".to_string());
+                self.output_lines.push("Done.".to_string());
+            }
+            "All" => {
+                // To be implemented
+            }
+            "Help" => {
+                self.output_lines.push("Help:".to_string());
+                self.output_lines.push("- Use Up/Down arrows to select a command.".to_string());
+                self.output_lines.push("- Press Enter to execute.".to_string());
+                self.output_lines.push("- Press 'q' to quit.".to_string());
+            }
+            _ => {
+                self.output_lines.push(format!("Unknown command: {}", command));
+            }
+        }
+    }
 
     pub fn check_terminal_size(&mut self, area: Rect) { //>
         self.terminal_too_small = area.width < self.config.application.min_width || 
@@ -131,12 +260,39 @@ impl App {
             frame.buffer_mut()
         );
 
-        let [commands_area, right_col_area] = Layout::horizontal([
-            Constraint::Length(18),
+        
+        
+        
+        let [left_col_area, right_col_area] = Layout::horizontal([
+            Constraint::Length(25),
             Constraint::Min(0),
         ])
         .areas(inner_area);
+        
+        
+        
+        let [profile_area, commands_area] = Layout::vertical([
+            Constraint::Length(10),
+            Constraint::Length(10),
+        ])
+        .areas(left_col_area);
+        
+        
+        
+        
+        
+        // let [commands_area, right_col_area] = Layout::horizontal([
+        //     Constraint::Length(18),
+        //     Constraint::Min(0),
+        // ])
+        // .areas(inner_area);
 
+        
+        
+        
+        
+        
+        
         let [status_area, output_area] = Layout::vertical([
             Constraint::Length(4),
             Constraint::Min(0),
@@ -144,51 +300,77 @@ impl App {
         .areas(right_col_area);
         
         
+        let profile_block = Block::bordered().title(" Profile ");
+        frame.render_widget(profile_block, profile_area);
+
         
-
-
-
-
+        
+        
+        
+        // --- Commands List ---
         let commands_block = Block::bordered().title(" Commands ");
-        let status_block = Block::bordered().title(" Status ");
-        frame.render_widget(&status_block, status_area);
+        let command_items: Vec<ListItem> = self.commands
+            .iter()
+            .enumerate()
+            .map(|(idx, cmd)| {
+                let style = if idx == self.selected_command_index {
+                    Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().fg(Color::DarkGray)
+                };
+                ListItem::new(Line::from(Span::styled(cmd.clone(), style)))
+            })
+            .collect();
+    
+        let command_list = List::new(command_items)
+            .block(commands_block.padding(ratatui::widgets::Padding::uniform(1)));
+        
+        frame.render_widget(command_list, commands_area);
+
+        
+        
+        
+        
+        // --- Status and Output Blocks ---
+        if self.progress_is_running {
+            let progress_widget = ProgressBarWidget::new(
+                "Status".to_string(),
+                self.progress_percentage,
+                self.progress_stage.clone(),
+            );
+            frame.render_widget(progress_widget, status_area);
+        } else {
+            let status_block = Block::bordered()
+                .title(" Status ")
+                .padding(ratatui::widgets::Padding::uniform(1))
+                .border_style(if self.status_text.starts_with("[Error]") {
+                    Style::default().fg(Color::Red)
+                } else {
+                    Style::default()
+                });
+            let inner_status_area = status_block.inner(status_area);
+            frame.render_widget(status_block, status_area);
+
+            let style = if self.status_text.starts_with("[Error]") {
+                Style::default().fg(Color::Red)
+            } else {
+                Style::default()
+            };
+            let status_paragraph = Paragraph::new(self.status_text.as_str())
+                .style(style)
+                .wrap(ratatui::widgets::Wrap { trim: true });
+
+            frame.render_widget(status_paragraph, inner_status_area);
+        }
         
         let output_block = Block::bordered().title(" Output ");
-        frame.render_widget(&output_block, output_area);
-        
-        // Get the inner area of the commands box by creating a new block for calculation
-        let inner_commands_area = Block::bordered().title(" Commands ").inner(commands_area);
-        frame.render_widget(&commands_block, commands_area);
-        
-        let commands_list = vec![
-
-            "Compile".to_string(),
-            "Ready".to_string(),
-            "Upload".to_string(),
-            "Monitor-Serial".to_string(),
-            "Monitor-MQTT".to_string(),
-            "Clean".to_string(),
-            "All".to_string(),
-            "Help".to_string(),
-
-        ];
-
-
-
-        let commands_text: String = commands_list.join("\n");
-
-        let commands_paragraph = ratatui::widgets::Paragraph::new(commands_text);
-
-
-
-        // Render the paragraph inside the commands box
-        frame.render_widget(commands_paragraph, inner_commands_area);
-
-
-
-        // Render existing content into the remaining area
-        // let content = ratatui::widgets::Paragraph::new("Your content here...");
-        // frame.render_widget(content, remaining_content_area);
+        let output_paragraph = if self.output_lines.is_empty() {
+            Paragraph::new("No output yet.").style(Style::default().fg(Color::DarkGray))
+        } else {
+            let lines: Vec<Line> = self.output_lines.iter().map(|line| Line::from(line.as_str())).collect();
+            Paragraph::new(lines)
+        };
+        frame.render_widget(output_paragraph.block(output_block.padding(ratatui::widgets::Padding::uniform(1))), output_area);
     }
 
     

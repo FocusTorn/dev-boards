@@ -1,0 +1,36 @@
+    
+connections:
+  - &arduino-c9-115200  # & creates an anchor
+    id: "arduino-c9-115200" 
+    compiler: "arduino-cli"
+    port: "COM9"
+    baudrate: 115200
+
+devices:
+  - &esp32-s3  # & creates an anchor
+    id: "esp32-s3"
+    board_model: "esp32-s3"
+    FBQN: "esp32:esp32:esp32s3"    
+    
+mqtt:
+  - &univ-win  # & creates an anchor
+    id: "univ-win"
+    host: "Acer-Lappy"
+    port: 1883
+    username: "mqtt"
+    password: "mqtt"
+    
+    
+    
+sketches:
+  - id: sht21-Win
+    path: "D:\\_dev\\_Projects\\dev-boards\\projects\\esp32-s3__LB-Gold\\sht21-solo"
+    connection: *arduino-c9-115200  # * references the anchor
+    device: *esp32-s3               # * references the anchor
+    mqtt: *univ-win                 # * references the anchor
+    
+  - id: sk6822-solo
+    path: "D:\\_dev\\_Projects\\dev-boards\\projects\\esp32-s3__LB-Gold\\sk6822-solo\\sk6822-solo.ino"
+    connection: *arduino-c9-115200  # * references the anchor
+    device: *esp32-s3               # * references the anchor    
+    mqtt: *univ-win                 # * references the anchor    

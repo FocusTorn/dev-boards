@@ -7,6 +7,7 @@ mod app;
 mod config;
 mod terminal;
 mod widgets;
+mod commands;
 
 use app::{App, Message};
 
@@ -32,6 +33,9 @@ fn main() -> Result<()> {
         while let Some(msg) = current_msg {
             current_msg = app.update(msg);
         }
+
+        // Handle any updates from background commands
+        app.handle_command_updates();
     }
 
     // Restore terminal
@@ -55,7 +59,9 @@ fn handle_event(_app: &App) -> Result<Option<Message>> {
 fn map_key_to_message(key: event::KeyEvent) -> Option<Message> {
     match key.code {
         KeyCode::Char('q') | KeyCode::Esc => Some(Message::Quit),
-        // Future key mappings can be added here
+        KeyCode::Up => Some(Message::SelectPreviousCommand),
+        KeyCode::Down => Some(Message::SelectNextCommand),
+        KeyCode::Enter => Some(Message::ExecuteCommand),
         _ => None,
     }
 }

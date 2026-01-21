@@ -99,7 +99,23 @@ pub struct Content {
     pub value: Option<String>,
 }
 
+use crate::commands::Settings;
+
+// ... (existing content) ...
+
+pub fn load_command_settings() -> Settings {
+    // Return dummy data for now
+    Settings {
+        sketch_directory: "D:/_dev/_Projects/dev-boards/Arduino/sketchbook/sht21-bme680-led-mqtt".to_string(),
+        sketch_name: "sht21-bme680-led-mqtt".to_string(),
+        fqbn: "esp32:esp32:lilygo-t-display-s3".to_string(),
+        board_model: "esp32-s3".to_string(),
+        env: "arduino".to_string(),
+    }
+}
+
 pub fn load_config() -> Result<Config> {
+// ... (existing content) ...
     // For now, we only load the build-config.yaml
     // Later, we will implement the search and merge for config.yaml
     let mut file = File::open("build-config.yaml")?;
