@@ -29,7 +29,7 @@ tab_bars:
     # │                            Main Content Tab Bar (MainContentTabBar)                            │
     # └────────────────────────────────────────────────────────────────────────────────────────────────┘
     - id: "MainContentTabBar"
-      style: "boxed" # Options: tabbed, boxed, text, box_static, text_static
+      style: "tabbed" # Options: tabbed, boxed, text, box_static, text_static
       color: "cyan" # Color for active tab (ratatui color name)
       
       min_tab_width: 8 # OPTIONAL: Minimum width per tab
@@ -46,45 +46,92 @@ tab_bars:
         right: ["PgDown"]
 
       tabs:
+        
         - id: "dashboard"
           name: "Dashboard"
           default: "active"
+          bindings:
+        
+            - key: "[🡘 🡙]"
+              description: "Navigate"
+            - key: "[Enter]"
+              description: "Execute Command"
           
         - id: "tab2"
           name: "Tab 2"
             
             
+            
+            
+            
+            
+            
+            
+tab_content:
+
+    - tab_id: "dashboard"
+      bindings:
+        - key: "[🡘 🡙]"
+          description: "Navigate"
+        - key: "[Enter]"
+          description: "Execute Command"
+
+
+    - tab_id: "settings"
+      bindings:
+        - key: "[🡙]"
+          description: "Navigate Profiles"
+        - key: "[Tab]"
+          description: "Next field"
+        - key: "[Shift+Tab]"
+          description: "Previous field"
+        - key: "[Enter/Click]"
+          description: "Confirm/Edit field"
         
         
-    # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
-    # │                   MAIN CONTENT STATIC TAB BAR (MainContentStaticTabBar)                        │
-    # └────────────────────────────────────────────────────────────────────────────────────────────────┘
-    - id: "MainContentStaticTabBar"
+        
+    # # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+    # # │                   MAIN CONTENT STATIC TAB BAR (MainContentStaticTabBar)                        │
+    # # └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    # - id: "MainContentStaticTabBar"
       
-      alignment:
-        vertical: "bottom" # Options: "top", "bottom"
-        horizontal: "left" # Options: "left", "center", "right"
-        offset_x: 0 # Horizontal offset in characters
-        offset_y: 0 # Vertical offset in lines
+    #   alignment:
+    #     vertical: "top" # Options: "top", "bottom"
+    #     horizontal: "right" # Options: "left", "center", "right"
+    #     offset_x: 0 # Horizontal offset in characters
+    #     offset_y: 0 # Vertical offset in lines
 
-      style: "box_static" # Options: tabbed, boxed, text, box_static, text_static
-      type: state
-      colors:
-        active: "green"
-        negate: "red"
-        disabled: null
+    #   style: "box_static" # Options: tabbed, boxed, text, box_static, text_static
+      
+    # #   type: state # state, button, 
+    # #   colors:
+    # #     active: "green"
+    # #     negate: "red"
+    # #     disabled: null
+      
+      
+    #   type: button # state, button, 
+    #   on_click: "functionToExecute"  
+    #   colors:
+    #     active: null
+    #     hover: "cyan"
+        
+    #     # negate: "red"
+    #     # disabled: null
 
-      min_tab_width: 8 # Minimum width per tab
-      tab_tooltips: true # Show tooltips on hover
 
-      # navigation: # optional
-      #     left: ["h"] # Keys to navigate to previous tab
-      #     right: ["l"] # Keys to navigate to next tab
 
-      tabs:
-        - id: "static1"
-          name: "Static 1"
-          default: "active"  # "active" indicates starting tab for non-static styles, or "active"/"negate"/"disabled" for state-based static styles
+    #   min_tab_width: 8 # Minimum width per tab
+    #   tab_tooltips: true # Show tooltips on hover
 
-        - id: "static2"
-          name: "Static 2"
+    #   # navigation: # optional
+    #   #     left: ["h"] # Keys to navigate to previous tab
+    #   #     right: ["l"] # Keys to navigate to next tab
+
+    #   tabs:
+    #     - id: "static1"
+    #       name: "Static 1"
+    #       default: "active"  # "active" indicates starting tab for non-static styles, or "active"/"negate"/"disabled" for state-based static styles
+
+    #     - id: "static2"
+    #       name: "Static 2"
