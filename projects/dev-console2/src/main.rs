@@ -4,6 +4,7 @@ use color_eyre::eyre::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 
 mod app;
+mod config;
 mod terminal;
 mod widgets;
 

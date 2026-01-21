@@ -1,0 +1,90 @@
+
+
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃                                            TAB BARS WIDGET CONFIGURATION                                           ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+#>
+# style: tabbed
+#   ╭──────╮
+# ──╯ Tab1 ╰─ Tab 2 ─ Tab 3 ──
+
+# style: text
+# ─ Tab 1 ─ Tab 2 ─ Tab 3 ─
+
+# style: boxed
+# ──[ Tab 1 ]─ Tab 2 ─ Tab 3 ──
+
+# style: box_static
+# ──[ Tab 1 ]─[ Tab 2 ]─[ Tab 3 ]──
+
+# style: text_static
+# ─ Tab 1 ─ Tab 2 ─ Tab 3 ─
+
+ #<
+
+tab_bars:
+
+    # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+    # │                            Main Content Tab Bar (MainContentTabBar)                            │
+    # └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    - id: "MainContentTabBar"
+      style: "boxed" # Options: tabbed, boxed, text, box_static, text_static
+      color: "cyan" # Color for active tab (ratatui color name)
+      
+      min_tab_width: 8 # OPTIONAL: Minimum width per tab
+      tab_tooltips: true # Show tooltips on hover
+      
+      alignment:
+        vertical: "top" # Options: "top", "bottom"
+        horizontal: "center" # Options: "left", "center", "right"
+        offset_x: 0 # Horizontal offset in characters
+        offset_y: 0 # Vertical offset in lines
+
+      navigation:
+        left: ["PgUp"]
+        right: ["PgDown"]
+
+      tabs:
+        - id: "dashboard"
+          name: "Dashboard"
+          default: "active"
+          
+        - id: "tab2"
+          name: "Tab 2"
+            
+            
+        
+        
+    # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+    # │                   MAIN CONTENT STATIC TAB BAR (MainContentStaticTabBar)                        │
+    # └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    - id: "MainContentStaticTabBar"
+      
+      alignment:
+        vertical: "bottom" # Options: "top", "bottom"
+        horizontal: "left" # Options: "left", "center", "right"
+        offset_x: 0 # Horizontal offset in characters
+        offset_y: 0 # Vertical offset in lines
+
+      style: "box_static" # Options: tabbed, boxed, text, box_static, text_static
+      type: state
+      colors:
+        active: "green"
+        negate: "red"
+        disabled: null
+
+      min_tab_width: 8 # Minimum width per tab
+      tab_tooltips: true # Show tooltips on hover
+
+      # navigation: # optional
+      #     left: ["h"] # Keys to navigate to previous tab
+      #     right: ["l"] # Keys to navigate to next tab
+
+      tabs:
+        - id: "static1"
+          name: "Static 1"
+          default: "active"  # "active" indicates starting tab for non-static styles, or "active"/"negate"/"disabled" for state-based static styles
+
+        - id: "static2"
+          name: "Static 2"
