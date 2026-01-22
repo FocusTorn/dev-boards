@@ -1,7 +1,55 @@
 use serde::Deserialize;
 use std::fs::File;
 use std::io::Read;
-use color_eyre::eyre::Result;
+use color_eyre::eyre;
+use color_eyre::Result;
+
+// In src/config.rs, add these helper functions
+mod deserializers {
+    use serde::{Deserialize, Deserializer};
+    use std::fmt;
+
+    // Helper to deserialize an anchored Connection object into its ID string
+    pub fn deserialize_connection_id<'de, D>(deserializer: D) -> Result<String, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // Deserialize as a temporary struct that only contains the ID
+        #[derive(Deserialize)]
+        struct IdHelper {
+            id: String,
+        }
+        let helper = IdHelper::deserialize(deserializer)?;
+        Ok(helper.id)
+    }
+
+    // Helper to deserialize an anchored Device object into its ID string
+    pub fn deserialize_device_id<'de, D>(deserializer: D) -> Result<String, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct IdHelper {
+            id: String,
+        }
+        let helper = IdHelper::deserialize(deserializer)?;
+        Ok(helper.id)
+    }
+
+    // Helper to deserialize an anchored Mqtt object into its ID string
+    pub fn deserialize_mqtt_id<'de, D>(deserializer: D) -> Result<String, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct IdHelper {
+            id: String,
+        }
+        let helper = IdHelper::deserialize(deserializer)?;
+        Ok(helper.id)
+    }
+}
+
 
 #[derive(Debug, Deserialize, Default)]
 pub struct ApplicationConfig {
@@ -99,12 +147,110 @@ pub struct Content {
     pub value: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct Connection {
+    pub id: String,
+    pub compiler: String,
+    pub port: String,
+    pub baudrate: u32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Device {
+    pub id: String,
+    pub board_model: String,
+    pub fbqn: String,  // Note: YAML has FBQN (typo), keeping for compatibility
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Mqtt {
+    pub id: String,
+    pub host: String,
+    pub port: u16,
+    pub username: String,
+    pub password: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Sketch {
+    pub id: String,
+    pub path: String,
+    #[serde(deserialize_with = "deserializers::deserialize_connection_id")]
+    pub connection: String,
+    #[serde(deserialize_with = "deserializers::deserialize_device_id")]
+    pub device: String,
+    #[serde(deserialize_with = "deserializers::deserialize_mqtt_id")]
+    pub mqtt: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ProfileConfig {
+    pub connections: Vec<Connection>,
+    pub devices: Vec<Device>,
+    pub mqtt: Vec<Mqtt>,
+    pub sketches: Vec<Sketch>,
+}
+
 use crate::commands::Settings;
 
 // ... (existing content) ...
 
+pub fn load_profile_config() -> Result<ProfileConfig> {
+    let config_path = std::path::PathBuf::from("config.yaml");
+    let mut file = match File::open(&config_path) {
+        Ok(f) => f,
+        Err(e) => {
+            return Err(eyre::eyre!("Failed to open config.yaml at {:?}: {}", config_path, e));
+        }
+    };
+    let mut contents = String::new();
+    match file.read_to_string(&mut contents) {
+        Ok(_) => {},
+        Err(e) => {
+            return Err(eyre::eyre!("Failed to read config.yaml: {}", e));
+        }
+    }
+    
+    match serde_yaml::from_str::<ProfileConfig>(&contents) {
+        Ok(config) => {
+            Ok(config)
+        },
+        Err(e) => {
+            Err(eyre::eyre!("Failed to parse config.yaml: {}", e))
+        }
+    }
+}
+
 pub fn load_command_settings() -> Settings {
-    // Return dummy data for now
+    // Try to load from profile config, fallback to dummy data
+    if let Ok(profile_config) = load_profile_config() {
+        if let Some(first_sketch) = profile_config.sketches.first() {
+            // Find the device and connection for this sketch
+            let device = profile_config.devices.iter()
+                .find(|d| d.id == first_sketch.device);
+            let connection = profile_config.connections.iter()
+                .find(|c| c.id == first_sketch.connection);
+            
+            if let (Some(device), Some(connection)) = (device, connection) {
+                // Extract sketch name from path
+                let sketch_name = std::path::Path::new(&first_sketch.path)
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("sketch")
+                    .to_string();
+                
+                return Settings {
+                    sketch_directory: first_sketch.path.clone(),
+                    sketch_name,
+                    fqbn: device.fbqn.clone(),  // Using FBQN from YAML
+                    board_model: device.board_model.clone(),
+                    env: if connection.compiler == "arduino-cli" { "arduino" } else { "windows" }.to_string(),
+                };
+            }
+        }
+    }
+    
+    // Fallback to dummy data
     Settings {
         sketch_directory: "D:/_dev/_Projects/dev-boards/Arduino/sketchbook/sht21-bme680-led-mqtt".to_string(),
         sketch_name: "sht21-bme680-led-mqtt".to_string(),

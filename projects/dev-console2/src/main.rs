@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use color_eyre::eyre::Result;
+use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 
 mod app;
@@ -61,6 +61,8 @@ fn map_key_to_message(key: event::KeyEvent) -> Option<Message> {
         KeyCode::Char('q') | KeyCode::Esc => Some(Message::Quit),
         KeyCode::Up => Some(Message::SelectPreviousCommand),
         KeyCode::Down => Some(Message::SelectNextCommand),
+        KeyCode::Left => Some(Message::SelectPreviousProfile),
+        KeyCode::Right => Some(Message::SelectNextProfile),
         KeyCode::Enter => Some(Message::ExecuteCommand),
         _ => None,
     }

@@ -1,6 +1,6 @@
 use super::{compile_state, compile_parser, path_utils, process::ProcessHandler};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Command;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Debug)]

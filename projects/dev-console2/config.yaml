@@ -10,7 +10,7 @@ devices:
   - &esp32-s3  # & creates an anchor
     id: "esp32-s3"
     board_model: "esp32-s3"
-    FBQN: "esp32:esp32:esp32s3"    
+    fbqn: "esp32:esp32:esp32s3"    
     
 mqtt:
   - &univ-win  # & creates an anchor
@@ -24,13 +24,13 @@ mqtt:
     
 sketches:
   - id: sht21-Win
-    path: "D:\\_dev\\_Projects\\dev-boards\\projects\\esp32-s3__LB-Gold\\sht21-solo"
+    path: "D:/_dev/_Projects/dev-boards/projects/esp32-s3__LB-Gold/sht21-solo/sht21-Win.ino"
     connection: *arduino-c9-115200  # * references the anchor
     device: *esp32-s3               # * references the anchor
     mqtt: *univ-win                 # * references the anchor
     
   - id: sk6822-solo
-    path: "D:\\_dev\\_Projects\\dev-boards\\projects\\esp32-s3__LB-Gold\\sk6822-solo\\sk6822-solo.ino"
+    path: "D:/_dev/_Projects/dev-boards/projects/esp32-s3__LB-Gold/sk6822-solo/sk6822-solo.ino"
     connection: *arduino-c9-115200  # * references the anchor
     device: *esp32-s3               # * references the anchor    
     mqtt: *univ-win                 # * references the anchor    

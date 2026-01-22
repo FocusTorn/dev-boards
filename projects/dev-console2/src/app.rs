@@ -2,14 +2,14 @@
     
     
 use crate::commands::{self, ProgressUpdate};
-use crate::config::{Config};
+use crate::config::{Config, ProfileConfig};
 use crate::widgets::tab_bar::{TabBarItem, TabBarWidget};
 use crate::widgets::progress_bar::ProgressBarWidget;
 use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect, Margin},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Clear, List, ListItem, Paragraph},
+    widgets::{Block, Clear, List, ListItem, Paragraph, BorderType},
     Frame,
 };
 use std::sync::mpsc;
@@ -29,6 +29,10 @@ pub struct App {
     pub command_tx: mpsc::Sender<ProgressUpdate>,
     command_rx: mpsc::Receiver<ProgressUpdate>,
     pub status_text: String,
+    // Profile state
+    pub profile_config: Option<ProfileConfig>,
+    pub selected_profile_index: usize,
+    pub profile_ids: Vec<String>,
 }
 
 impl Default for App {
@@ -55,6 +59,22 @@ impl Default for App {
 
         let (command_tx, command_rx) = mpsc::channel();
 
+        // Load profile configuration
+        let mut profile_config: Option<ProfileConfig> = None;
+        let mut profile_ids: Vec<String> = Vec::new();
+        let mut status_text = "Ready".to_string();
+
+        match crate::config::load_profile_config() {
+            Ok(config) => {
+                profile_ids = config.sketches.iter().map(|s| s.id.clone()).collect();
+                profile_config = Some(config);
+                status_text = format!("{} profiles loaded.", profile_ids.len());
+            },
+            Err(e) => {
+                status_text = format!("[Error] Failed to load profiles: {}", e);
+            }
+        };
+
         Self {
             running: true,
             tabs,
@@ -68,7 +88,10 @@ impl Default for App {
             progress_stage: String::new(),
             command_tx,
             command_rx,
-            status_text: "Ready".to_string(),
+            status_text,
+            profile_config,
+            selected_profile_index: 0,
+            profile_ids,
         }
     }
 }
@@ -79,6 +102,8 @@ pub enum Message {
     SelectPreviousCommand,
     SelectNextCommand,
     ExecuteCommand,
+    SelectPreviousProfile,
+    SelectNextProfile,
 }
 
 impl App {
@@ -98,6 +123,20 @@ impl App {
             Message::ExecuteCommand => {
                 let command = self.commands[self.selected_command_index].clone();
                 self.dispatch_command(&command);
+            }
+            Message::SelectNextProfile => {
+                if !self.profile_ids.is_empty() {
+                    self.selected_profile_index = (self.selected_profile_index + 1) % self.profile_ids.len();
+                }
+            }
+            Message::SelectPreviousProfile => {
+                if !self.profile_ids.is_empty() {
+                    self.selected_profile_index = if self.selected_profile_index > 0 {
+                        self.selected_profile_index - 1
+                    } else {
+                        self.profile_ids.len() - 1
+                    };
+                }
             }
         }
         None
@@ -129,6 +168,43 @@ impl App {
         }
     }
 
+    fn get_settings_from_profile(&self) -> crate::commands::Settings {
+    if let (Some(profile_config), Some(profile_id)) = (&self.profile_config, self.profile_ids.get(self.selected_profile_index)) {
+        // Find the sketch for this profile
+        if let Some(sketch) = profile_config.sketches.iter().find(|s| s.id == *profile_id) {
+            // Find the device and connection for this sketch
+            let device = profile_config.devices.iter()
+                .find(|d| d.id == sketch.device);
+            let connection = profile_config.connections.iter()
+                .find(|c| c.id == sketch.connection);
+            
+            if let (Some(device), Some(connection)) = (device, connection) {
+                let sketch_path_buf = std::path::PathBuf::from(&sketch.path);
+                
+                let sketch_directory = sketch_path_buf.parent()
+                    .map(|p| p.to_string_lossy().into_owned())
+                    .unwrap_or_else(|| "".to_string()); // Fallback if parent is somehow not found
+
+                let sketch_name = sketch_path_buf.file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("sketch")
+                    .to_string();
+                
+                return crate::commands::Settings {
+                    sketch_directory,
+                    sketch_name,
+                    fqbn: device.fbqn.clone(),  // Using FBQN from YAML
+                    board_model: device.board_model.clone(),
+                    env: if connection.compiler == "arduino-cli" { "arduino" } else { "windows" }.to_string(),
+                };
+            }
+        }
+    }
+    
+    // Fallback to default settings
+    crate::config::load_command_settings()
+}
+
     fn dispatch_command(&mut self, command: &str) {
         self.output_lines.push(format!("Executing '{}'...", command));
         
@@ -143,7 +219,7 @@ impl App {
                 self.output_lines.clear(); // Clear previous output
                 
                 let tx = self.command_tx.clone();
-                let settings = crate::config::load_command_settings(); // Get settings
+                let settings = self.get_settings_from_profile(); // Get settings from selected profile
 
                 std::thread::spawn(move || {
                     let callback = move |update| {
@@ -301,7 +377,43 @@ impl App {
         
         
         let profile_block = Block::bordered().title(" Profile ");
+        let inner_profile_area = profile_block.inner(profile_area);
         frame.render_widget(profile_block, profile_area);
+        
+        // Render profile combo box
+        if !self.profile_ids.is_empty() {
+            // Show current selection
+            let current_profile = if self.selected_profile_index < self.profile_ids.len() {
+                &self.profile_ids[self.selected_profile_index]
+            } else {
+                "No profiles"
+            };
+            
+            let profile_text = if self.profile_ids.len() > 1 {
+                format!("{} ({} of {})", current_profile, self.selected_profile_index + 1, self.profile_ids.len())
+            } else {
+                current_profile.to_string()
+            };
+            
+            let profile_paragraph = Paragraph::new(profile_text)
+                .style(Style::default().fg(Color::Cyan))
+                .block(Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .title(" Sketch Profile ")
+                    .title_style(Style::default().fg(Color::Yellow)));
+            
+            frame.render_widget(profile_paragraph, inner_profile_area);
+        } else {
+            // No profiles available
+            let no_profile_text = Paragraph::new("No profiles found")
+                .style(Style::default().fg(Color::DarkGray))
+                .block(Block::bordered()
+                    .border_type(BorderType::Rounded)
+                    .title(" Sketch Profile ")
+                    .title_style(Style::default().fg(Color::Yellow)));
+            
+            frame.render_widget(no_profile_text, inner_profile_area);
+        }
 
         
         
@@ -323,7 +435,7 @@ impl App {
             .collect();
     
         let command_list = List::new(command_items)
-            .block(commands_block.padding(ratatui::widgets::Padding::uniform(1)));
+            .block(commands_block);
         
         frame.render_widget(command_list, commands_area);
 
@@ -342,7 +454,6 @@ impl App {
         } else {
             let status_block = Block::bordered()
                 .title(" Status ")
-                .padding(ratatui::widgets::Padding::uniform(1))
                 .border_style(if self.status_text.starts_with("[Error]") {
                     Style::default().fg(Color::Red)
                 } else {
@@ -370,7 +481,7 @@ impl App {
             let lines: Vec<Line> = self.output_lines.iter().map(|line| Line::from(line.as_str())).collect();
             Paragraph::new(lines)
         };
-        frame.render_widget(output_paragraph.block(output_block.padding(ratatui::widgets::Padding::uniform(1))), output_area);
+        frame.render_widget(output_paragraph.block(output_block), output_area);
     }
 
     
@@ -484,361 +595,3 @@ impl App {
     
 }
 
-
-
-
-
-
-
-
-
-//>
-// use crate::config::{self, Config};
-// use crate::widgets::tab_bar::{TabBarAlignment, TabBarItem, TabBarStyle, TabBarWidget};
-// use ratatui::{
-//     layout::{Alignment, Constraint, Layout, Rect},
-//     style::Color,
-//     text::{Line, Span},
-//     widgets::{Block, Borders, Paragraph},
-//     Frame,
-// };
-
-// #[derive(Debug)]
-// pub struct App {
-//     pub running: bool,
-//     #[allow(dead_code)] // Future UI state
-//     pub ui_state: UiState,
-//     pub tabs: Vec<TabBarItem>,
-//     pub config: Config,
-// }
-
-// impl Default for App {
-//     fn default() -> Self {
-//         let config = config::load_config().unwrap();
-//         let tabs = if let Some(main_tabs_config) =
-//             config.tab_bars.iter().find(|t| t.id == "MainContentTabBar")
-//         {
-//             main_tabs_config
-//                 .tabs
-//                 .iter()
-//                 .map(|t| TabBarItem {
-//                     name: t.name.clone(),
-//                     active: t.default == Some("active".to_string()),
-//                 })
-//                 .collect()
-//         } else {
-//             vec![]
-//         };
-
-//         Self {
-//             running: true,
-//             ui_state: UiState::default(),
-//             tabs,
-//             config,
-//         }
-//     }
-// }
-
-// /// UI-specific state
-// #[derive(Debug, Default)]
-// #[allow(dead_code)] // Future UI state
-// pub struct UiState {
-//     //>
-//     // Future UI state can be added here
-//     // e.g., active_panel: Option<PanelId>,
-//     // selected_item: Option<usize>,
-// } //<
-
-// /// Application messages for state updates
-// #[derive(PartialEq, Debug)]
-// pub enum Message {
-//     //>
-//     Quit,
-//     // Future messages can be added
-//     // NavigateUp,
-//     // NavigateDown,
-//     // SelectItem,
-// } //<
-
-// impl App {
-//     /// Update application state based on messages
-//     pub fn update(&mut self, msg: Message) -> Option<Message> {
-//         //>
-//         match msg {
-//             Message::Quit => {
-//                 self.running = false;
-//             } // Handle other messages
-//         }
-//         None // Return None unless chaining messages
-//     } //<
-
-//     /// Render the application UI
-//     pub fn view(&mut self, frame: &mut Frame) {
-//         //>
-//         // Create vertical layout with 5 sections
-//         let vertical_layout = Layout::vertical([
-//             Constraint::Length(3), // Title Bar
-//             Constraint::Min(0),    // Main Content
-//             Constraint::Length(1), // Bindings
-//             Constraint::Length(1), // Divider
-//             Constraint::Length(1), // Status Bar
-//         ]);
-
-//         let [title_area, main_area, bindings_area, divider_area, status_area] =
-//             vertical_layout.areas(frame.area());
-
-//         // Render each component
-//         self.render_title_bar(frame, title_area);
-//         self.render_main_content(frame, main_area, Block::bordered());
-//         self.render_bindings(frame, bindings_area);
-//         self.render_divider(frame, divider_area);
-//         self.render_status_bar(frame, status_area);
-//     } //<
-
-//     /// Render the title bar component
-//     fn render_title_bar(&self, frame: &mut Frame, area: ratatui::layout::Rect) {
-//         //>
-//         let block = Block::bordered()
-//             .title("Title Bar")
-//             .title_alignment(Alignment::Center);
-//         frame.render_widget(block, area);
-//     } //<
-
-//    fn render_main_content(&self, frame: &mut Frame, area: Rect, _block: Block) {
-//         // 1. Get widget and alignment in one step
-//         if let Some((tab_bar, alignment)) = TabBarWidget::from_config(&self.config, &self.tabs, "MainContentTabBar") {
-            
-//             // 2. Handle the layout (the split automatically accounts for 1 or 2 lines)
-//             let [header_area, body_area] = tab_bar.split_layout(area);
-
-//             // 3. Render body and aligned tab bar
-//             frame.render_widget(Block::bordered(), body_area);
-//             tab_bar.render_aligned(header_area, alignment, frame.buffer_mut());
-//         } else {
-//             // Fallback if no tab config found
-//             frame.render_widget(Block::bordered(), area);
-//         }
-//     }
-
-
-
-    
-    
-//     /// Render the bindings display
-//     fn render_bindings(&self, frame: &mut Frame, area: ratatui::layout::Rect) {
-//         //>
-//         let paragraph = Paragraph::new("Bindings").alignment(Alignment::Left);
-//         frame.render_widget(paragraph, area);
-//     } //<
-
-//     /// Render the divider line
-//     fn render_divider(&self, frame: &mut Frame, area: ratatui::layout::Rect) {
-//         //>
-//         let divider = Paragraph::new(Line::from(Span::raw("─".repeat(area.width as usize))));
-//         frame.render_widget(divider, area);
-//     } //<
-
-//     /// Render the status bar
-//     fn render_status_bar(&self, frame: &mut Frame, area: ratatui::layout::Rect) {
-//         //>
-//         let paragraph = Paragraph::new("Status Bar").alignment(Alignment::Left);
-//         frame.render_widget(paragraph, area);
-//     } //<
-// }
-
-
-
-
-
-
-// #[cfg(test)]
-// mod tests {
-//     //>
-//     use super::*;
-
-//     #[test]
-//     fn test_app_default_state() {
-//         let app = App::default();
-//         assert!(app.running);
-//     }
-
-//     #[test]
-//     fn test_quit_message() {
-//         let mut app = App::default();
-//         let result = app.update(Message::Quit);
-//         assert!(!app.running);
-//         assert!(result.is_none());
-//     }
-
-//     #[test]
-//     fn test_message_equality() {
-//         assert_eq!(Message::Quit, Message::Quit);
-//     }
-// } //<
-
-
-
-
-
-
-
-//     /// Render main content area with custom TabBar widget
-//     // fn render_main_content(&self, frame: &mut Frame, area: Rect, _block: Block) { //>
-//     //     // 1. Determine style and height first
-//     //     let tab_config = self
-//     //         .config
-//     //         .tab_bars
-//     //         .iter()
-//     //         .find(|t| t.id == "MainContentTabBar");
-
-//     //     let style = tab_config
-//     //         .and_then(|c| c.style.as_deref())
-//     //         .map(|s| match s {
-//     //             "tabbed" => TabBarStyle::Tab,
-//     //             "boxed" => TabBarStyle::Boxed,
-//     //             _ => TabBarStyle::Text,
-//     //         })
-//     //         .unwrap_or(TabBarStyle::Text);
-
-//     //     // Height is 2 for "Tab" style (label + bottom connector), 1 for others
-//     //     let header_height = if style == TabBarStyle::Tab { 2 } else { 1 };
-
-//     //     // 2. Create a layout with Overlap(1) so the TabBar's bottom row
-//     //     // is the Parent's top border.
-//     //     let layout = Layout::vertical([Constraint::Length(header_height), Constraint::Min(0)])
-//     //         .spacing(ratatui::layout::Spacing::Overlap(1));
-
-//     //     let [header_area, body_area] = layout.areas(area);
-
-//     //     // 3. Render the Body (the "Parent")
-//     //     // We use MergeStrategy to ensure the top border respects the tabs above it
-//     //     let body_block =
-//     //         Block::bordered().merge_borders(ratatui::symbols::merge::MergeStrategy::Exact);
-//     //     frame.render_widget(body_block, body_area);
-
-//     //     // 4. Render the TabBar in the header area
-//     //     if let Some(tab_config) = tab_config {
-//     //         let color = match tab_config.color.as_deref() {
-//     //             Some("cyan") => Color::Cyan,
-//     //             _ => Color::White,
-//     //         };
-
-//     //         let tab_bar = TabBarWidget::new(&self.tabs).style(style).color(color);
-
-//     //         // Calculate alignment within the header_area
-//     //         let tab_width = tab_bar.estimate_width();
-//     //         let alignment = match tab_config.alignment.horizontal.as_deref() {
-//     //             Some("center") => TabBarAlignment::Center,
-//     //             Some("right") => TabBarAlignment::Right,
-//     //             _ => TabBarAlignment::Left,
-//     //         };
-
-//     //         let start_x = match alignment {
-//     //             TabBarAlignment::Left => header_area.x + 1,
-//     //             TabBarAlignment::Center => {
-//     //                 header_area.x + (header_area.width.saturating_sub(tab_width)) / 2
-//     //             }
-//     //             TabBarAlignment::Right => {
-//     //                 header_area.x + header_area.width.saturating_sub(tab_width) - 1
-//     //             }
-//     //         };
-
-//     //         let final_tab_area = Rect {
-//     //             x: start_x,
-//     //             y: header_area.y,
-//     //             width: tab_width,
-//     //             height: header_height,
-//     //         };
-
-//     //         frame.render_widget(tab_bar, final_tab_area);
-//     //     }
-//     // } //<
-
-//     // fn render_main_content(&self, frame: &mut Frame, area: Rect, _block: Block) { //>
-       
-       
-//     //     let tab_config = self
-//     //         .config
-//     //         .tab_bars
-//     //         .iter()
-//     //         .find(|t| t.id == "MainContentTabBar");
-
-            
-            
-            
-//     //     // 1. Setup the Widget from config (Simplified Mapping)
-//     //     let style = match tab_config.and_then(|c| c.style.as_deref()) {
-//     //         Some("tabbed") => TabBarStyle::Tab,
-//     //         Some("boxed") => TabBarStyle::Boxed,
-//     //         _ => TabBarStyle::Text,
-//     //     };
-
-//     //     let tab_bar = TabBarWidget::new(&self.tabs)
-//     //         .style(style)
-//     //         .color(Color::Cyan); // Or map from config
-
-            
-            
-            
-//     //     // 2. Handle Layout (The "Padding" logic)
-//     //     let [header_area, body_area] = Layout::vertical([
-//     //         Constraint::Length(tab_bar.desired_height()),
-//     //         Constraint::Min(0),
-//     //     ])
-//     //     .spacing(ratatui::layout::Spacing::Overlap(1))
-//     //     .areas(area);
-
-//     //     // 3. Render
-//     //     frame.render_widget(Block::bordered(), body_area);
-
-//     //     if let Some(config) = tab_config {
-//     //         let alignment = match config.alignment.horizontal.as_deref() {
-//     //             Some("center") => TabBarAlignment::Center,
-//     //             Some("right") => TabBarAlignment::Right,
-//     //             _ => TabBarAlignment::Left,
-//     //         };
-
-//     //         // Use our new helper that handles X-offset and Rect creation
-//     //         tab_bar.render_aligned(header_area, alignment, frame.buffer_mut());
-//     //     }
-//     // } //<
-
-
-    
-//<    
-    
-
-
-
-    // /// Renders a block and automatically attaches one or more tab bars to its borders.
-    // /// The first ID in `tab_ids` determines the primary top-border layout.
-    // fn render_tabbed_block(&self, frame: &mut Frame, area: Rect, tab_ids: &[&str]) {
-    //     let mut current_body_area = area;
-    //     let mut active_widgets = Vec::new();
-
-    //     // 1. Calculate layouts for all requested tab bars
-    //     for id in tab_ids {
-    //         if let Some((tab_bar, alignment)) = TabBarWidget::from_config(&self.config, &self.tabs, id) {
-    //             // Determine how this specific tab bar affects the block's inner area
-    //             let [header, body] = tab_bar.split_layout(current_body_area);
-                
-    //             // Update the area for the NEXT widget or the final block
-    //             current_body_area = body;
-    //             active_widgets.push((tab_bar, alignment, header));
-    //         }
-    //     }
-
-    //     // 2. Render the actual Block (The "Parent")
-    //     // Use MergeStrategy so all attached tab bars join seamlessly
-    //     let block = Block::bordered().merge_borders(MergeStrategy::Exact);
-    //     frame.render_widget(block, current_body_area);
-
-    //     // 3. Render all tab bar decals on top of the block's borders
-    //     for (widget, alignment, header_area) in active_widgets {
-    //         widget.render_aligned(header_area, alignment, frame.buffer_mut());
-    //     }
-    // }
-    
-    // fn render_main_content(&self, frame: &mut Frame, area: Rect) {
-    //     self.render_tabbed_block(frame, area, &["MainContentTabBar", "MainContentStaticTabBar"]);
-    // }
