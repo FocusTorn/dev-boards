@@ -2,6 +2,7 @@ use super::{compile_state, compile_parser, path_utils, process::ProcessHandler};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::AtomicBool;
 
 #[derive(Clone, Debug)]
 pub struct Settings {
@@ -22,7 +23,7 @@ pub enum ProgressUpdate {
     Failed(String),
 }
 
-pub fn run_compile(settings: &Settings, progress_callback: impl FnMut(ProgressUpdate) + Send + 'static) {
+pub fn run_compile(settings: &Settings, cancel_signal: Arc<AtomicBool>, progress_callback: impl FnMut(ProgressUpdate) + Send + 'static) {
     let callback = Arc::new(Mutex::new(progress_callback));
 
     callback.lock().unwrap()(ProgressUpdate::Stage("Initializing".to_string()));
@@ -35,7 +36,13 @@ pub fn run_compile(settings: &Settings, progress_callback: impl FnMut(ProgressUp
         return;
     }
     
-    let project_root = path_utils::find_project_root(&sketch_dir);
+    let project_root = match path_utils::find_workspace_root() {
+        Ok(root) => root,
+        Err(e) => {
+            callback.lock().unwrap()(ProgressUpdate::Failed(format!("Failed to determine workspace root: {}", e)));
+            return;
+        }
+    };
 
     // Temp directory logic
     let (compile_dir, temp_dir_guard) = match setup_compile_directory(&sketch_dir, &sketch_file, &project_root) {
@@ -80,7 +87,10 @@ pub fn run_compile(settings: &Settings, progress_callback: impl FnMut(ProgressUp
     callback.lock().unwrap()(ProgressUpdate::Stage("Compiling".to_string()));
 
     let callback_clone = callback.clone();
-    let result = process_handler.read_output(move |line| {
+    let result = process_handler.read_output(cancel_signal, move |line| {
+        // Remove ANSI escape codes to prevent TUI corruption (e.g. cursor movement overwriting UI)
+        let line = crate::commands::utils::remove_ansi_escapes(&line);
+
         let mut cb = callback_clone.lock().unwrap();
         let (stage_changed, should_continue) = compile_parser::detect_stage_change(&line, &mut compile_state, 0.0);
         if !should_continue {
@@ -101,7 +111,7 @@ pub fn run_compile(settings: &Settings, progress_callback: impl FnMut(ProgressUp
     let mut cb = callback.lock().unwrap();
     match result {
         Ok(true) => cb(ProgressUpdate::Completed),
-        Ok(false) => cb(ProgressUpdate::Failed("Compilation failed.".to_string())),
+        Ok(false) => cb(ProgressUpdate::Failed("Process cancelled or failed.".to_string())),
         Err(e) => cb(ProgressUpdate::Failed(format!("Error reading process output: {}", e))),
     }
 }
@@ -144,7 +154,3 @@ fn setup_compile_directory(sketch_dir: &Path, sketch_file: &Path, project_root: 
         Ok((temp_dir_path.clone(), Some(TempDirGuard(temp_dir_path))))
     }
 }
-
-
-
-

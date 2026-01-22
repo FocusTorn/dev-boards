@@ -50,7 +50,12 @@ impl<'a> Widget for ProgressBarWidget<'a> {
         let inner_area = block.inner(area);
         block.render(area, buf);
 
-        if inner_area.height < 1 {
+        let content_area = inner_area.inner(Margin {
+            vertical: 0,
+            horizontal: 1,
+        });
+
+        if content_area.height < 1 {
             return;
         }
 
@@ -66,7 +71,7 @@ impl<'a> Widget for ProgressBarWidget<'a> {
 
         let percent_text = format!("{:.1}%", self.progress_percentage);
         let percent_text_width = percent_text.len();
-        let progress_bar_width = (inner_area.width as usize).saturating_sub(percent_text_width + 3);
+        let progress_bar_width = (content_area.width as usize).saturating_sub(percent_text_width + 3);
         
         let filled_width = ((progress_bar_width as f64 * self.progress_percentage / 100.0) as usize).min(progress_bar_width);
         let empty_width = progress_bar_width.saturating_sub(filled_width);
@@ -78,10 +83,10 @@ impl<'a> Widget for ProgressBarWidget<'a> {
             Line::from(Span::styled(line2, Style::default().fg(Color::Green))),
         ];
 
-        if !self.file_text.is_empty() && inner_area.height > 2 {
+        if !self.file_text.is_empty() && content_area.height > 2 {
             lines.push(Line::from(Span::styled(format!("File: {}", self.file_text), Style::default())));
         }
 
-        Paragraph::new(lines).render(inner_area, buf);
+        Paragraph::new(lines).render(content_area, buf);
     }
 }

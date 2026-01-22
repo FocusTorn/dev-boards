@@ -84,8 +84,10 @@ tab_bars:
           name: "Dashboard"
           default: "active"
 
-        - id: "tab2"
-          name: "Tab 2"
+
+
+
+
 
       # Tab-specific bindings for each tab
       tab_bindings:

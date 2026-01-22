@@ -11,10 +11,13 @@ ratatui = "0.30.0"
 crossterm = "0.28.1"
 color-eyre = "0.6.3"
 serde = { version = "1.0.228", features = ["derive"] }
-serde_yaml = "0.9.34"
 regex = "1.12.2"
 lazy_static = "1.5.0"
 which = "8.0.0"
+serde-saphyr = "0.0.16"
+arboard = "3.2.0"
+tui-scrollview = "0.5.0"
+tui-scrollbar = "0.1.0"
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"

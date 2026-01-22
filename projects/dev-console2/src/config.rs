@@ -1,53 +1,15 @@
 use serde::Deserialize;
 use std::fs::File;
 use std::io::Read;
-use color_eyre::eyre;
+use color_eyre::eyre; // Explicitly import eyre for the macro
 use color_eyre::Result;
+use serde_saphyr; // New YAML deserializer
 
-// In src/config.rs, add these helper functions
-mod deserializers {
-    use serde::{Deserialize, Deserializer};
-    use std::fmt;
+pub use crate::widgets::toast::ToastConfig;
 
-    // Helper to deserialize an anchored Connection object into its ID string
-    pub fn deserialize_connection_id<'de, D>(deserializer: D) -> Result<String, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        // Deserialize as a temporary struct that only contains the ID
-        #[derive(Deserialize)]
-        struct IdHelper {
-            id: String,
-        }
-        let helper = IdHelper::deserialize(deserializer)?;
-        Ok(helper.id)
-    }
-
-    // Helper to deserialize an anchored Device object into its ID string
-    pub fn deserialize_device_id<'de, D>(deserializer: D) -> Result<String, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        struct IdHelper {
-            id: String,
-        }
-        let helper = IdHelper::deserialize(deserializer)?;
-        Ok(helper.id)
-    }
-
-    // Helper to deserialize an anchored Mqtt object into its ID string
-    pub fn deserialize_mqtt_id<'de, D>(deserializer: D) -> Result<String, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        struct IdHelper {
-            id: String,
-        }
-        let helper = IdHelper::deserialize(deserializer)?;
-        Ok(helper.id)
-    }
+#[derive(Debug, Deserialize)]
+struct WidgetConfig {
+    toast_widget: ToastConfig,
 }
 
 
@@ -159,7 +121,7 @@ pub struct Connection {
 pub struct Device {
     pub id: String,
     pub board_model: String,
-    pub fbqn: String,  // Note: YAML has FBQN (typo), keeping for compatibility
+    pub fbqn: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -175,11 +137,8 @@ pub struct Mqtt {
 pub struct Sketch {
     pub id: String,
     pub path: String,
-    #[serde(deserialize_with = "deserializers::deserialize_connection_id")]
     pub connection: String,
-    #[serde(deserialize_with = "deserializers::deserialize_device_id")]
     pub device: String,
-    #[serde(deserialize_with = "deserializers::deserialize_mqtt_id")]
     pub mqtt: String,
 }
 
@@ -193,7 +152,6 @@ pub struct ProfileConfig {
 
 use crate::commands::Settings;
 
-// ... (existing content) ...
 
 pub fn load_profile_config() -> Result<ProfileConfig> {
     let config_path = std::path::PathBuf::from("config.yaml");
@@ -211,7 +169,7 @@ pub fn load_profile_config() -> Result<ProfileConfig> {
         }
     }
     
-    match serde_yaml::from_str::<ProfileConfig>(&contents) {
+    match serde_saphyr::from_str::<ProfileConfig>(&contents) {
         Ok(config) => {
             Ok(config)
         },
@@ -221,54 +179,70 @@ pub fn load_profile_config() -> Result<ProfileConfig> {
     }
 }
 
-pub fn load_command_settings() -> Settings {
-    // Try to load from profile config, fallback to dummy data
-    if let Ok(profile_config) = load_profile_config() {
-        if let Some(first_sketch) = profile_config.sketches.first() {
-            // Find the device and connection for this sketch
-            let device = profile_config.devices.iter()
-                .find(|d| d.id == first_sketch.device);
-            let connection = profile_config.connections.iter()
-                .find(|c| c.id == first_sketch.connection);
+pub fn load_command_settings() -> Result<Settings> {
+    // Try to load from profile config
+    let profile_config = load_profile_config()?;
+
+    if let Some(first_sketch) = profile_config.sketches.first() {
+        // Find the device and connection for this sketch
+        let device = profile_config.devices.iter()
+            .find(|d| d.id == first_sketch.device);
+        let connection = profile_config.connections.iter()
+            .find(|c| c.id == first_sketch.connection);
+        
+        if let (Some(device), Some(connection)) = (device, connection) {
+            // Extract sketch name from path
+            let sketch_name = std::path::Path::new(&first_sketch.path)
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("sketch")
+                .to_string();
             
-            if let (Some(device), Some(connection)) = (device, connection) {
-                // Extract sketch name from path
-                let sketch_name = std::path::Path::new(&first_sketch.path)
-                    .file_stem()
-                    .and_then(|s| s.to_str())
-                    .unwrap_or("sketch")
-                    .to_string();
-                
-                return Settings {
-                    sketch_directory: first_sketch.path.clone(),
-                    sketch_name,
-                    fqbn: device.fbqn.clone(),  // Using FBQN from YAML
-                    board_model: device.board_model.clone(),
-                    env: if connection.compiler == "arduino-cli" { "arduino" } else { "windows" }.to_string(),
-                };
-            }
+            return Ok(Settings {
+                sketch_directory: first_sketch.path.clone(),
+                sketch_name,
+                fqbn: device.fbqn.clone(),  // Using FBQN from YAML
+                board_model: device.board_model.clone(),
+                env: if connection.compiler == "arduino-cli" { "arduino" } else { "windows" }.to_string(),
+            });
         }
     }
     
-    // Fallback to dummy data
-    Settings {
-        sketch_directory: "D:/_dev/_Projects/dev-boards/Arduino/sketchbook/sht21-bme680-led-mqtt".to_string(),
-        sketch_name: "sht21-bme680-led-mqtt".to_string(),
-        fqbn: "esp32:esp32:lilygo-t-display-s3".to_string(),
-        board_model: "esp32-s3".to_string(),
-        env: "arduino".to_string(),
-    }
+    Err(eyre::eyre!("No valid sketch configuration found in config.yaml"))
 }
 
 pub fn load_config() -> Result<Config> {
 // ... (existing content) ...
-    // For now, we only load the build-config.yaml
-    // Later, we will implement the search and merge for config.yaml
+    // For now, we only load of build-config.yaml
+    // Later, we will implement of search and merge for config.yaml
     let mut file = File::open("build-config.yaml")?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
     
-    let config: Config = serde_yaml::from_str(&contents)?;
+    let config: Config = serde_saphyr::from_str(&contents)?;
     
     Ok(config)
+}
+
+pub fn load_widget_config() -> Result<ToastConfig> {
+    let config_path = std::path::PathBuf::from("src/widgets/widget-config.yaml");
+    let mut file = match File::open(&config_path) {
+        Ok(f) => f,
+        Err(e) => {
+            return Err(eyre::eyre!("Failed to open widget-config.yaml at {:?}: {}", config_path, e));
+        }
+    };
+    let mut contents = String::new();
+    match file.read_to_string(&mut contents) {
+        Ok(_) => {},
+        Err(e) => {
+            return Err(eyre::eyre!("Failed to read widget-config.yaml: {}", e));
+        }
+    }
+    
+    // Directly deserialize the widget config
+    let widget_config: WidgetConfig = serde_saphyr::from_str(&contents)
+        .map_err(|e| eyre::eyre!("Failed to parse widget-config.yaml: {}", e))?;
+    
+    Ok(widget_config.toast_widget)
 }
