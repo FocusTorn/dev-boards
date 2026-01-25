@@ -4,6 +4,9 @@ mod executors;
 mod system;
 mod view;
 mod ansi;
+pub mod theme;
+
+use crate::app::theme::Theme;
 
 use crate::widgets::tab_bar::{TabBarItem, TabBarWidget, TabBarAlignment};
 use crate::widgets::command_list::CommandListWidget;
@@ -93,8 +96,6 @@ pub enum TaskState {
         monitor_type: MonitorType,
         start_time: Instant,
     },
-    #[allow(dead_code)]
-    Error(String),
 }
 
 const MAX_OUTPUT_LINES: usize = 2000;
@@ -137,11 +138,11 @@ pub struct App {
     cancel_signal: Arc<AtomicBool>,
     view_area: Rect,
     layout: AppLayout,
+    pub theme: Theme,
     predictor: crate::commands::ProgressPredictor,
     last_raw_input: String,
     last_frame_time: Instant,
     pub should_redraw: bool,
-    pub should_relayout: bool,
 
     // Input state
     pub input: tui_input::Input,
@@ -187,25 +188,27 @@ impl App {
 
         let mut profile_config: Option<ProfileConfig> = None;
         let mut profile_ids: Vec<String> = Vec::new();
-        let mut status_text = String::new();
-        let mut output_lines = Vec::new();
+        let mut initial_output = Vec::new();
         
         let toast_config = crate::config::load_widget_config()?;
         let toast_manager = ToastManager::new(toast_config);
 
-        match crate::config::load_profile_config() {
+        let initial_status = match crate::config::load_profile_config() {
             Ok(config) => {
                 profile_ids = config.sketches.iter().map(|s| s.id.clone()).collect();
                 profile_config = Some(config);
-                status_text = format!("{} profiles loaded.", profile_ids.len());
+                format!("{} profiles loaded.", profile_ids.len())
             },
             Err(e) => {
-                status_text = "[Error] Failed to load config.yaml".to_string();
+                let msg = "[Error] Failed to load config.yaml".to_string();
                 for line in format!("{}", e).lines() {
-                    output_lines.push(line.to_string());
+                    initial_output.push(line.to_string());
                 }
+                msg
             }
         };
+
+        let app_theme = Theme::new(&config.theme);
 
         Ok(Self {
             running: true,
@@ -217,14 +220,14 @@ impl App {
             selected_command_index: 0,
             hovered_command_index: None,
             command_index_before_hover: None,
-            output_lines,
+            output_lines: initial_output,
             output_scroll: 0,
             output_scroll_interaction: ScrollBarInteraction::new(),
             output_autoscroll,
             task_state: TaskState::Idle,
             command_tx,
             command_rx,
-            status_text,
+            status_text: initial_status,
             toast_manager,
             profile_config,
             selected_profile_index: 0,
@@ -241,11 +244,11 @@ impl App {
                 status: Rect::default(),
                 output: Rect::default(),
             },
+            theme: app_theme,
             predictor: crate::commands::ProgressPredictor::new(),
             last_raw_input: String::new(),
             last_frame_time: Instant::now(),
             should_redraw: true,
-            should_relayout: true,
             input: tui_input::Input::default(),
             input_active: false,
             serial_tx: None,
@@ -335,6 +338,7 @@ impl App {
                 let new_area = Rect::new(0, 0, w, h);
                 self.view_area = new_area;
                 self.layout = self.calculate_layout(new_area);
+                self.check_terminal_size(new_area);
                 self.sync_autoscroll();
             } //<
        
@@ -366,8 +370,12 @@ impl App {
                     self.should_redraw = true;
                 }
                 KeyCode::Esc => {
-                    self.input_active = false;
-                    self.input.reset();
+                    if self.input_active {
+                        self.input_active = false;
+                        self.input.reset();
+                    } else {
+                        self.dispatch_command(Action::Cancel);
+                    }
                     self.should_redraw = true;
                 }
                 _ => {
@@ -523,8 +531,9 @@ impl App {
                 event::MouseEventKind::Down(event::MouseButton::Left) => {
                     // Check if we are clicking on the Scrollbar area (last column of inner)
                     let is_scrollbar_click = mouse_pos.x >= inner_output.right().saturating_sub(1);
+                    let is_control_held = mouse_event.modifiers.contains(event::KeyModifiers::CONTROL);
                     
-                    if !is_scrollbar_click {
+                    if !is_scrollbar_click && is_control_held {
                         self.exec_copy_output(false); // Copy visible text
                         return;
                     }
@@ -575,46 +584,85 @@ impl App {
         }
     }
 
-    fn key_matches(&self, key: event::KeyEvent, binding_key: &str) -> bool {
-        let inner = binding_key.trim_matches(|c| c == '[' || c == ']');
-        let parts: Vec<String> = inner.split('+').map(|s| s.to_lowercase()).collect();
-        let mut req_mods = KeyModifiers::empty();
-        let mut target = String::new();
-        
-        for part in &parts {
-            match part.as_str() {
-                "alt" => req_mods.insert(KeyModifiers::ALT),
-                "ctrl" | "control" => req_mods.insert(KeyModifiers::CONTROL),
-                "shift" => req_mods.insert(KeyModifiers::SHIFT),
-                k => target = k.to_string(),
+        fn key_matches(&self, key: event::KeyEvent, binding_key: &str) -> bool {
+
+            let inner = binding_key.trim_matches(|c| c == '[' || c == ']');
+
+            let parts: Vec<String> = inner.split('+').map(|s| s.to_lowercase()).collect();
+
+            let mut req_mods = KeyModifiers::empty();
+
+            let mut target = String::new();
+
+            for part in &parts {
+
+                match part.as_str() {
+
+                    "alt" => req_mods.insert(KeyModifiers::ALT),
+
+                    "ctrl" | "control" => req_mods.insert(KeyModifiers::CONTROL),
+
+                    "shift" => req_mods.insert(KeyModifiers::SHIFT),
+
+                    k => target = k.to_string(),
+
+                }
+
             }
+
+            let significant = KeyModifiers::SHIFT | KeyModifiers::CONTROL | KeyModifiers::ALT;
+
+            if (key.modifiers & significant) != req_mods { return false; }
+
+            
+
+            match target.as_str() {
+
+                "q" => matches!(key.code, KeyCode::Char('q') | KeyCode::Char('Q')),
+
+                "enter" | "return" => matches!(key.code, KeyCode::Enter),
+
+                "esc" | "escape" => matches!(key.code, KeyCode::Esc),
+
+                "up" => matches!(key.code, KeyCode::Up),
+
+                "down" => matches!(key.code, KeyCode::Down),
+
+                "left" => matches!(key.code, KeyCode::Left),
+
+                "right" => matches!(key.code, KeyCode::Right),
+
+                "pgup" | "pageup" => matches!(key.code, KeyCode::PageUp),
+
+                "pgdn" | "pagedown" => matches!(key.code, KeyCode::PageDown),
+
+                "home" => matches!(key.code, KeyCode::Home),
+
+                "end" => matches!(key.code, KeyCode::End),
+
+                "backspace" => matches!(key.code, KeyCode::Backspace),
+
+                "tab" => matches!(key.code, KeyCode::Tab),
+
+                "delete" | "del" => matches!(key.code, KeyCode::Delete),
+
+                _ => {
+
+                    if target.len() == 1 {
+
+                        let c = target.chars().next().unwrap();
+
+                        matches!(key.code, KeyCode::Char(key_c) if key_c.to_ascii_lowercase() == c.to_ascii_lowercase())
+
+                    } else { false }
+
+                }
+
+            }
+
         }
-        
-        let significant = KeyModifiers::SHIFT | KeyModifiers::CONTROL | KeyModifiers::ALT;
-        
-        if (key.modifiers & significant) != req_mods { return false; }
-        
-        match target.as_str() {
-            "q" => matches!(key.code, KeyCode::Char('q')),
-            "enter" => matches!(key.code, KeyCode::Enter),
-            "esc" => matches!(key.code, KeyCode::Esc),
-            "up" => matches!(key.code, KeyCode::Up),
-            "down" => matches!(key.code, KeyCode::Down),
-            "left" => matches!(key.code, KeyCode::Left),
-            "right" => matches!(key.code, KeyCode::Right),
-            "pgup" | "pageup" => matches!(key.code, KeyCode::PageUp),
-            "pgdn" | "pagedown" => matches!(key.code, KeyCode::PageDown),
-            "home" => matches!(key.code, KeyCode::Home),
-            "end" => matches!(key.code, KeyCode::End),
-            _ => { //>
-                if target.len() == 1 {
-                    let c = target.chars().next().unwrap();
-                    matches!(key.code, KeyCode::Char(key_c) if key_c.to_ascii_lowercase() == c.to_ascii_lowercase())
-                } else { false }
-            } //<
-        }
-   
-    }
+
+    
 
     fn get_settings_from_profile(&self) -> Result<crate::commands::Settings> {
         if let (Some(profile_config), Some(profile_id)) = (&self.profile_config, self.profile_ids.get(self.selected_profile_index)) {
@@ -686,6 +734,11 @@ impl App {
         self.sync_autoscroll();
     }
 
+    pub fn log(&mut self, kind: &str, message: &str) {
+        let formatted = self.theme.format_message(kind, message);
+        self.push_line(formatted);
+    }
+
     pub fn sync_autoscroll(&mut self) {
         if self.output_autoscroll {
             let layout = self.calculate_layout(self.view_area);
@@ -726,7 +779,7 @@ impl App {
     pub fn report_error(&mut self, e: impl std::fmt::Display) {
         let msg = format!("{}", e);
         self.status_text = format!("[Error] {}", msg);
-        self.push_line(format!("[Error] {}", msg));
+        self.log("error", &msg);
         self.toast_manager.error(&msg);
     }
 }

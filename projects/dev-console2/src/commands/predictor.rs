@@ -54,11 +54,17 @@ pub struct WorkloadProfile {
 impl Default for WorkloadProfile {
     fn default() -> Self {
         let mut weights = HashMap::new();
+        // Compile (Total 0.70)
         weights.insert(CompileStage::Initializing, 0.05);
-        weights.insert(CompileStage::DetectingLibraries, 0.15); 
-        weights.insert(CompileStage::Compiling, 0.40); // Was 0.50
-        weights.insert(CompileStage::Linking, 0.30);   // Was 0.20
-        weights.insert(CompileStage::Generating, 0.10);
+        weights.insert(CompileStage::DetectingLibraries, 0.10); 
+        weights.insert(CompileStage::Compiling, 0.35);
+        weights.insert(CompileStage::Linking, 0.15);
+        weights.insert(CompileStage::Generating, 0.05);
+        // Upload (Total 0.30)
+        weights.insert(CompileStage::Resetting, 0.02);
+        weights.insert(CompileStage::Uploading, 0.20);
+        weights.insert(CompileStage::Verifying, 0.08);
+        
         Self { stage_weights: weights }
     }
 }

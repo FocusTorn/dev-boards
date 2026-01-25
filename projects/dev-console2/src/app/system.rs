@@ -14,11 +14,27 @@ impl App {
     pub fn exec_system_update(&mut self, update: ProgressUpdate) {
         self.should_redraw = true;
         match update {
-            ProgressUpdate::Status(status) => {
-                self.status_text = status;
-            }
             ProgressUpdate::OutputLine(line) => {
-                self.push_line(line);
+                if let Some(first_char) = line.chars().next() {
+                    let char_len = first_char.len_utf8();
+                    match first_char {
+                        '⬒' => self.log("system", line[char_len..].trim_start()),
+                        '⮻' => self.log("action", line[char_len..].trim_start()),
+                        '⇄' => self.log("serial", line[char_len..].trim_start()),
+                        '✗' => self.log("error", line[char_len..].trim_start()),
+                        '⚠' => self.log("warn", line[char_len..].trim_start()),
+                        'ｉ' => self.log("info", &line[char_len..]), // Info: No space/trim
+                        _ => {
+                            if line.contains('✗') || line.contains("MQTT connection failed") {
+                                self.log("serial", &line);
+                            } else {
+                                self.log("board", &line);
+                            }
+                        },
+                    }
+                } else {
+                    self.log("board", &line);
+                }
             }
             ProgressUpdate::Percentage(p) => {
                 let remaining = self.predictor.predict_remaining(p);
@@ -48,11 +64,6 @@ impl App {
                     *stage = s;
                 }
             }
-            ProgressUpdate::Completed => {
-                self.task_state = TaskState::Idle;
-                self.status_text = "Command completed successfully.".to_string();
-                self.push_line("Command completed successfully.".to_string());
-            }
             ProgressUpdate::CompletedWithMetrics { stage_times } => {
                 let sketch_id = self.get_current_sketch_id().unwrap_or_else(|| "default".to_string());
                 let history_path = std::path::Path::new(".dev-console/progress_history.json");
@@ -62,8 +73,8 @@ impl App {
                 let _ = manager.save(history_path);
 
                 self.task_state = TaskState::Idle;
-                self.status_text = "Command completed successfully (Metrics saved).".to_string();
-                self.push_line("Command completed successfully.".to_string());
+                self.status_text = "Command completed successfully.".to_string();
+                self.log("system", "Command completed successfully (Metrics saved).");
             }
             ProgressUpdate::Failed(e) => {
                 self.task_state = TaskState::Idle;

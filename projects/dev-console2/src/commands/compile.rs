@@ -16,13 +16,10 @@ pub struct Settings {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-#[allow(dead_code)]
 pub enum ProgressUpdate {
-    Status(String),
     OutputLine(String),
     Percentage(f64),
     Stage(String),
-    Completed,
     CompletedWithMetrics {
         stage_times: std::collections::HashMap<crate::commands::predictor::CompileStage, f64>,
     },

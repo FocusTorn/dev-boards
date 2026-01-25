@@ -12,6 +12,8 @@ pub fn run_mqtt_monitor(
     host: String,
     port: u16,
     client_id: String,
+    username: Option<String>,
+    password: Option<String>,
     cancel_signal: Arc<AtomicBool>,
     command_rx: mpsc::Receiver<MqttCommand>,
     progress_callback: impl FnMut(ProgressUpdate) + Send + 'static,
@@ -21,13 +23,18 @@ pub fn run_mqtt_monitor(
     let mut mqtt_options = MqttOptions::new(client_id, host.clone(), port);
     mqtt_options.set_keep_alive(Duration::from_secs(5));
 
+    // Apply authentication if provided
+    if let (Some(u), Some(p)) = (username, password) {
+        mqtt_options.set_credentials(u, p);
+    }
+
     let (client, mut connection) = Client::new(mqtt_options, 10);
     
-    callback(ProgressUpdate::OutputLine(format!("[MQTT] Connecting to {}:{}...", host, port)));
+    callback(ProgressUpdate::OutputLine(format!("⮻ Connecting to {}:{}...", host, port)));
 
     // Subscribe to a default topic or everything if permitted
     if let Err(e) = client.subscribe("#", QoS::AtMostOnce) {
-        callback(ProgressUpdate::Failed(format!("[MQTT] Subscription failed: {}", e)));
+        callback(ProgressUpdate::Failed(format!("✗ Subscription failed: {}", e)));
         return;
     }
 
@@ -37,9 +44,9 @@ pub fn run_mqtt_monitor(
             match cmd {
                 MqttCommand::Publish { topic, payload } => {
                     if let Err(e) = client.publish(&topic, QoS::AtMostOnce, false, payload.as_bytes()) {
-                        callback(ProgressUpdate::OutputLine(format!("[MQTT] Publish Error: {}", e)));
+                        callback(ProgressUpdate::OutputLine(format!("✗ Publish Error: {}", e)));
                     } else {
-                        callback(ProgressUpdate::OutputLine(format!("[MQTT TX] {} -> {}", topic, payload)));
+                        callback(ProgressUpdate::OutputLine(format!("ｉ{} -> {}", topic, payload)));
                     }
                 }
             }
@@ -55,7 +62,7 @@ pub fn run_mqtt_monitor(
                     }
                     Ok(_) => {}
                     Err(e) => {
-                        callback(ProgressUpdate::OutputLine(format!("[MQTT] Connection Error: {}", e)));
+                        callback(ProgressUpdate::OutputLine(format!("✗ Connection Error: {}", e)));
                         break;
                     }
                 }
@@ -64,5 +71,5 @@ pub fn run_mqtt_monitor(
         }
     }
     
-    callback(ProgressUpdate::OutputLine("[MQTT] Connection closed.".to_string()));
+    callback(ProgressUpdate::OutputLine("⮻ Connection closed.".to_string()));
 }

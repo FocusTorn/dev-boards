@@ -16,99 +16,149 @@ application:
     bindings:
         separator: " "
         items:
-          - key: "[q]"
-            description: "Quit"
-            triggers:
-                "[q]": "quit"
-          - key: "[Esc]"
-            description: "Cancel"
-            triggers:
-                "[Esc]": "cancel"
+            - key: "[q]"
+              description: "Quit"
+              triggers:
+                  "[q]": "quit"
+            - key: "[Esc]"
+              description: "Cancel"
+              triggers:
+                  "[Esc]": "cancel"
 
     # Status bar configuration
     status_bar:
         default_text: "Status: Ready"
 
-# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-# ┃                                            TAB BARS WIDGET CONFIGURATION                                           ┃
-# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+# UI Theme Customization
+theme:
+    styles:
+        # Output Panel
+        output_title: "bold white"
+        output_border: "white"
+
+        # Input Box
+        input_title: "bold yellow"
+        input_border: "yellow"
+        input_text: "white"
+
+        # Progress Bar
+        progress_border: "white"
+        progress_title: "bold white"
+
+        # Command List
+        commands_border: "white"
+        commands_title: "bold white"
+        commands_highlight: "bold cyan on #002828" # Vibrant cyan text on very dim cyan bg
+
+    message_types:
+        system:
+            icon: "⬒"
+            icon_style: "#466473"
+            text_style: "#466473"
+        action:
+            icon: "⮻"
+            icon_style: "#466473"
+            text_style: "#466473"
+        serial:
+            icon: "⇄"
+            icon_style: "#466473"
+            text_style: "#466473"
+        error:
+            icon: "✗"
+            icon_style: "red"
+            text_style: "red"
+        warn:
+            icon: "⚠"
+            icon_style: "yellow"
+            text_style: "yellow"
+        info:
+            icon: "ｉ"
+            icon_style: "bold white"
+            text_style: "white"
+        board:
+            icon: "➤"
+            icon_style: "rgb(190,70,230)"
+            text_style: "rgb(190,70,230)"
+        # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        # ┃                                            TAB BARS WIDGET CONFIGURATION                                           ┃
+        # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 tab_bars:
 
-  # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
-  # │                            Main Content Tab Bar (MainContentTabBar)                            │
-  # └────────────────────────────────────────────────────────────────────────────────────────────────┘
-  - id: "MainContentTabBar"
-    style: "Tab" # Options: tabbed, boxed, text, box_static, text_static
-    
-    color: "cyan" # Color for active tab text
+    # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+    # │                            Main Content Tab Bar (MainContentTabBar)                            │
+    # └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    - id: "MainContentTabBar"
+      style: "Tab" # Options: tabbed, boxed, text, box_static, text_static
+      color: "cyan" # Color for active tab text
+      min_tab_width: 11 # OPTIONAL: Minimum width per tab
+      tab_tooltips: true # Show tooltips on hover
 
-    min_tab_width: 11 # OPTIONAL: Minimum width per tab
-    tab_tooltips: true # Show tooltips on hover
+      alignment:
+          vertical: "Top" # Options: "top", "bottom"
+          horizontal: "Center" # Options: "left", "center", "right"
+          offset_x: 0 # Horizontal offset in characters
+          offset_y: 0 # Vertical offset in lines
 
-    alignment:
-        vertical: "Top" # Options: "top", "bottom"
-        horizontal: "Center" # Options: "left", "center", "right"
-        offset_x: 0 # Horizontal offset in characters
-        offset_y: 0 # Vertical offset in lines
-    
-    navigation:
-        left: ["PgUp"]
-        right: ["PgDown"]
+      navigation:
+          left: [ "PgUp" ]
+          right: [ "PgDown" ]
 
-    tabs:
-      - id: "dashboard"
-        name: "Dashboard"
-        default: "active"
+      tabs:
+          - id: "dashboard"
+            name: "Dashboard"
+            default: "active"
 
-    # Tab-specific bindings for each tab
-    tab_bindings:
-      dashboard:
-        separator: " "
-        items:
-            - key: "[🡙]"
-              description: "Navigate Commands"
-              triggers:
-                "[Up]": "commands_up"
-                "[Down]": "commands_down"
+      tab_bindings:
+          dashboard:
+              separator: " "
+              items:
+                  - key: "[🡙]"
+                    description: "Navigate Commands"
+                    triggers:
+                        "[Up]": "commands_up"
+                        "[Down]": "commands_down"
 
-            - key: "[🡘]"
-              description: "Change Profile"
-              triggers:
-                "[Left]": "prev_profile"
-                "[Right]": "next_profile"
+                  - key: "[🡘]"
+                    description: "Change Profile"
+                    triggers:
+                        "[Left]": "prev_profile"
+                        "[Right]": "next_profile"
 
-            - key: "[Enter]"
-              description: "Execute Command"
-              triggers:
-                "[Enter]": "execute"
-                
-            - key: "[HM/END]"
-              description: "Scroll to top/btm"
-              triggers:
-                "[Home]": "scroll_output_to_top"
-                "[End]": "scroll_output_to_bottom"
-    
-        # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
-        # │                   Output Panel Static Options (OutputPanelStaticOptions)                       │
-        # └────────────────────────────────────────────────────────────────────────────────────────────────┘
-  - id: "OutputPanelStaticOptions"
+                  - key: "[Enter]"
+                    description: "Execute Command"
+                    triggers:
+                        "[Enter]": "execute"
 
-    alignment:
-        vertical: "Bottom" # Options: "top", "bottom"
-        horizontal: "Left" # Options: "left", "center", "right"
-        offset_x: 0 # Horizontal offset in characters
-        offset_y: 0 # Vertical offset in lines
+                  - key: "[i]"
+                    description: "Input"
+                    triggers:
+                        "i": "toggle_input"
 
-    style: "BoxStatic" # Options: tabbed, boxed, text, box_static, text_static
+                  - key: "[HM/END]"
+                    description: "Scroll to top/btm"
+                    triggers:
+                        "[Home]": "scroll_output_to_top"
+                        "[End]": "scroll_output_to_bottom"
 
-    type: state # state, button,
-    colors:
-        active: "green"
-        negate: "red"
+    # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+    # │                   Output Panel Static Options (OutputPanelStaticOptions)                       │
+    # └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    - id: "OutputPanelStaticOptions"
+      style: "BoxStatic" # Options: tabbed, boxed, text, box_static, text_static
 
-    tabs:
-      - id: "autoscroll"
-        name: "Auto"
-        default: "active"
-      
+      type: state # state, button,
+      colors:
+          active: "green"
+          negate: "red"
+
+      alignment:
+          vertical: "Bottom" # Options: "top", "bottom"
+          horizontal: "Left" # Options: "left", "center", "right"
+          offset_x: 0 # Horizontal offset in characters
+          offset_y: 0 # Vertical offset in lines
+
+      tabs:
+          - id: "autoscroll"
+            name: "Auto"
+            default: "active"

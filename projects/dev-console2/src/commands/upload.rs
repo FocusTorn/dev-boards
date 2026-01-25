@@ -63,7 +63,7 @@ pub fn run_upload(settings: &Settings, stats: crate::commands::history::StageSta
             next_stage = Some(crate::commands::predictor::CompileStage::Uploading);
         } else if line_lower.contains("verifying") {
             next_stage = Some(crate::commands::predictor::CompileStage::Verifying);
-        } else if line_lower.contains("leaving...") || line_lower.contains("done") {
+        } else if line_lower.contains("leaving...") || line_lower.contains("hard resetting via rts pin") {
             next_stage = Some(crate::commands::predictor::CompileStage::Complete);
         }
 
@@ -75,10 +75,13 @@ pub fn run_upload(settings: &Settings, stats: crate::commands::history::StageSta
         }
 
         // Parse esptool percentage if available
-        if state.stage == crate::commands::predictor::CompileStage::Uploading {
-            // Match "Writing at 0x00000000... (10 %)" or similar
-            if let Some(cap) = regex::Regex::new(r"\((\d+)\s*%\)").unwrap().captures(&cleaned) {
+        if state.stage == crate::commands::predictor::CompileStage::Uploading || state.stage == crate::commands::predictor::CompileStage::Verifying {
+            // Match the specific esptool format: "... (10 %)"
+            let re_progress = regex::Regex::new(r"\((\d+)\s*%\)").unwrap();
+            if let Some(cap) = re_progress.captures(&cleaned) {
                 if let Ok(p) = cap[1].parse::<f64>() {
+                    // Only update if it's an increase, or if we just started a new segment (low percentage after high)
+                    // Actually, let's just pass it through and let calculate_progress handle the monotonicity
                     state.update_stage_progress(p);
                 }
             }

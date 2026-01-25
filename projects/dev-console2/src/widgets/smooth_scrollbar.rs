@@ -70,7 +70,6 @@ pub struct ScrollBar {
     offset: usize,
     track_style: Style,
     thumb_style: Style,
-    #[allow(dead_code)]
     arrows: ScrollBarArrows,
 }
 
@@ -81,7 +80,7 @@ impl ScrollBar {
             offset: 0,
             track_style: Style::default().bg(Color::Rgb(45, 45, 45)),
             thumb_style: Style::default().fg(Color::White).bg(Color::Rgb(45, 45, 45)),
-            arrows: ScrollBarArrows::Both,
+            arrows: ScrollBarArrows::None,
         }
     }
 
@@ -204,14 +203,36 @@ impl Widget for &ScrollBar {
             return;
         }
 
-        // 2. High-precision thumb bounds (in sub-cells)
-        let total_sub = (area.height * 8) as f64;
+        // 2. Render Arrows if requested
+        let mut scroll_area = area;
+        match self.arrows {
+            ScrollBarArrows::Top => {
+                buf[(area.x, area.y)].set_symbol("↑").set_style(self.thumb_style);
+                scroll_area.y += 1;
+                scroll_area.height = scroll_area.height.saturating_sub(1);
+            }
+            ScrollBarArrows::Bottom => {
+                buf[(area.x, area.bottom() - 1)].set_symbol("↓").set_style(self.thumb_style);
+                scroll_area.height = scroll_area.height.saturating_sub(1);
+            }
+            ScrollBarArrows::Both => {
+                buf[(area.x, area.y)].set_symbol("↑").set_style(self.thumb_style);
+                buf[(area.x, area.bottom() - 1)].set_symbol("↓").set_style(self.thumb_style);
+                scroll_area.y += 1;
+                scroll_area.height = scroll_area.height.saturating_sub(2);
+            }
+            ScrollBarArrows::None => {}
+        }
+
+        if scroll_area.height == 0 { return; }
+
+        // 3. High-precision thumb bounds (in sub-cells)
+        let total_sub = (scroll_area.height * 8) as f64;
         let max_offset = (self.lengths.content_len.saturating_sub(self.lengths.viewport_len)) as f64;
         
         let scroll_ratio = if max_offset > 0.0 { self.offset as f64 / max_offset } else { 0.0 };
         let thumb_ratio = self.lengths.viewport_len as f64 / self.lengths.content_len as f64;
         
-        // The thumb can move over (height - thumb_height) cells.
         let thumb_h_sub = (thumb_ratio * total_sub).max(8.0);
         let travel_sub = total_sub - thumb_h_sub;
         
@@ -220,7 +241,7 @@ impl Widget for &ScrollBar {
 
         let blocks = [" ", "▂", "▃", "▄", "▅", "▆", "▇", "█"];
 
-        for y in 0..area.height {
+        for y in 0..scroll_area.height {
             let cell_top = (y * 8) as f64;
             let cell_bottom = ((y + 1) * 8) as f64;
             
@@ -228,30 +249,24 @@ impl Widget for &ScrollBar {
             let intersect_b = end_sub.min(cell_bottom);
             
             if intersect_b > intersect_t {
-                let cell = &mut buf[(area.x, area.y + y)];
+                let cell = &mut buf[(scroll_area.x, scroll_area.y + y)];
                 let h_filled = intersect_b - intersect_t;
                 
-                // Determine if this cell is a partial cap or a full middle segment
                 if h_filled >= 7.9 {
                     cell.set_symbol("█").set_style(self.thumb_style);
                 } else {
-                    // It's a cap or a tiny thumb
                     let is_at_top = intersect_t > cell_top;
                     let is_at_bottom = intersect_b < cell_bottom;
                     
                     if is_at_top && !is_at_bottom {
-                        // Top Cap: Fill from bottom up
                         let idx = (h_filled.round() as usize).min(7);
                         cell.set_symbol(blocks[idx]).set_style(self.thumb_style);
                     } else if !is_at_top && is_at_bottom {
-                        // Bottom Cap: Fill from top down using Inversion
-                        // h_empty is the gap at the bottom of this cell
                         let h_empty = 8.0 - h_filled;
                         let idx = (h_empty.round() as usize).min(7);
                         let inv_style = Style::default().fg(track_bg).bg(thumb_fg);
                         cell.set_symbol(blocks[idx]).set_style(inv_style);
                     } else {
-                        // Tiny thumb entirely within one cell
                         let idx = (h_filled.round() as usize).min(7);
                         cell.set_symbol(blocks[idx]).set_style(self.thumb_style);
                     }

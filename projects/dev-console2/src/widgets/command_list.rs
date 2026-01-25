@@ -1,7 +1,8 @@
 use ratatui::{
     buffer::Buffer,
     layout::{Rect, Position},
-    style::{Color, Modifier, Style},
+    style::{Color, Style},
+    text::{Span},
     widgets::{Block, Widget},
 };
 use crossterm::event::{MouseEvent, MouseButton, MouseEventKind};
@@ -10,11 +11,36 @@ pub struct CommandListWidget<'a> {
     commands: &'a [String],
     selected_index: usize,
     hovered_index: Option<usize>,
+    border_style: Style,
+    title_style: Style,
+    highlight_style: Style,
 }
 
 impl<'a> CommandListWidget<'a> {
     pub fn new(commands: &'a [String], selected_index: usize, hovered_index: Option<usize>) -> Self {
-        Self { commands, selected_index, hovered_index }
+        Self { 
+            commands, 
+            selected_index, 
+            hovered_index,
+            border_style: Style::default(),
+            title_style: Style::default(),
+            highlight_style: Style::default().fg(Color::Cyan).bg(Color::Rgb(0, 40, 40)),
+        }
+    }
+
+    pub fn border_style(mut self, style: Style) -> Self {
+        self.border_style = style;
+        self
+    }
+
+    pub fn title_style(mut self, style: Style) -> Self {
+        self.title_style = style;
+        self
+    }
+
+    pub fn highlight_style(mut self, style: Style) -> Self {
+        self.highlight_style = style;
+        self
     }
 
     /// Handles mouse events and returns either a Click(index) or Hover(index)
@@ -47,7 +73,9 @@ pub enum CommandListInteraction {
 
 impl<'a> Widget for CommandListWidget<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let block = Block::bordered().title(" Commands ");
+        let block = Block::bordered()
+            .title(Span::styled(" Commands ", self.title_style))
+            .border_style(self.border_style);
         let inner_area = block.inner(area);
         block.render(area, buf);
 
@@ -60,9 +88,6 @@ impl<'a> Widget for CommandListWidget<'a> {
             let is_selected = idx == self.selected_index;
             let is_hovered = self.hovered_index == Some(idx);
             
-            // Requirement: "highlight follows the mouse... return to the last selected item"
-            // "no grey remnant, and same coloration for the highlighted item"
-            // The effective highlighted row is the hover, or the selection if nothing is hovered.
             let is_highlighted = if self.hovered_index.is_some() {
                 is_hovered
             } else {
@@ -70,10 +95,7 @@ impl<'a> Widget for CommandListWidget<'a> {
             };
 
             let style = if is_highlighted {
-                Style::default()
-                    .fg(Color::Cyan)
-                    .bg(Color::Rgb(0, 40, 40)) // Very dim cyan bg
-                    .add_modifier(Modifier::BOLD)
+                self.highlight_style
             } else {
                 Style::default().fg(Color::DarkGray)
             };

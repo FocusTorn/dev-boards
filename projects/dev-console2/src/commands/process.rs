@@ -1,4 +1,4 @@
-use std::io::{BufRead, BufReader};
+use std::io::Read;
 use std::process::{Child, Command, Stdio};
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -28,25 +28,30 @@ impl ProcessHandler {
 
         let (tx, rx) = mpsc::channel();
 
-        let stdout_tx = tx.clone();
-        thread::spawn(move || {
-            let reader = BufReader::new(stdout);
-            for line in reader.lines() {
-                if stdout_tx.send(line.unwrap_or_default()).is_err() {
-                    break;
+        // Helper to spawn a real-time byte-reader for a stream
+        fn spawn_byte_reader<R: Read + Send + 'static>(stream: R, tx: mpsc::Sender<String>) {
+            thread::spawn(move || {
+                let mut reader = stream;
+                let mut buffer = Vec::new();
+                let mut byte = [0u8; 1];
+                
+                while reader.read_exact(&mut byte).is_ok() {
+                    let b = byte[0];
+                    if b == b'\n' || b == b'\r' {
+                        if !buffer.is_empty() {
+                            let s = String::from_utf8_lossy(&buffer).to_string();
+                            if tx.send(s).is_err() { break; }
+                            buffer.clear();
+                        }
+                    } else {
+                        buffer.push(b);
+                    }
                 }
-            }
-        });
+            });
+        }
 
-        let stderr_tx = tx.clone();
-        thread::spawn(move || {
-            let reader = BufReader::new(stderr);
-            for line in reader.lines() {
-                if stderr_tx.send(line.unwrap_or_default()).is_err() {
-                    break;
-                }
-            }
-        });
+        spawn_byte_reader(stdout, tx.clone());
+        spawn_byte_reader(stderr, tx.clone());
 
         loop {
             // Check for cancellation signal

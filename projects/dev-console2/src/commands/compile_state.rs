@@ -19,10 +19,8 @@ pub struct CompileState {
     pub link_stage_start: Option<Instant>,
     pub generate_stage_start: Option<Instant>,
     pub previous_stage_progress: f64, // Track progress when transitioning stages
-    pub last_logged_progress: f64, // Track last logged progress to avoid unnecessary updates
     pub max_progress: f64, // Track maximum progress reached to prevent backwards jumps
     pub last_marker_time: Instant, // Track when the last stage marker was seen
-    pub last_warning_time: Option<Instant>, // Prevent warning spam
     pub has_warned_current_stage: bool, // Prevent multiple warnings for the same stuck stage
     pub stage_progress: f64, // 0.0 - 100.0 within the CURRENT stage
     pub stage_durations: std::collections::HashMap<crate::commands::predictor::CompileStage, f64>,
@@ -45,10 +43,8 @@ impl CompileState {
             link_stage_start: None,
             generate_stage_start: None,
             previous_stage_progress: 0.0,
-            last_logged_progress: 0.0,
             max_progress: 0.0,
             last_marker_time: Instant::now(),
-            last_warning_time: None,
             has_warned_current_stage: false,
             stage_progress: 0.0,
             stage_durations: std::collections::HashMap::new(),
@@ -56,7 +52,16 @@ impl CompileState {
     }
 
     pub fn update_stage_progress(&mut self, progress: f64) {
-        self.stage_progress = progress.clamp(0.0, 100.0);
+        // esptool does multiple segments. 
+        // If we see a significant drop (e.g. 100% -> 5%), it's a new segment.
+        // We'll treat the overall stage progress as a weighted average or just keep it moving.
+        if progress < self.stage_progress && self.stage_progress > 90.0 {
+            // New segment started. We'll "nudge" the floor up but allow 0-100 again.
+            // For now, let's just allow it to reset so the bar keeps moving.
+            self.stage_progress = progress;
+        } else if progress > self.stage_progress {
+            self.stage_progress = progress.clamp(0.0, 100.0);
+        }
     }
     
     /// Transitions to a new stage and returns a list of any skipped stages
@@ -178,7 +183,7 @@ impl CompileState {
             }
             CompileStage::Uploading => {
                 let elapsed = self.last_marker_time.elapsed().as_secs_f64();
-                let typical = *self.expected_durations.get(&self.stage).unwrap_or(&10.0);
+                let typical = *self.expected_durations.get(&self.stage).unwrap_or(&30.0);
                 
                 // CRITICAL: Use the actual reported percentage if we have it
                 if self.stage_progress > 0.0 {

@@ -79,7 +79,13 @@ impl App {
         }
 
         // Command List
-        frame.render_widget(CommandListWidget::new(&self.commands, self.selected_command_index, self.hovered_command_index), layout.commands);
+        frame.render_widget(
+            CommandListWidget::new(&self.commands, self.selected_command_index, self.hovered_command_index)
+                .border_style(self.theme.style("commands_border"))
+                .title_style(self.theme.style("commands_title"))
+                .highlight_style(self.theme.style("commands_highlight")),
+            layout.commands
+        );
 
         match &self.task_state {
             TaskState::Running { percentage, visual_percentage, stage, start_time, smoothed_eta, last_updated, .. } => {
@@ -101,7 +107,14 @@ impl App {
                 } else { 
                     "--:--".to_string() 
                 };
-                frame.render_widget(ProgressBarWidget::new("Status".to_string(), *visual_percentage, stage.clone()).elapsed(elapsed_str).eta(eta_str), layout.status);
+                frame.render_widget(
+                    ProgressBarWidget::new("Status".to_string(), *visual_percentage, stage.clone())
+                        .elapsed(elapsed_str)
+                        .eta(eta_str)
+                        .border_style(self.theme.style("progress_border"))
+                        .title_style(self.theme.style("progress_title")),
+                    layout.status
+                );
             }
             _ => {
                 frame.render_widget(StatusBoxWidget::new(&self.status_text), layout.status);
@@ -109,7 +122,9 @@ impl App {
         }
         
         // Output Block Rendering
-        let output_block = Block::bordered().title(" Output ");
+        let output_block = Block::bordered()
+            .title(Span::styled(" Output ", self.theme.style("output_title")))
+            .border_style(self.theme.style("output_border"));
         let inner_output_area = output_block.inner(layout.output);
         frame.render_widget(output_block, layout.output);
 
@@ -124,10 +139,12 @@ impl App {
             
             actual_text_area = text_part;
             
-            let input_block = Block::bordered().title(" Send Command ").border_style(Style::default().fg(Color::Yellow));
+            let input_block = Block::bordered()
+                .title(Span::styled(" Send Command ", self.theme.style("input_title")))
+                .border_style(self.theme.style("input_border"));
             let input_inner = input_block.inner(input_part);
             frame.render_widget(input_block, input_part);
-            frame.render_widget(Paragraph::new(self.input.value()), input_inner);
+            frame.render_widget(Paragraph::new(self.input.value()).style(self.theme.style("input_text")), input_inner);
             
             // Set cursor for input using tui-input's visual cursor tracking
             frame.set_cursor_position(Position::new(

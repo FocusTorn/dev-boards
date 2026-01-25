@@ -30,8 +30,8 @@
 // Defaults: Server=192.168.1.10, Port=1883, Username=mqtt, Password=mqtt
 const char* mqtt_client_id = "esp32-s3-sht21.2";
 
-const char* mqtt_topic = "sensors/sht21/readings";
-const char* mqtt_topic_status = "sensors/esp32-s3-sht21/status";
+const char* mqtt_topic = "sensors/sht21.2/readings";
+const char* mqtt_topic_status = "sensors/esp32-s3-sht21.2/status";
 
 // I2C Configuration
 // Note: ESP32-S3 doesn't have GPIO 22-25. Using GPIO 4 and 5 (both on left side)

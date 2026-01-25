@@ -15,13 +15,7 @@ struct WidgetConfig {
 
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct ApplicationConfig {
-    #[serde(default)]
-    pub name: String,
     pub title: String,
-    #[serde(default)]
-    pub version: String,
-    #[serde(default)]
-    pub author: String,
     #[serde(default = "default_min_width")]
     pub min_width: u16,
     #[serde(default = "default_min_height")]
@@ -64,8 +58,6 @@ pub struct BindingsConfig {
 pub struct TabBarColors {
     pub active: Option<String>,
     pub negate: Option<String>,
-    pub hover: Option<String>,
-    pub disabled: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Default, Clone)]
@@ -75,8 +67,6 @@ pub struct TabBarConfig {
     pub alignment: Alignment,
     pub style: Option<TabBarStyle>,
     pub color: Option<String>,
-    #[serde(rename = "type")]
-    pub bar_type: Option<String>,
     pub colors: Option<TabBarColors>,
     #[serde(default)]
     pub min_tab_width: u16,
@@ -94,6 +84,8 @@ pub struct TabBarConfig {
 pub struct Config {
     #[serde(default)]
     pub application: ApplicationConfig,
+    #[serde(default)]
+    pub theme: crate::app::theme::ThemeConfig,
     #[serde(default)]
     pub tab_bars: Vec<TabBarConfig>,
 }
@@ -127,15 +119,6 @@ pub struct TabConfig {
     pub id: String,
     pub name: String,
     pub default: Option<String>,
-    #[serde(default)]
-    pub content: Content,
-}
-
-#[derive(Debug, Deserialize, Default, Clone)]
-pub struct Content {
-    #[serde(rename = "type")]
-    pub content_type: Option<String>,
-    pub value: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]

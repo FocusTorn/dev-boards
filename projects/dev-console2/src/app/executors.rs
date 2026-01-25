@@ -28,17 +28,21 @@ impl App {
         if let Some(action) = Action::from_str(&selected_str) {
             self.dispatch_command(action);
         } else {
-            self.push_line(format!("[SYSTEM] No executor mapped for '{}'", selected_str));
+            self.log("action", &format!("No executor mapped for '{}'", selected_str));
         }
     }
 
     pub fn exec_cancel(&mut self) {
-        self.input_active = false;
-        self.input.reset();
+        let is_active = matches!(self.task_state, TaskState::Running { .. }) || matches!(self.task_state, TaskState::Monitoring { .. });
         
-        if matches!(self.task_state, TaskState::Running { .. }) || matches!(self.task_state, TaskState::Monitoring { .. }) {
+        if is_active {
             self.cancel_signal.store(true, Ordering::SeqCst);
-            self.push_line("[SYSTEM] Cancellation signal sent...".to_string());
+            self.log("system", "Cancellation signal sent...");
+        }
+
+        if self.input_active {
+            self.input_active = false;
+            self.input.reset();
         }
     }
 
@@ -96,8 +100,12 @@ impl App {
             start_time: now,
         };
         self.output_lines.clear();
-        self.push_line("[SYSTEM] Starting Serial Monitor...".to_string());
+        self.log("action", "Starting Serial Monitor...");
         
+        // Activate Input Field Automatically
+        self.input_active = true;
+        self.input.reset();
+
         let tx = self.command_tx.clone();
         let (serial_tx, serial_rx) = mpsc::channel();
         self.serial_tx = Some(serial_tx);
@@ -115,6 +123,7 @@ impl App {
             },
             Err(e) => {
                 self.task_state = TaskState::Idle;
+                self.input_active = false;
                 self.report_error(e);
             }
         }
@@ -127,8 +136,12 @@ impl App {
             start_time: now,
         };
         self.output_lines.clear();
-        self.push_line("[SYSTEM] Starting MQTT Monitor...".to_string());
+        self.log("action", "Starting MQTT Monitor...");
         
+        // Activate Input Field Automatically
+        self.input_active = true;
+        self.input.reset();
+
         let tx = self.command_tx.clone();
         let (mqtt_tx, mqtt_rx) = mpsc::channel();
         self.mqtt_tx = Some(mqtt_tx);
@@ -145,19 +158,24 @@ impl App {
                     let host = m.host.clone();
                     let port = m.port;
                     let client_id = m.id.clone();
+                    let username = if m.username.is_empty() { None } else { Some(m.username.clone()) };
+                    let password = if m.password.is_empty() { None } else { Some(m.password.clone()) };
+                    
                     std::thread::spawn(move || {
                         let callback = move |update| {
                             if tx.send(update).is_err() { return; }
                         };
-                        crate::commands::run_mqtt_monitor(host, port, client_id, cancel_signal, mqtt_rx, callback);
+                        crate::commands::run_mqtt_monitor(host, port, client_id, username, password, cancel_signal, mqtt_rx, callback);
                     });
                 } else {
                     self.task_state = TaskState::Idle;
+                    self.input_active = false;
                     self.report_error(color_eyre::eyre::eyre!("No MQTT configuration found for this profile."));
                 }
             },
             Err(e) => {
                 self.task_state = TaskState::Idle;
+                self.input_active = false;
                 self.report_error(e);
             }
         }
@@ -323,7 +341,7 @@ impl App {
                 }
             }
             _ => {
-                self.push_line(format!("[SYSTEM] No active monitor to send: {}", msg));
+                self.log("system", &format!("No active monitor to send: {}", msg));
             }
         }
     }

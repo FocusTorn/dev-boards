@@ -28,10 +28,29 @@
 // CONFIGURATION - Modify these values for your setup
 // ============================================================================
 
-// MQTT Configuration
-// Note: Client ID must be unique per ESP32 device and max 23 characters (MQTT 3.1 limit)
-// Other ESP32: "esp32-s3-sht21" (SHT21 sensor)
-const char* mqtt_client_id = "esp32-s3-led";  // Unique client ID (13 chars, within 23 char limit)
+const char* mqtt_client_id = "esp32s3-sht21.2_sk6822";  // Unique client ID (13 chars, within 23 char limit)
+
+const char* mqtt_6822_command = "e32s3/sk6822/command"; // Subscribe to commands
+const char* mqtt_6822_state =   "e32s3/sk6822/state";   // Subscribe to state
+const char* mqtt_6822_status =  "e32s3/sk6822/status";  // Subscribe to state
+
+
+const char* mqtt_sht21_readings = "e32s3.1/sht21.2/readings"; // Sensor readings
+const char* mqtt_sht21_status   = "e32s3.1/sht21.2/status";   // Publish status
+
+
+
+#define COMMAND_PIN 12        // GPIO pin for LED data line (change as needed)
+#define COMMAND_COUNT 31     // Number of LEDs in strip
+#define COMMAND_BRIGHTNESS 50  // 0-255 (default brightness)
+
+#define STATUS_PIN 17        // GPIO pin for LED data line (change as needed)
+#define STATUS_COUNT 30     // Number of LEDs in strip
+#define STATUS_BRIGHTNESS 50  // 0-255 (default brightness)
+
+
+
+
 
 // MQTT Broker Configuration (override library defaults if needed)
 // Set to nullptr to use library defaults, or specify custom values
@@ -49,13 +68,13 @@ const char* mqtt_topic_status = "controller/esp32-s3-led/status";    // Publish 
 
 // SK6812 LED Strip Configuration
 
-#define LED_PIN 12        // GPIO pin for LED data line (change as needed)
-#define LED_COUNT 31     // Number of LEDs in strip
-#define LED_BRIGHTNESS 50  // 0-255 (default brightness)
+#define COMMAND_PIN 12        // GPIO pin for LED data line (change as needed)
+#define COMMAND_COUNT 31     // Number of LEDs in strip
+#define COMMAND_BRIGHTNESS 50  // 0-255 (default brightness)
 
-#define STATE_LED_PIN 3        // GPIO pin for LED data line (change as needed)
-#define STATE_LED_COUNT 30     // Number of LEDs in strip
-#define STATE_LED_BRIGHTNESS 50  // 0-255 (default brightness)
+#define STATUS_PIN 17        // GPIO pin for LED data line (change as needed)
+#define STATUS_COUNT 30     // Number of LEDs in strip
+#define STATUS_BRIGHTNESS 50  // 0-255 (default brightness)
 
 
 

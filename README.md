@@ -76,6 +76,7 @@ idf.py -p COM3 flash monitor
 
 ## Notes
 
+- **The legacy `pmake` build system has been deprecated and replaced by the Rust-based `dev-console` and `dev-console-v2` applications.**
 - Both environments are configured for ESP32-S3 development
 - Arduino CLI structure mirrors the Raspberry Pi setup
 - ESP-IDF is a fresh installation

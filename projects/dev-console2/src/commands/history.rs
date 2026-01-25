@@ -69,10 +69,25 @@ impl HistoryManager {
         if total_avg_time < 1.0 { return None; }
 
         // 2. Convert time to weights (0.0 - 1.0)
+        // If some stages are missing (e.g. upload stats not recorded yet),
+        // we'll mix historical averages with defaults.
+        let defaults = crate::commands::predictor::WorkloadProfile::default().stage_weights;
+        
         for (stage, _) in &stages {
             if let Some(avg) = averages.get(stage) {
                 weights.insert(*stage, avg / total_avg_time);
+            } else if let Some(def_w) = defaults.get(stage) {
+                // If we have no history for this stage, use the default weight
+                // Note: This won't sum to exactly 1.0 anymore, so we normalize below
+                weights.insert(*stage, *def_w);
+                averages.insert(*stage, *def_w * 60.0); // Assume 60s total for fallback
             }
+        }
+
+        // Normalize weights to sum to 1.0
+        let sum: f64 = weights.values().sum();
+        if sum > 0.0 {
+            for w in weights.values_mut() { *w /= sum; }
         }
 
         Some(StageStats { weights, averages })

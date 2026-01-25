@@ -11,6 +11,8 @@ pub struct ProgressBarWidget<'a> {
     elapsed_text: String,
     eta_text: String,
     file_text: String,
+    border_style: Style,
+    title_style: Style,
 }
 
 impl<'a> ProgressBarWidget<'a> {
@@ -22,7 +24,19 @@ impl<'a> ProgressBarWidget<'a> {
             elapsed_text: String::new(),
             eta_text: String::new(),
             file_text: String::new(),
+            border_style: Style::default(),
+            title_style: Style::default(),
         }
+    }
+
+    pub fn border_style(mut self, style: Style) -> Self {
+        self.border_style = style;
+        self
+    }
+
+    pub fn title_style(mut self, style: Style) -> Self {
+        self.title_style = style;
+        self
     }
 
     pub fn elapsed(mut self, elapsed: String) -> Self {
@@ -41,7 +55,8 @@ impl<'a> Widget for ProgressBarWidget<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let block = Block::default()
             .borders(Borders::ALL)
-            .title(self.title);
+            .border_style(self.border_style)
+            .title(self.title.style(self.title_style));
         
         let inner_area = block.inner(area);
         block.render(area, buf);

@@ -1,0 +1,65 @@
+# Rust Agentic Skills: Gemini CLI Extension Reference
+
+Rust Agentic Skills is a modular, constraint-based skill set designed for autonomous AI coding agents. It focuses on turning general-purpose LLMs into a disciplined Rust engineering team by providing specialized context, tools, and protocols tailored to the Rust ecosystem.
+
+---
+
+## CORE ARCHITECTURE (The Triad Pattern)
+
+To maximize token efficiency and reliability, each skill is broken into three components:
+
+1.  **Driver (`SKILL.md`):** Minimal metadata (triggers, execution phases) used by the agent to determine if the skill is relevant to the current task.
+2.  **Tools (`scripts/`):** Deterministic executables (Shell, Rust binaries) that perform the actual work (e.g., linting, parsing, refactoring).
+3.  **Context (`references/`):** Lazy-loaded documentation and "Dictionaries of Pain" (common pitfalls) that provide deep-dive knowledge only when needed.
+
+---
+
+## KEY FEATURES & CAPABILITIES
+
+### 1. Agent Context Protocol (ACP) Compliance
+**Functionality:**
+Skills are self-describing, allowing agents to understand their own capabilities and the exact triggers that should activate specific workflows.
+
+**Example Situations:**
+- An agent detects a complex lifetime error and automatically activates the `Lint Hunter` skill to trace the reference.
+- During project initialization, the agent uses the `Agent Router` to select the correct engineering sub-skills.
+
+---
+
+### 2. Research-Plan-Implement (RPI) Methodology
+**Functionality:**
+Enforces a strict workflow where the agent must research the codebase and plan its changes before writing any code.
+
+**Example Situations:**
+- Refactoring a core data structure: The agent first uses research tools to map dependencies, creates a migration plan, and only then begins implementation.
+
+---
+
+### 3. Specialized Rust Skills
+**Functionality:**
+Includes dedicated modules for various aspects of Rust development, such as:
+- **Rust Core Specialist:** Idiomatic implementation and performance optimization.
+- **Lint Hunter:** Debugging compiler errors and lifetime issues.
+- **Pest/RON Specialists:** Domain-specific knowledge for grammar and serialization.
+- **Security Specialist:** Auditing for `unsafe` code and potential vulnerabilities.
+
+**Example Situations:**
+- Resolving a `borrow checker` error that standard LLMs struggle with.
+- Implementing a complex parser using the `pest` crate with guided expert instructions.
+
+---
+
+## USAGE & INTEGRATION
+
+- **Gemini CLI:** Integrated as an extension where skills are discovered and activated via the `Agent Router`.
+- **Manual Activation:** Skills can be manually loaded into any agent by providing the `SKILL.md` content as part of the prompt context.
+- **Token Optimization:** By separating context into lazy-loaded files, it keeps the main conversation buffer clean and focused.
+
+---
+
+## PERTINENT NOTES
+- **Multi-Agent Readiness:** Designed to support future "Beast Mode" where multiple skills can be chained autonomously without human intervention.
+- **No-Dependency Focus:** Tools are designed to be as self-contained as possible to minimize environment setup friction.
+
+---
+*Last Updated: January 2026*
