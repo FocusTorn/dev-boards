@@ -366,3 +366,39 @@ are only available while on the dashboard tab (which we currently are) as seen b
 ```
 
 but they should be in the dispatcher available when id: "dashboard" tab is active, and the [??] should be cyan, and the description next to it should be a grey color
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@https://github.com/cloudfunnels/rust-guardian                                                                                                                                                                                                     │
+@https://crates.io/crates/rust-guardian                                                                                                                                                                                                            │
+@https://docs.rs/rust-guardian/0.1.0/rust_guardian/ 
+
+Based on the above documentation sites for Rust Guardian, can you write a cleanly formatted txt document (within .gemini/_docs) outlining:
+
+- for each of the different avialale commands
+  - a high level of the functionality
+  - Example situations that would call for their use
+  - and any other notes or detail you think is pertanent
+
+
+and one for each of these gemini-cli extensions:
+
+- rust-agentic-skills @https://github.com/udapy/rust-agentic-skills
+- conductor @https://github.com/gemini-cli-extensions/conductor
+
+
