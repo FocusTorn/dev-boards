@@ -144,3 +144,6 @@ projects/dev-console2/target/
 .dev-console/compile_output.log
 carrot-ai-pm
 projects/dev-console2/shared-rust
+
+# Ignored by F-UX Notes Hub
+/.fux_note-hub/

@@ -1,9 +1,34 @@
 
 
+// https://github.com/abagames/slash-criticalthink
+// gemini extensions install https://github.com/abagames/slash-criticalthink
+
+// https://github.com/gemini-cli-extensions/conductor
+// gemini extensions install https://github.com/gemini-cli-extensions/conductor
+
+// https://github.com/qodo-ai/open-aware
+// gemini extensions install https://github.com/qodo-ai/open-aware
+
+// https://github.com/involvex/gemini-cli-prompt-library
+// gemini extensions install https://github.com/involvex/gemini-cli-prompt-library
+
+// https://github.com/udapy/rust-agentic-skills
+// gemini extensions install https://github.com/udapy/rust-agentic-skills
+
 
 
 {
-  "mcpServers": {
+  
+  
+    "coreTools": {
+        "includeDirectories": ["D:\\_dev\\_Projects\\dev-boards\\projects\\dev-console2"]
+    }   
+    
+    
+    
+    
+  
+    // "mcpServers": {
 //     "carrot-pm": {
 //       "command": "node",
 //       "args": ["D:/_dev/_Projects/dev-boards/carrot-ai-pm/dist/src/server.js"],
@@ -11,5 +36,9 @@
 //         "CARROT_PROJECT_ROOT": "D:/_dev/_Projects/dev-boards"
 //       }
 //     }
-  }
+//   }
+  
+  
+  
+  
 }

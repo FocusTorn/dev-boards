@@ -1,161 +1,114 @@
-
 application:
+
+    # ====================================================================
+    # DEBUG CONFIGURATION
+
+    show_terminal_size: true
+    show_press_and_modifier: true
+    # ====================================================================
+
     title: "ESP32-S3 Dev Console"
 
     min_width: 80
-    min_height: 21
+    min_height: 27
 
     # Global keyboard bindings
     bindings:
-        - id: "quit"
-          key: "[q]"
-          display: "[q] Quit"
-          onPress: "actionToTake"
+        separator: " "
+        items:
+          - key: "[q]"
+            description: "Quit"
+            triggers:
+                "[q]": "quit"
+          - key: "[Esc]"
+            description: "Cancel"
+            triggers:
+                "[Esc]": "cancel"
 
     # Status bar configuration
     status_bar:
         default_text: "Status: Ready"
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 # ┃                                            TAB BARS WIDGET CONFIGURATION                                           ┃
 # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-#>
-# style: tabbed
-#   ╭──────╮
-# ──╯ Tab1 ╰─ Tab 2 ─ Tab 3 ──
-
-# style: text
-# ─ Tab 1 ─ Tab 2 ─ Tab 3 ─
-
-# style: boxed
-# ──[ Tab 1 ]─ Tab 2 ─ Tab 3 ──
-
-# style: box_static
-# ──[ Tab 1 ]─[ Tab 2 ]─[ Tab 3 ]──
-
-# style: text_static
-# ─ Tab 1 ─ Tab 2 ─ Tab 3 ─
-
- #<
 
 tab_bars:
 
-    # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
-    # │                            Main Content Tab Bar (MainContentTabBar)                            │
-    # └────────────────────────────────────────────────────────────────────────────────────────────────┘
-    - id: "MainContentTabBar"
-      style: "tabbed" # Options: tabbed, boxed, text, box_static, text_static
-      color: "cyan" # Color for active tab (ratatui color name)
+  # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  # │                            Main Content Tab Bar (MainContentTabBar)                            │
+  # └────────────────────────────────────────────────────────────────────────────────────────────────┘
+  - id: "MainContentTabBar"
+    style: "Tab" # Options: tabbed, boxed, text, box_static, text_static
+    
+    color: "cyan" # Color for active tab text
 
-      min_tab_width: 8 # OPTIONAL: Minimum width per tab
-      tab_tooltips: true # Show tooltips on hover
+    min_tab_width: 11 # OPTIONAL: Minimum width per tab
+    tab_tooltips: true # Show tooltips on hover
 
-      alignment:
-        vertical: "top" # Options: "top", "bottom"
-        horizontal: "center" # Options: "left", "center", "right"
+    alignment:
+        vertical: "Top" # Options: "top", "bottom"
+        horizontal: "Center" # Options: "left", "center", "right"
         offset_x: 0 # Horizontal offset in characters
         offset_y: 0 # Vertical offset in lines
-
-      navigation:
+    
+    navigation:
         left: ["PgUp"]
         right: ["PgDown"]
 
-      tabs:
+    tabs:
+      - id: "dashboard"
+        name: "Dashboard"
+        default: "active"
 
-        - id: "dashboard"
-          name: "Dashboard"
-          default: "active"
+    # Tab-specific bindings for each tab
+    tab_bindings:
+      dashboard:
+        separator: " "
+        items:
+            - key: "[🡙]"
+              description: "Navigate Commands"
+              triggers:
+                "[Up]": "commands_up"
+                "[Down]": "commands_down"
 
+            - key: "[🡘]"
+              description: "Change Profile"
+              triggers:
+                "[Left]": "prev_profile"
+                "[Right]": "next_profile"
 
+            - key: "[Enter]"
+              description: "Execute Command"
+              triggers:
+                "[Enter]": "execute"
+                
+            - key: "[HM/END]"
+              description: "Scroll to top/btm"
+              triggers:
+                "[Home]": "scroll_output_to_top"
+                "[End]": "scroll_output_to_bottom"
+    
+        # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+        # │                   Output Panel Static Options (OutputPanelStaticOptions)                       │
+        # └────────────────────────────────────────────────────────────────────────────────────────────────┘
+  - id: "OutputPanelStaticOptions"
 
+    alignment:
+        vertical: "Bottom" # Options: "top", "bottom"
+        horizontal: "Left" # Options: "left", "center", "right"
+        offset_x: 0 # Horizontal offset in characters
+        offset_y: 0 # Vertical offset in lines
 
+    style: "BoxStatic" # Options: tabbed, boxed, text, box_static, text_static
 
+    type: state # state, button,
+    colors:
+        active: "green"
+        negate: "red"
 
-      # Tab-specific bindings for each tab
-      tab_bindings:
-        dashboard:
-          - key: "[🡘 🡙]"
-            description: "Navigate"
-          - key: "[Enter]"
-            description: "Execute Command"
-
-        tab2:
-          - key: "[🡙]"
-            description: "Navigate Profiles"
-          - key: "[Tab]"
-            description: "Next field"
-          - key: "[Shift+Tab]"
-            description: "Previous field"
-          - key: "[Enter/Click]"
-            description: "Confirm/Edit field"
-
-
-
-
-
-
-
-
-    # # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
-    # # │                   MAIN CONTENT STATIC TAB BAR (MainContentStaticTabBar)                        │
-    # # └────────────────────────────────────────────────────────────────────────────────────────────────┘
-    # - id: "MainContentStaticTabBar"
-
-    #   alignment:
-    #     vertical: "top" # Options: "top", "bottom"
-    #     horizontal: "right" # Options: "left", "center", "right"
-    #     offset_x: 0 # Horizontal offset in characters
-    #     offset_y: 0 # Vertical offset in lines
-
-    #   style: "box_static" # Options: tabbed, boxed, text, box_static, text_static
-
-    # #   type: state # state, button,
-    # #   colors:
-    # #     active: "green"
-    # #     negate: "red"
-    # #     disabled: null
-
-
-    #   type: button # state, button,
-    #   on_click: "functionToExecute"
-    #   colors:
-    #     active: null
-    #     hover: "cyan"
-
-    #     # negate: "red"
-    #     # disabled: null
-
-
-
-    #   min_tab_width: 8 # Minimum width per tab
-    #   tab_tooltips: true # Show tooltips on hover
-
-    #   # navigation: # optional
-    #   #     left: ["h"] # Keys to navigate to previous tab
-    #   #     right: ["l"] # Keys to navigate to next tab
-
-    #   tabs:
-    #     - id: "static1"
-    #       name: "Static 1"
-    #       default: "active"  # "active" indicates starting tab for non-static styles, or "active"/"negate"/"disabled" for state-based static styles
-
-    #     - id: "static2"
-    #       name: "Static 2"
+    tabs:
+      - id: "autoscroll"
+        name: "Auto"
+        default: "active"
+      

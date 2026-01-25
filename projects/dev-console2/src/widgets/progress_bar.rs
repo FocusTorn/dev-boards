@@ -35,10 +35,6 @@ impl<'a> ProgressBarWidget<'a> {
         self
     }
 
-    pub fn current_file(mut self, file: String) -> Self {
-        self.file_text = file;
-        self
-    }
 }
 
 impl<'a> Widget for ProgressBarWidget<'a> {
@@ -59,28 +55,25 @@ impl<'a> Widget for ProgressBarWidget<'a> {
             return;
         }
 
+        // Row 1: Structured Status Info
         let line1 = format!(
-            "{}: {:.1}%{}{}{}{}",
-            self.stage_text,
+            "Progress: {:>5.1}% | Elapsed: {:>5} | ETA: {:>5} | Stage: {}",
             self.progress_percentage,
-            if self.elapsed_text.is_empty() { "" } else { " | Elapsed: " },
-            self.elapsed_text,
-            if self.eta_text.is_empty() { "" } else { " | ETA: " },
-            self.eta_text
+            if self.elapsed_text.is_empty() { "00:00" } else { &self.elapsed_text },
+            if self.eta_text.is_empty() { "--:--" } else { &self.eta_text },
+            self.stage_text
         );
 
-        let percent_text = format!("{:.1}%", self.progress_percentage);
-        let percent_text_width = percent_text.len();
-        let progress_bar_width = (content_area.width as usize).saturating_sub(percent_text_width + 3);
+        // Row 2: Pure Progress Bar (Percentage moved to structured header)
+        let bar_width = (content_area.width as usize).saturating_sub(2);
+        let filled_width = ((bar_width as f64 * self.progress_percentage / 100.0).round() as usize).min(bar_width);
+        let empty_width = bar_width.saturating_sub(filled_width);
         
-        let filled_width = ((progress_bar_width as f64 * self.progress_percentage / 100.0) as usize).min(progress_bar_width);
-        let empty_width = progress_bar_width.saturating_sub(filled_width);
-        
-        let line2 = format!("[{}{}] {}", "█".repeat(filled_width), "░".repeat(empty_width), percent_text);
+        let bar_text = format!("[{}{}]", "█".repeat(filled_width), " ".repeat(empty_width));
 
         let mut lines = vec![
-            Line::from(Span::styled(line1, Style::default().fg(Color::Cyan))),
-            Line::from(Span::styled(line2, Style::default().fg(Color::Green))),
+            Line::from(Span::styled(line1, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))),
+            Line::from(Span::styled(bar_text, Style::default().fg(Color::Green))),
         ];
 
         if !self.file_text.is_empty() && content_area.height > 2 {

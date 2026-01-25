@@ -9,21 +9,27 @@ pub struct Settings {
     pub sketch_directory: String,
     pub sketch_name: String,
     pub fqbn: String,
+    pub port: String,
+    pub baudrate: u32,
     pub board_model: String,
     pub env: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 pub enum ProgressUpdate {
     Status(String),
     OutputLine(String),
     Percentage(f64),
     Stage(String),
     Completed,
+    CompletedWithMetrics {
+        stage_times: std::collections::HashMap<crate::commands::predictor::CompileStage, f64>,
+    },
     Failed(String),
 }
 
-pub fn run_compile(settings: &Settings, cancel_signal: Arc<AtomicBool>, progress_callback: impl FnMut(ProgressUpdate) + Send + 'static) {
+pub fn run_compile(settings: &Settings, stats: crate::commands::history::StageStats, cancel_signal: Arc<AtomicBool>, progress_callback: impl FnMut(ProgressUpdate) + Send + 'static) {
     let callback = Arc::new(Mutex::new(progress_callback));
 
     callback.lock().unwrap()(ProgressUpdate::Stage("Initializing".to_string()));
@@ -83,35 +89,58 @@ pub fn run_compile(settings: &Settings, cancel_signal: Arc<AtomicBool>, progress
         }
     };
 
-    let mut compile_state = compile_state::CompileState::new();
+    let compile_state = Arc::new(Mutex::new(compile_state::CompileState::new(stats.weights, stats.averages)));
     callback.lock().unwrap()(ProgressUpdate::Stage("Compiling".to_string()));
 
     let callback_clone = callback.clone();
-    let result = process_handler.read_output(cancel_signal, move |line| {
-        // Remove ANSI escape codes to prevent TUI corruption (e.g. cursor movement overwriting UI)
-        let line = crate::commands::utils::remove_ansi_escapes(&line);
-
+    let state_clone = compile_state.clone();
+    let result = process_handler.read_output(cancel_signal.clone(), move |line| {
         let mut cb = callback_clone.lock().unwrap();
-        let (stage_changed, should_continue) = compile_parser::detect_stage_change(&line, &mut compile_state, 0.0);
+        let mut state = state_clone.lock().unwrap();
+        let (stage_changed, should_continue) = compile_parser::detect_stage_change(&line, &mut state, 0.0, &mut |msg| {
+            cb(ProgressUpdate::OutputLine(msg));
+        });
         if !should_continue {
             cb(ProgressUpdate::OutputLine(line));
             return;
         }
         
         if stage_changed {
-             cb(ProgressUpdate::Stage(format!("{:?}", compile_state.stage)));
+             cb(ProgressUpdate::Stage(format!("{:?}", state.stage)));
         }
 
-        compile_parser::parse_compilation_info(&line, &mut compile_state);
-        let progress = compile_state.calculate_progress();
+        compile_parser::parse_compilation_info(&line, &mut state);
+        let progress = state.calculate_progress();
         cb(ProgressUpdate::Percentage(progress));
         cb(ProgressUpdate::OutputLine(line));
+
+        // Watchdog: Check if we are stuck in a stage without markers
+        // This method now handles its own internal "has_warned" state
+        if let Some(warning) = state.check_for_missing_markers() {
+            cb(ProgressUpdate::OutputLine(warning));
+        }
     });
 
     let mut cb = callback.lock().unwrap();
     match result {
-        Ok(true) => cb(ProgressUpdate::Completed),
-        Ok(false) => cb(ProgressUpdate::Failed("Process cancelled or failed.".to_string())),
+        Ok(true) => {
+            // Capture final stage duration
+            let mut state = compile_state.lock().unwrap();
+            let duration = state.last_marker_time.elapsed().as_secs_f64();
+            let stage = state.stage;
+            state.stage_durations.insert(stage, duration);
+            
+            cb(ProgressUpdate::CompletedWithMetrics { 
+                stage_times: state.stage_durations.clone() 
+            });
+        },
+        Ok(false) => {
+            if cancel_signal.load(std::sync::atomic::Ordering::SeqCst) {
+                cb(ProgressUpdate::Failed("Compilation cancelled by user.".to_string()))
+            } else {
+                cb(ProgressUpdate::Failed("Compilation failed (see output for details).".to_string()))
+            }
+        },
         Err(e) => cb(ProgressUpdate::Failed(format!("Error reading process output: {}", e))),
     }
 }
@@ -132,9 +161,31 @@ fn setup_compile_directory(sketch_dir: &Path, sketch_file: &Path, project_root: 
         Ok((sketch_dir.to_path_buf(), None))
     } else {
         let temp_dir_path = project_root.join(".dev-console").join("temp_compile").join(sketch_file_name);
+        
+        // Retry logic for Windows file locking
         if temp_dir_path.exists() {
-            std::fs::remove_dir_all(&temp_dir_path).map_err(|e| format!("Failed to clean up old temp directory: {}", e))?;
+            let mut retries = 5;
+            let mut last_err = None;
+            
+            while retries > 0 {
+                match std::fs::remove_dir_all(&temp_dir_path) {
+                    Ok(_) => break,
+                    Err(e) => {
+                        last_err = Some(e);
+                        retries -= 1;
+                        std::thread::sleep(std::time::Duration::from_millis(200));
+                    }
+                }
+            }
+            
+            if temp_dir_path.exists() {
+                return Err(format!(
+                    "Failed to clean up old temp directory after 5 retries: {}. This usually happens if a previous process is still shutting down.", 
+                    last_err.map(|e| e.to_string()).unwrap_or_default()
+                ));
+            }
         }
+
         std::fs::create_dir_all(&temp_dir_path).map_err(|e| format!("Failed to create temporary compile directory: {}", e))?;
 
         let temp_sketch_file = temp_dir_path.join(format!("{}.ino", sketch_file_name));
@@ -144,6 +195,10 @@ fn setup_compile_directory(sketch_dir: &Path, sketch_file: &Path, project_root: 
             for entry in entries.filter_map(Result::ok) {
                 let path = entry.path();
                 if path.is_file() && path != sketch_file {
+                    // Skip other .ino files - only the main one should be in the temp dir root
+                    if path.extension().and_then(|s| s.to_str()) == Some("ino") {
+                        continue;
+                    }
                     if let Some(file_name) = path.file_name() {
                         let dest = temp_dir_path.join(file_name);
                         let _ = std::fs::copy(&path, &dest);

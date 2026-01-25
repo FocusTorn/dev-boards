@@ -2,26 +2,21 @@
 name = "dev-console-v2"
 version = "0.1.0"
 edition = "2021"
-authors = ["Dev Boards Team"]
-description = "A TUI application for development console management using Elm architecture"
-license = "MIT"
 
 [dependencies]
 ratatui = "0.30.0"
 crossterm = "0.28.1"
-color-eyre = "0.6.3"
-serde = { version = "1.0.228", features = ["derive"] }
-regex = "1.12.2"
-lazy_static = "1.5.0"
-which = "8.0.0"
+color-eyre = "0.6"
+tokio = { version = "1.36", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 serde-saphyr = "0.0.16"
 arboard = "3.2.0"
-tui-scrollview = "0.5.0"
-tui-scrollbar = "0.1.0"
-
-[dev-dependencies]
-pretty_assertions = "1.4.1"
-
-[[bin]]
-name = "dev-console-v2"
-path = "src/main.rs"
+regex = "1.10"
+lazy_static = "1.4"
+which = "6.0"
+serialport = "4.3"
+rumqttc = { version = "0.24", default-features = false, features = ["use-native-tls"] }
+tui-input = "0.11"
+strum = { version = "0.26", features = ["derive"] }
+strum_macros = "0.26"

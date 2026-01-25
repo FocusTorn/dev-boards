@@ -9,8 +9,10 @@ use serde::Deserialize;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ToastLevel {
+    #[allow(dead_code)]
     Info,
     Success,
+    #[allow(dead_code)]
     Warning,
     Error,
 }
@@ -49,9 +51,7 @@ pub enum ToastPosition {
 }
 
 fn default_duration_seconds() -> f32 { 1.5 }
-fn default_fade_out_frames() -> u16 { 20 }
-fn default_show_on_control_click() -> bool { false }
-fn default_show_on_regular_click() -> bool { false }
+fn default_fade_out_seconds() -> f32 { 0.5 }
 fn bottom_center() -> ToastPosition { ToastPosition::BottomCenter }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -60,12 +60,8 @@ pub struct ToastConfig {
     pub position: ToastPosition,
     #[serde(default = "default_duration_seconds")]
     pub duration_seconds: f32,
-    #[serde(default = "default_fade_out_frames")]
-    pub fade_out_frames: u16,
-    #[serde(default = "default_show_on_control_click")]
-    pub show_on_control_click: bool,
-    #[serde(default = "default_show_on_regular_click")]
-    pub show_on_regular_click: bool,
+    #[serde(default = "default_fade_out_seconds")]
+    pub fade_out_seconds: f32,
 }
 
 #[derive(Debug, Clone)]
@@ -74,6 +70,7 @@ pub struct Toast {
     pub level: ToastLevel,
     pub shown_at: Instant,
     pub duration: Duration,
+    pub opacity: f64, // 0.0 to 1.0
 }
 
 impl Toast {
@@ -83,11 +80,8 @@ impl Toast {
             level,
             shown_at: Instant::now(),
             duration,
+            opacity: 1.0,
         }
-    }
-
-    pub fn is_expired(&self) -> bool {
-        self.shown_at.elapsed() >= self.duration
     }
 }
 
@@ -106,10 +100,11 @@ impl ToastManager {
     }
 
     pub fn add(&mut self, message: String, level: ToastLevel) {
-        let duration = Duration::from_secs_f32(self.config.duration_seconds);
-        self.toasts.push(Toast::new(message, level, duration));
+        let total_duration = Duration::from_secs_f32(self.config.duration_seconds + self.config.fade_out_seconds);
+        self.toasts.push(Toast::new(message, level, total_duration));
     }
 
+    #[allow(dead_code)]
     pub fn info(&mut self, message: &str) {
         self.add(message.to_string(), ToastLevel::Info);
     }
@@ -118,6 +113,7 @@ impl ToastManager {
         self.add(message.to_string(), ToastLevel::Success);
     }
 
+    #[allow(dead_code)]
     pub fn warning(&mut self, message: &str) {
         self.add(message.to_string(), ToastLevel::Warning);
     }
@@ -127,22 +123,42 @@ impl ToastManager {
     }
 
     pub fn update(&mut self) {
-        self.toasts.retain(|t| !t.is_expired());
+        let fade_start_offset = Duration::from_secs_f32(self.config.duration_seconds);
+        let fade_duration = Duration::from_secs_f32(self.config.fade_out_seconds);
+
+        self.toasts.retain_mut(|t| {
+            let elapsed = t.shown_at.elapsed();
+            if elapsed >= t.duration {
+                return false;
+            }
+
+            if elapsed > fade_start_offset {
+                let fade_elapsed = elapsed.saturating_sub(fade_start_offset);
+                let fade_pct = fade_elapsed.as_secs_f64() / fade_duration.as_secs_f64();
+                t.opacity = (1.0 - fade_pct).max(0.0);
+            } else {
+                t.opacity = 1.0;
+            }
+            true
+        });
     }
 }
 
 pub struct ToastWidget<'a> {
-    manager: &'a ToastManager,
+    manager: &'a mut ToastManager,
 }
 
 impl<'a> ToastWidget<'a> {
-    pub fn new(manager: &'a ToastManager) -> Self {
+    pub fn new(manager: &'a mut ToastManager) -> Self {
         Self { manager }
     }
 }
 
 impl<'a> Widget for ToastWidget<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        // Encapsulate expiration logic within the render pass
+        self.manager.update();
+
         if self.manager.toasts.is_empty() {
             return;
         }
@@ -152,15 +168,16 @@ impl<'a> Widget for ToastWidget<'a> {
 
         // Calculate the maximum width of all toasts
         let mut max_width = 0usize;
-        let mut toast_data: Vec<(String, Color)> = Vec::new();
+        let mut toast_data: Vec<(String, Color, f64)> = Vec::new();
 
         for toast in toasts {
             let icon = toast.level.icon();
             let fg_color = toast.level.color();
+            let opacity = toast.opacity;
 
             let content = format!("{} {}", icon, toast.message);
             max_width = max_width.max(content.len());
-            toast_data.push((content, fg_color));
+            toast_data.push((content, fg_color, opacity));
         }
 
         // Add padding
@@ -180,15 +197,13 @@ impl<'a> Widget for ToastWidget<'a> {
             ToastPosition::BottomLeft | ToastPosition::BottomCenter | ToastPosition::BottomRight
         );
 
-        let iter: Box<dyn Iterator<Item = _>> = if stack_up {
+        let iter: Box<dyn Iterator<Item = &(String, Color, f64)>> = if stack_up {
             Box::new(toast_data.iter().rev())
         } else {
-            Box::new(toast_data.iter().rev()) // Actually we always want to iterate from newest to oldest for stacking "away" from edge?
-            // If stacking up from bottom: newest at bottom. y_offset increases upwards.
-            // If stacking down from top: newest at top. y_offset increases downwards.
+            Box::new(toast_data.iter().rev()) 
         };
 
-        for (content, fg_color) in iter {
+        for (content, fg_color, opacity) in iter {
             // Left-pad content to match max width
             let content_len = content.len();
             let left_padding = max_width.saturating_sub(content_len).saturating_sub(1).max(2);
@@ -228,9 +243,16 @@ impl<'a> Widget for ToastWidget<'a> {
 
             Clear.render(toast_area, buf);
 
+            // Apply fade effect: Interpolate color toward grey/black based on opacity
+            let current_fg = if *opacity < 1.0 {
+                Color::Indexed(240 + (*opacity * 15.0) as u8) // Fade to dark grey
+            } else {
+                *fg_color
+            };
+
             let toast_widget = Paragraph::new(padded_text)
                 .style(Style::default()
-                    .fg(*fg_color)
+                    .fg(current_fg)
                     .bg(Color::Rgb(10, 10, 10))
                     .add_modifier(Modifier::BOLD));
 

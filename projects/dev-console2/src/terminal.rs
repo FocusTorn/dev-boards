@@ -3,7 +3,7 @@ use std::{io, panic};
 use ratatui::{
     backend::CrosstermBackend,
     crossterm::{
-        event::{DisableMouseCapture, EnableMouseCapture},
+        event::{DisableMouseCapture, EnableMouseCapture, PushKeyboardEnhancementFlags, KeyboardEnhancementFlags, PopKeyboardEnhancementFlags},
         terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
         ExecutableCommand,
     },
@@ -15,12 +15,23 @@ pub fn init_terminal() -> io::Result<Terminal<CrosstermBackend<io::Stdout>>> {
     enable_raw_mode()?;
     io::stdout().execute(EnterAlternateScreen)?;
     io::stdout().execute(EnableMouseCapture)?;
+    
+    // Enable Kitty Keyboard Protocol if supported
+    // This allows for better detection of modifiers (Shift, Alt, Ctrl) especially on Windows Terminal
+    let _ = io::stdout().execute(PushKeyboardEnhancementFlags(
+        KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
+            | KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES
+            | KeyboardEnhancementFlags::REPORT_ALTERNATE_KEYS
+            | KeyboardEnhancementFlags::REPORT_EVENT_TYPES
+    ));
+
     let terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
     Ok(terminal)
 }
 
 /// Restore the terminal to its original state
 pub fn restore_terminal() -> io::Result<()> {
+    let _ = io::stdout().execute(PopKeyboardEnhancementFlags);
     io::stdout().execute(DisableMouseCapture)?;
     io::stdout().execute(LeaveAlternateScreen)?;
     disable_raw_mode()?;
@@ -32,6 +43,7 @@ pub fn restore_terminal() -> io::Result<()> {
 pub fn install_panic_hook() {
     let original_hook = panic::take_hook();
     panic::set_hook(Box::new(move |panic_info| {
+        let _ = io::stdout().execute(PopKeyboardEnhancementFlags);
         let _ = io::stdout().execute(LeaveAlternateScreen);
         let _ = disable_raw_mode();
         original_hook(panic_info);

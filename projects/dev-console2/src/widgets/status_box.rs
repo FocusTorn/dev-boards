@@ -7,12 +7,11 @@ use ratatui::{
 
 pub struct StatusBoxWidget<'a> {
     status_text: &'a str,
-    is_focused: bool,
 }
 
 impl<'a> StatusBoxWidget<'a> {
-    pub fn new(status_text: &'a str, is_focused: bool) -> Self {
-        Self { status_text, is_focused }
+    pub fn new(status_text: &'a str) -> Self {
+        Self { status_text }
     }
 }
 
@@ -22,8 +21,6 @@ impl<'a> Widget for StatusBoxWidget<'a> {
 
         let border_color = if is_error {
             Color::Red
-        } else if self.is_focused {
-            Color::Cyan
         } else {
             Color::White
         };

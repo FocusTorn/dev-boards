@@ -13,56 +13,71 @@ struct WidgetConfig {
 }
 
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct ApplicationConfig {
+    #[serde(default)]
+    pub name: String,
     pub title: String,
+    #[serde(default)]
+    pub version: String,
+    #[serde(default)]
+    pub author: String,
     #[serde(default = "default_min_width")]
     pub min_width: u16,
     #[serde(default = "default_min_height")]
     pub min_height: u16,
     #[serde(default)]
-    pub bindings: Vec<BindingConfig>,
+    pub show_terminal_size: bool,
+    #[serde(default)]
+    pub show_press_and_modifier: bool,
     #[serde(default)]
     pub status_bar: StatusBarConfig,
+    #[serde(default)]
+    pub bindings: BindingsConfig,
+}
+
+#[derive(Debug, Deserialize, Default, Clone)]
+pub struct StatusBarConfig {
+    pub default_text: String,
 }
 
 fn default_min_width() -> u16 { 80 }
 fn default_min_height() -> u16 { 21 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct BindingConfig {
-    pub id: String,
-    pub key: String,
-    pub display: String,
-    pub on_press: Option<String>,
-}
-
-#[derive(Debug, Deserialize, Default)]
-pub struct StatusBarConfig {
-    pub default_text: String,
-}
-
-#[derive(Debug, Deserialize, Default)]
-pub struct Config {
+    pub key: String,         // Display key (e.g. "[🡙]")
+    pub description: String, // Display description
     #[serde(default)]
-    pub application: ApplicationConfig,
+    pub triggers: std::collections::HashMap<String, String>, // Physical Key -> Semantic Action
+}
+
+#[derive(Debug, Deserialize, Default, Clone)]
+pub struct BindingsConfig {
+    #[serde(default = "default_separator")]
+    pub separator: String,
     #[serde(default)]
-    pub tab_bars: Vec<TabBarConfig>,
+    pub items: Vec<BindingConfig>,
 }
 
-#[derive(Debug, Deserialize, Default)]
-pub struct TabBindingConfig {
-    pub key: String,
-    pub description: String,
+#[derive(Debug, Deserialize, Default, Clone)]
+pub struct TabBarColors {
+    pub active: Option<String>,
+    pub negate: Option<String>,
+    pub hover: Option<String>,
+    pub disabled: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct TabBarConfig {
     pub id: String,
     #[serde(default)]
     pub alignment: Alignment,
-    pub style: Option<String>,
+    pub style: Option<TabBarStyle>,
     pub color: Option<String>,
+    #[serde(rename = "type")]
+    pub bar_type: Option<String>,
+    pub colors: Option<TabBarColors>,
     #[serde(default)]
     pub min_tab_width: u16,
     #[serde(default)]
@@ -72,20 +87,34 @@ pub struct TabBarConfig {
     #[serde(default)]
     pub tabs: Vec<TabConfig>,
     #[serde(default)]
-    pub tab_bindings: std::collections::HashMap<String, Vec<TabBindingConfig>>,
+    pub tab_bindings: std::collections::HashMap<String, BindingsConfig>,
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
+pub struct Config {
+    #[serde(default)]
+    pub application: ApplicationConfig,
+    #[serde(default)]
+    pub tab_bars: Vec<TabBarConfig>,
+}
+
+fn default_separator() -> String {
+    " | ".to_string()
+}
+
+use crate::widgets::tab_bar::{TabBarAlignment, TabBarStyle};
+
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct Alignment {
-    pub vertical: Option<String>,
-    pub horizontal: Option<String>,
+    pub vertical: Option<TabBarAlignment>,
+    pub horizontal: Option<TabBarAlignment>,
     #[serde(default)]
     pub offset_x: i16,
     #[serde(default)]
     pub offset_y: i16,
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct Navigation {
     #[serde(default)]
     pub left: Vec<String>,
@@ -93,7 +122,7 @@ pub struct Navigation {
     pub right: Vec<String>,
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct TabConfig {
     pub id: String,
     pub name: String,
@@ -102,7 +131,7 @@ pub struct TabConfig {
     pub content: Content,
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct Content {
     #[serde(rename = "type")]
     pub content_type: Option<String>,
@@ -191,17 +220,21 @@ pub fn load_command_settings() -> Result<Settings> {
             .find(|c| c.id == first_sketch.connection);
         
         if let (Some(device), Some(connection)) = (device, connection) {
-            // Extract sketch name from path
-            let sketch_name = std::path::Path::new(&first_sketch.path)
-                .file_stem()
+            let path = std::path::Path::new(&first_sketch.path);
+            let sketch_directory = path.parent()
+                .map(|p| p.to_string_lossy().into_owned())
+                .unwrap_or_default();
+            let sketch_name = path.file_stem()
                 .and_then(|s| s.to_str())
                 .unwrap_or("sketch")
                 .to_string();
             
             return Ok(Settings {
-                sketch_directory: first_sketch.path.clone(),
+                sketch_directory,
                 sketch_name,
-                fqbn: device.fbqn.clone(),  // Using FBQN from YAML
+                fqbn: device.fbqn.clone(),
+                port: connection.port.clone(),
+                baudrate: connection.baudrate,
                 board_model: device.board_model.clone(),
                 env: if connection.compiler == "arduino-cli" { "arduino" } else { "windows" }.to_string(),
             });

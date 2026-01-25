@@ -19,7 +19,7 @@ lazy_static! {
 
 /// Parse a line and detect compilation stage changes
 /// Returns (stage_changed, should_continue)
-pub fn detect_stage_change(line: &str, compile_state: &mut CompileState, current_progress: f64) -> (bool, bool) {
+pub fn detect_stage_change(line: &str, compile_state: &mut CompileState, current_progress: f64, callback: &mut impl FnMut(String)) -> (bool, bool) {
     let cleaned = remove_ansi_escapes(line);
     let line_lower = cleaned.to_lowercase();
     let trimmed = cleaned.trim();
@@ -33,49 +33,76 @@ pub fn detect_stage_change(line: &str, compile_state: &mut CompileState, current
         return (false, false); // Don't continue processing
     }
     
-    // Detect stages
-    let stage_changed = if line_lower.contains("detecting libraries") || line_lower.contains("detecting library") {
-        compile_state.previous_stage_progress = current_progress;
-        compile_state.stage = crate::commands::compile_state::CompileStage::Compiling;
-        if compile_state.compile_stage_start.is_none() {
-            compile_state.compile_stage_start = Some(std::time::Instant::now());
-        }
-        true
+    let mut next_stage = None;
+
+    // Detect markers
+    if line_lower.contains("detecting libraries") || line_lower.contains("detecting library") {
+        next_stage = Some(crate::commands::compile_state::CompileStage::DetectingLibraries);
     } else if line_lower.contains("generating function prototypes") || line_lower.contains("generating prototypes") {
-        compile_state.stage = crate::commands::compile_state::CompileStage::Compiling;
-        false
-    } else if line_lower.contains("linking everything together") || (line_lower.contains("linking") && line_lower.contains("together")) {
-        compile_state.previous_stage_progress = current_progress;
-        compile_state.stage = crate::commands::compile_state::CompileStage::Linking;
-        compile_state.current_file.clear();
-        if compile_state.link_stage_start.is_none() {
-            compile_state.link_stage_start = Some(std::time::Instant::now());
-        }
-        true
+        next_stage = Some(crate::commands::compile_state::CompileStage::Compiling);
+    } else if line_lower.contains("linking everything together") 
+           || (line_lower.contains("linking") && line_lower.contains(".elf"))
+           || line_lower.contains("archive") 
+           || line_lower.contains("gcc-ar")
+    {
+        next_stage = Some(crate::commands::compile_state::CompileStage::Linking);
     } else if line_lower.contains("esptool") && line_lower.contains("elf2image") && 
               line_lower.contains(".ino.elf") && line_lower.contains(".ino.bin") &&
               !line_lower.contains("bootloader") {
-        // Only trigger Generating for final .ino.elf to .ino.bin conversion (after linking)
         if compile_state.stage == crate::commands::compile_state::CompileStage::Linking || compile_state.link_stage_start.is_some() {
-            compile_state.previous_stage_progress = current_progress;
-            compile_state.stage = crate::commands::compile_state::CompileStage::Generating;
-            compile_state.current_file.clear();
-            if compile_state.generate_stage_start.is_none() {
-                compile_state.generate_stage_start = Some(std::time::Instant::now());
-            }
-            true
-        } else {
-            false
+            next_stage = Some(crate::commands::compile_state::CompileStage::Generating);
         }
     } else if line_lower.contains("sketch uses") || line_lower.contains("global variables use") {
-        compile_state.stage = crate::commands::compile_state::CompileStage::Complete;
-        compile_state.current_file.clear();
-        true
-    } else {
-        false
-    };
+        next_stage = Some(crate::commands::compile_state::CompileStage::Complete);
+    }
+
+    if let Some(stage) = next_stage {
+        // Monotonic transition: only move forward
+        if stage.rank() > compile_state.stage.rank() {
+            compile_state.previous_stage_progress = current_progress;
+            let skipped = compile_state.transition_to(stage);
+            
+            // Notify about skips
+            for s in skipped {
+                callback(format!("[WARNING] Skipped stage marker: {:?}", s));
+            }
+
+            compile_state.last_marker_time = std::time::Instant::now();
+            
+            // Setup timers
+            match stage {
+                crate::commands::compile_state::CompileStage::DetectingLibraries => {
+                    if compile_state.detect_libs_stage_start.is_none() {
+                        compile_state.detect_libs_stage_start = Some(std::time::Instant::now());
+                    }
+                }
+                crate::commands::compile_state::CompileStage::Compiling => {
+                    if compile_state.compile_stage_start.is_none() {
+                        compile_state.compile_stage_start = Some(std::time::Instant::now());
+                    }
+                }
+                crate::commands::compile_state::CompileStage::Linking => {
+                    compile_state.current_file.clear();
+                    if compile_state.link_stage_start.is_none() {
+                        compile_state.link_stage_start = Some(std::time::Instant::now());
+                    }
+                }
+                crate::commands::compile_state::CompileStage::Generating => {
+                    compile_state.current_file.clear();
+                    if compile_state.generate_stage_start.is_none() {
+                        compile_state.generate_stage_start = Some(std::time::Instant::now());
+                    }
+                }
+                crate::commands::compile_state::CompileStage::Complete => {
+                    compile_state.current_file.clear();
+                }
+                _ => {}
+            }
+            return (true, true);
+        }
+    }
     
-    (stage_changed, true) // Continue processing
+    (false, true) // Continue processing
 }
 
 /// Parse compilation commands and files from a line
@@ -87,7 +114,11 @@ pub fn parse_compilation_info(line: &str, compile_state: &mut CompileState) {
     // Detect compilation commands/files
     if line.contains("xtensa-esp32s3-elf-g++") || line.contains("xtensa-esp32s3-elf-gcc") {
         if line.contains("-c") {
-            compile_state.stage = crate::commands::compile_state::CompileStage::Compiling;
+            // Only move to Compiling if we are currently in an earlier stage
+            if compile_state.stage.rank() < crate::commands::compile_state::CompileStage::Compiling.rank() {
+                compile_state.stage = crate::commands::compile_state::CompileStage::Compiling;
+            }
+            
             if compile_state.compile_stage_start.is_none() {
                 compile_state.compile_stage_start = Some(std::time::Instant::now());
             }
