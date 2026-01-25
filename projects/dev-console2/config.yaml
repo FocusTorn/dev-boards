@@ -26,8 +26,9 @@ sketches:
     device: *esp32-s3
     mqtt: *univ-win
     
-  - id: sk6822-solo
-    path: "D:/_dev/_Projects/dev-boards/projects/esp32-s3__LB-Gold/sk6822-solo/sk6822-solo.ino"
+  - id: "sht21.2-sk6822"
+    path: "D:/_dev/_Projects/dev-boards/projects/esp32-s3__LB-Gold/sht21.2-sk6822/sht21.2-sk6822.ino"
     connection: *arduino-c9-115200
     device: *esp32-s3
     mqtt: *univ-win
+
