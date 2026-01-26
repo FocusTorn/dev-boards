@@ -1,18 +1,34 @@
-use crate::app::{App, Message, TaskState};
 use crate::commands::ProgressUpdate;
+use crate::app::{App, Message, TaskState};
 
+/// Event translation and ingestion for background processes.
+///>
+/// The `system` module acts as the bridge between long-running background tasks 
+/// (compilation, monitoring) and the main application loop. It translates 
+/// external `ProgressUpdate` events into internal state transitions, ensuring 
+/// thread-safe data ingestion and UI synchronization.
+///<
 impl App {
-    /// Polls external channels and translates them into internal Messages
+    /// Ingests pending events from background command channels.
+///>
+    /// This is called once per frame in the main loop to ensure background updates
+    /// (like compilation progress or serial data) are translated into internal
+    /// Messages. This keeps state mutation single-threaded and predictable.
+///<
     pub fn poll_system_events(&mut self) {
         while let Ok(update) = self.command_rx.try_recv() {
-            // Translate external event to internal message
+            // Self-send to the update loop to ensure single-threaded state mutation
             self.update(Message::SystemUpdate(update));
         }
     }
 
-    /// System-level executors for background updates
+    /// Transitions application state based on background task updates.
+///>
+    /// This method manages the lifecycle of 'Running' tasks, including progress
+    /// smoothing, stage transitions, and saving performance metrics to history
+    /// upon successful completion.
+///<
     pub fn exec_system_update(&mut self, update: ProgressUpdate) {
-        self.should_redraw = true;
         match update {
             ProgressUpdate::OutputLine(line) => {
                 if let Some(first_char) = line.chars().next() {
@@ -83,7 +99,11 @@ impl App {
         }
     }
 
-    /// Advances animations based on elapsed time
+    /// Advances animations based on elapsed time.
+///>
+    /// This is called on every loop iteration to ensure that visual elements 
+    /// (like the progress bar) transition smoothly between real data updates.
+///<
     pub fn tick(&mut self) {
         let now = std::time::Instant::now();
         let dt = now.duration_since(self.last_frame_time).as_secs_f64();
@@ -108,7 +128,11 @@ impl App {
         }
     }
 
-    /// Returns true if any visual elements are still transitioning
+    /// Returns true if any visual elements are still transitioning.
+///>
+    /// This helps the main loop decide if it needs to re-render even if
+    /// no new data has entered the system.
+///<
     pub fn is_animating(&self) -> bool {
         if let TaskState::Running { percentage, visual_percentage, .. } = &self.task_state {
             return (percentage - visual_percentage).abs() > 0.01;

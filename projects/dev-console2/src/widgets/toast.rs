@@ -54,14 +54,34 @@ fn default_duration_seconds() -> f32 { 1.5 }
 fn default_fade_out_seconds() -> f32 { 0.5 }
 fn bottom_center() -> ToastPosition { ToastPosition::BottomCenter }
 
+/// Configuration for the global Toast notification system.
+/// 
+/// Defines where toasts should appear on screen and their default animation/duration
+/// timings.
 #[derive(Debug, Clone, Deserialize)]
 pub struct ToastConfig {
+    /// Screen alignment for the toast notifications (e.g., BottomCenter).
     #[serde(default = "bottom_center")]
     pub position: ToastPosition,
+    /// Number of seconds the toast remains fully opaque.
     #[serde(default = "default_duration_seconds")]
     pub duration_seconds: f32,
+    /// Number of seconds the toast takes to fade to transparent.
     #[serde(default = "default_fade_out_seconds")]
     pub fade_out_seconds: f32,
+}
+
+impl Default for ToastConfig {
+    /// Provides sensible defaults for toast notifications.
+    /// 
+    /// Defaults to BottomCenter with a 1.5s duration and 0.5s fade-out.
+    fn default() -> Self {
+        Self {
+            position: bottom_center(),
+            duration_seconds: default_duration_seconds(),
+            fade_out_seconds: default_fade_out_seconds(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

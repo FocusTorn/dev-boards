@@ -133,19 +133,21 @@ lib/esp32-s3
 # git rm -r --cached <folder>
 
 
+.dev-console/compile_output.log
 
 
 projects/dev-console/target/
+projects/dev-console2/target/
+
 
 **/.cursor/
 
-.dev-console/compile_output.log
 
 carrot-ai-pm
 
 # Ignored by F-UX Notes Hub
 /.fux_note-hub/
 
-projects/dev-console2/
+
 
 

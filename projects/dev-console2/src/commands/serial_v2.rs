@@ -1,15 +1,34 @@
+/// High-performance Serial communication and monitoring.
+///>
+/// This module provides asynchronous serial monitoring with byte-level line 
+/// buffering. it ensures that raw hardware output is correctly aggregated 
+/// into strings before being sent to the UI, while also handling outgoing 
+/// data requests from the user.
+///<
 use std::time::Duration;
 use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 use std::sync::mpsc;
 use crate::commands::compile::ProgressUpdate;
 use serialport;
 
+/// Commands that can be sent to the Serial background thread.
+///>
+/// Represents the actions the UI can request from the serial monitor,
+/// primarily sending text data to the connected device.
+///<
 pub enum SerialCommand {
+    /// Sends a raw string to the MCU.
     SendData(String),
 }
 
-/// A high-performance Serial Monitor implementation with byte-level line buffering
-/// and semantic message tagging for the Theme Engine.
+/// Executes the Serial monitor loop in a background thread.
+///>
+/// This function:
+/// 1. Opens the specified hardware port with a short polling timeout.
+/// 2. Manages an internal byte buffer to handle partial line reads.
+/// 3. Ingests outgoing data from the `command_rx` channel and writes it to the port.
+/// 4. Emits `ProgressUpdate::OutputLine` events whenever a full line is captured.
+///<
 pub fn run_serial_monitor(
     port_name: String,
     baud_rate: u32,

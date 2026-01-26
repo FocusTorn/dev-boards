@@ -1,19 +1,42 @@
+/// Persistent storage and analysis of build performance metrics.
+///>
+/// The `history` module enables "Magic Progress Bars" by recording the actual 
+/// time spent in each build stage for every unique firmware project. It uses 
+/// this data to calculate weighted averages, allowing the TUI to provide 
+/// highly accurate ETAs even for diverse codebases.
+///<
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use std::path::{Path};
 use std::fs;
 use crate::commands::predictor::CompileStage;
 
+/// Historical metrics for a specific firmware sketch.
+///>
+/// Mapping of stage names to a rolling buffer of the last 10 durations (in seconds).
+/// Tracks the number of source files detected in the most recent successful build.
+///<
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SketchHistory {
-    pub stage_times: HashMap<String, Vec<f64>>, // Stage name -> Last 10 durations
+    pub stage_times: HashMap<String, Vec<f64>>,
+    pub total_files: Option<usize>,
 }
 
+/// Root manager for the collection of all sketch histories.
+///>
+/// This struct manages the high-level map of sketches and provides the 
+/// interface for loading from and saving to disk.
+///<
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HistoryManager {
     pub sketches: HashMap<String, SketchHistory>,
 }
 
+/// Calculated statistics used to drive the real-time progress predictor.
+///>
+/// Provides the relative weights and expected durations for each build stage, 
+/// derived from historical performance data.
+///<
 #[derive(Debug, Clone)]
 pub struct StageStats {
     pub weights: HashMap<CompileStage, f64>,
@@ -21,6 +44,12 @@ pub struct StageStats {
 }
 
 impl HistoryManager {
+    /// Loads history from a JSON file on disk.
+///>
+    /// Attempts to read the specified file and deserialize its content into a 
+    /// `HistoryManager`. Returns a default (empty) manager if the file 
+    /// does not exist or is malformed.
+    ///<
     pub fn load(path: &Path) -> Self {
         if let Ok(content) = fs::read_to_string(path) {
             serde_json::from_str(&content).unwrap_or_default()
@@ -29,6 +58,11 @@ impl HistoryManager {
         }
     }
 
+    /// Persists current history data to a JSON file.
+///>
+    /// Ensures that the parent directory exists before writing the 
+    /// pretty-printed JSON representation of the current metrics.
+    ///<
     pub fn save(&self, path: &Path) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)?;
@@ -38,7 +72,13 @@ impl HistoryManager {
         Ok(())
     }
 
-    pub fn get_stats(&self, sketch_id: &str) -> Option<StageStats> {
+    /// Generates accurate progress weights and ETAs for a specific sketch.
+///>
+    /// This method analyzes the last 10 runs to find the average time spent in 
+    /// each stage. If history is incomplete, it gracefully blends historical 
+    /// data with the default workload profile.
+    ///<
+    pub fn get_stats(&self, sketch_id: &str) -> Option<(StageStats, Option<usize>)> {
         let history = self.sketches.get(sketch_id)?;
         let mut weights = HashMap::new();
         let mut averages = HashMap::new();
@@ -90,12 +130,22 @@ impl HistoryManager {
             for w in weights.values_mut() { *w /= sum; }
         }
 
-        Some(StageStats { weights, averages })
+        Some((StageStats { weights, averages }, history.total_files))
     }
 
-    pub fn record_run(&mut self, sketch_id: &str, actual_times: HashMap<CompileStage, f64>) {
+    /// Updates the history with new performance data from a successful build.
+///>
+    /// Appends the actual durations recorded for each stage into the 
+    /// sketch's history buffer. Maintains a rolling window of the last 10 
+    /// entries to stay relevant to recent code changes.
+    ///<
+    pub fn record_run(&mut self, sketch_id: &str, actual_times: HashMap<CompileStage, f64>, total_files: usize) {
         let entry = self.sketches.entry(sketch_id.to_string())
-            .or_insert_with(|| SketchHistory { stage_times: HashMap::new() });
+            .or_insert_with(|| SketchHistory { stage_times: HashMap::new(), total_files: None });
+
+        if total_files > 0 {
+            entry.total_files = Some(total_files);
+        }
 
         for (stage, time) in actual_times {
             let name = format!("{:?}", stage);

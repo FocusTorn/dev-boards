@@ -1,3 +1,14 @@
+/// Background operation orchestrators and hardware interaction logic.
+/// 
+/// The `commands` module provides the "How" for all long-running tasks and external 
+/// system interactions. It encapsulates the logic for:
+/// - **Compiling:** Parsing MCU build outputs and tracking progress.
+/// - **Flashing:** Managing hardware upload processes via toolchains like `arduino-cli`.
+/// - **Monitoring:** Providing asynchronous serial and MQTT data streams.
+/// - **History & Prediction:** Tracking past performance to provide accurate ETAs for builds.
+///
+/// All commands communicate back to the main application through a `ProgressUpdate` 
+/// stream to ensure the UI remains responsive and informed.
 pub mod compile;
 pub mod upload;
 pub mod predictor;

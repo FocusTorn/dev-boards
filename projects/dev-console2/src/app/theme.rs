@@ -3,6 +3,11 @@ use std::collections::HashMap;
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize, Default)]
+/// Configuration for the application theme.
+///>
+/// This struct is deserialized from `build-config.yaml` and contains the raw 
+/// style strings and message templates used to skin the UI.
+///<
 pub struct ThemeConfig {
     #[serde(default)]
     pub styles: HashMap<String, String>,
@@ -11,19 +16,37 @@ pub struct ThemeConfig {
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
+/// Template for a specific semantic message type.
+///>
+/// Defines the icon and styles used when rendering specific events (e.g., 
+/// errors, system alerts) in the console output.
+///<
 pub struct MessageTypeConfig {
     pub icon: String,
     pub icon_style: String,
     pub text_style: String,
 }
 
+/// Manages the visual styling and semantic message formatting for the application.
+///>
+/// The `Theme` system allows for a clear separation between application logic and
+/// visual presentation. It resolves human-readable style strings (e.g., "bold red")
+/// into `ratatui` styles and provides templates for formatting complex console messages.
+///<
 #[derive(Debug)]
 pub struct Theme {
+    /// Cached map of named styles (e.g., "status_bar", "border") to resolved Ratatui Styles.
     resolved: HashMap<String, Style>,
+    /// Templates for rendering different message types (info, error, system) with icons and specific colors.
     message_templates: HashMap<String, MessageTypeConfig>,
 }
 
 impl Theme {
+    /// Creates a new Theme instance from a configuration.
+    ///>
+    /// This resolves all string-based style definitions from the YAML config into
+    /// functional `ratatui::style::Style` objects for high-performance rendering.
+    ///<
     pub fn new(config: &ThemeConfig) -> Self {
         let mut resolved = HashMap::new();
         for (name, style_str) in &config.styles {
@@ -34,8 +57,24 @@ impl Theme {
             message_templates: config.message_types.clone(),
         }
     }
+}
 
-    /// Formats a semantic message into an ANSI string for the output panel
+impl Default for Theme {
+    /// Provides a default theme configuration.
+    ///>
+    /// Useful for tests or as a fallback if no theme configuration is provided in `build-config.yaml`.
+    ///<
+    fn default() -> Self {
+        Self::new(&ThemeConfig::default())
+    }
+}
+
+impl Theme {
+    /// Formats a semantic message into an ANSI string for the output panel.
+    ///>
+    /// This combines icons, colors, and the message text into a single string
+    /// suitable for the TUI's ANSI-aware output buffer.
+    ///<
     pub fn format_message(&self, kind: &str, message: &str) -> String {
         let template = self.message_templates.get(kind).cloned().unwrap_or_else(|| {
             // Provide sensible defaults if the template is missing from YAML
@@ -64,8 +103,11 @@ impl Theme {
         )
     }
 
-
-
+    /// Resolves a named style into a Ratatui Style object.
+    ///>
+    /// If the requested style is not defined in the theme, it returns a 
+    /// sensible default or an empty style.
+    ///<
     pub fn style(&self, name: &str) -> Style {
         self.resolved.get(name).cloned().unwrap_or_else(|| {
             // Provide sensible defaults if the key is missing from YAML
@@ -79,7 +121,11 @@ impl Theme {
     }
 }
 
-/// Parses strings like "bold cyan on black" or "red" or "#ff0000 on #000000"
+/// Parses a human-readable style string into a Ratatui Style.
+///>
+/// Supports modifiers like 'bold', 'dim', and 'on' for background colors.
+/// Also handles hex codes and named colors.
+///<
 fn parse_style(s: &str) -> Style {
     let mut style = Style::default();
     let parts: Vec<&str> = s.split_whitespace().collect();
@@ -107,6 +153,11 @@ fn parse_style(s: &str) -> Style {
     style
 }
 
+/// Resolves a string into a Ratatui Color.
+///>
+/// Supports hex codes (#RRGGBB), RGB functions (rgb(r,g,b)), and 
+/// standard color names.
+///<
 fn parse_color(c: &str) -> Option<Color> {
     if c.starts_with('#') && c.len() == 7 {
         let r = u8::from_str_radix(&c[1..3], 16).ok()?;
@@ -141,7 +192,11 @@ fn parse_color(c: &str) -> Option<Color> {
     }
 }
 
-/// Helper to convert a Ratatui Style into an ANSI escape sequence
+/// Translates a Ratatui Style into an ANSI escape sequence string.
+///>
+/// This is used to inject themed styling into the raw string buffer used
+/// for the scrollable console output.
+///<
 fn style_to_ansi(style: &Style) -> String {
     let mut parts = Vec::new();
     

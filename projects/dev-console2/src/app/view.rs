@@ -14,8 +14,24 @@ use crate::widgets::smooth_scrollbar::{ScrollBar, ScrollLengths};
 use crate::widgets::toast::ToastWidget;
 use crate::app::ansi::parse_ansi_line;
 
+/// The UI projection layer (The 'View' in Elm Architecture).
+/// 
+/// The `view` module is responsible for transforming the current application state 
+/// into a visual representation. It uses `ratatui` primitives to draw the title bar,
+/// main content area, status bars, and transient notifications. 
+/// 
+/// Rendering logic here must remain as pure as possible, projecting state into 
+/// pixels without triggering side effects or unintended mutations.
+///
 impl App {
+    /// Primary entry point for rendering the application. 
+    /// 
+    /// This method manages high-level layout recalculations on terminal resize
+    /// and delegates the drawing of individual UI components to specialized 
+    /// render methods.
+    ///
     pub fn view(&mut self, frame: &mut Frame) {
+        // Ensure layout is synchronized with the actual terminal dimensions
         if self.view_area != frame.area() {
             self.view_area = frame.area();
             self.layout = self.calculate_layout(self.view_area);
@@ -36,6 +52,11 @@ impl App {
         frame.render_widget(ToastWidget::new(&mut self.toast_manager), frame.area());
     }
 
+    /// Renders the styled application title bar with decorative borders. 
+    /// 
+    /// Provides a centered, bold title with responsive horizontal borders 
+    /// that scale with the terminal width.
+    ///
     fn render_title_bar(&self, frame: &mut Frame, area: Rect) {
         let title_text = &self.config.application.title;
         let line = if (area.width as usize) <= title_text.len() + 2 {
@@ -53,12 +74,22 @@ impl App {
         frame.render_widget(Paragraph::new(line).alignment(Alignment::Center), area);
     }
 
+    /// Renders an error screen when terminal dimensions are insufficient. 
+    /// 
+    /// This prevents UI corruption by stopping the main render pass and
+    /// informing the user of the minimum required resolution.
+    ///
     fn render_terminal_too_small(&self, frame: &mut Frame) {
         frame.render_widget(Clear, frame.area());
         let message = format!("Terminal Too Small\nRequired: {}x{}\nCurrent: {}x{}\n\nPress 'q' to quit", self.config.application.min_width, self.config.application.min_height, frame.area().width, frame.area().height);
         frame.render_widget(Paragraph::new(message).alignment(Alignment::Center).style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)), frame.area());
     }
 
+    /// Orchestrates the rendering of the central application components. 
+    /// 
+    /// This includes the tab bar, the active sketch profile, the command
+    /// sidebar, and the scrollable output console.
+    ///
     fn render_main_content(&mut self, frame: &mut Frame, layout: AppLayout) {
         TabBarWidget::render_composite(&self.config, &self.tabs, &["MainContentTabBar"], layout.main, frame.buffer_mut());
         
@@ -195,6 +226,11 @@ impl App {
         }
     }
 
+    /// Renders the context-sensitive keybinding help bar at the bottom. 
+    /// 
+    /// Dynamically lists available shortcuts based on the current 
+    /// application state (e.g., active tab). 
+    ///
     fn render_bindings(&self, frame: &mut Frame, area: Rect) {
         let mut spans = Vec::new();
         
@@ -217,6 +253,11 @@ impl App {
         frame.render_widget(Paragraph::new(Line::from(spans)), area);
     }
     
+    /// Renders the persistent bottom status bar. 
+    /// 
+    /// Displays the current profile status, terminal size (if enabled), 
+    /// and recent input events for debugging.
+    ///
     fn render_status_bar(&self, frame: &mut Frame, area: Rect) {
         frame.render_widget(Block::new().borders(ratatui::widgets::Borders::TOP).border_style(Style::default().fg(Color::White)), area);
         

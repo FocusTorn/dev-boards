@@ -1,3 +1,7 @@
+/// Configuration management for the dev-boards workspace.
+/// 
+/// This module handles the loading and deserialization of YAML-based configuration 
+/// files that define the TUI layout, theme, and hardware profile settings.
 use serde::Deserialize;
 use std::fs::File;
 use std::io::Read;
@@ -7,12 +11,13 @@ use serde_saphyr; // New YAML deserializer
 
 pub use crate::widgets::toast::ToastConfig;
 
+/// Internal wrapper for the collective widget configurations.
 #[derive(Debug, Deserialize)]
 struct WidgetConfig {
     toast_widget: ToastConfig,
 }
 
-
+/// Global settings for the TUI shell.
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct ApplicationConfig {
     pub title: String,
@@ -30,6 +35,7 @@ pub struct ApplicationConfig {
     pub bindings: BindingsConfig,
 }
 
+/// Settings for the persistent bottom status bar.
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct StatusBarConfig {
     pub default_text: String,
@@ -38,14 +44,19 @@ pub struct StatusBarConfig {
 fn default_min_width() -> u16 { 80 }
 fn default_min_height() -> u16 { 21 }
 
+/// Definition for a single keyboard or mouse shortcut.
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct BindingConfig {
-    pub key: String,         // Display key (e.g. "[🡙]")
-    pub description: String, // Display description
+    /// Display name of the key (e.g., "[Esc]").
+    pub key: String,
+    /// Human-readable description of the action.
+    pub description: String,
+    /// Map of physical key codes to semantic application actions.
     #[serde(default)]
-    pub triggers: std::collections::HashMap<String, String>, // Physical Key -> Semantic Action
+    pub triggers: std::collections::HashMap<String, String>,
 }
 
+/// Collection of keybindings for a specific context.
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct BindingsConfig {
     #[serde(default = "default_separator")]
@@ -54,12 +65,14 @@ pub struct BindingsConfig {
     pub items: Vec<BindingConfig>,
 }
 
+/// Visual overrides for tab bar states.
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct TabBarColors {
     pub active: Option<String>,
     pub negate: Option<String>,
 }
 
+/// Structural configuration for a tab-based navigation bar.
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct TabBarConfig {
     pub id: String,
@@ -80,6 +93,7 @@ pub struct TabBarConfig {
     pub tab_bindings: std::collections::HashMap<String, BindingsConfig>,
 }
 
+/// The root configuration object representing `build-config.yaml`.
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct Config {
     #[serde(default)]
@@ -96,6 +110,7 @@ fn default_separator() -> String {
 
 use crate::widgets::tab_bar::{TabBarAlignment, TabBarStyle};
 
+/// Positioning settings for UI components.
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct Alignment {
     pub vertical: Option<TabBarAlignment>,
@@ -106,6 +121,7 @@ pub struct Alignment {
     pub offset_y: i16,
 }
 
+/// Defines the keys used to navigate between tabs.
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct Navigation {
     #[serde(default)]
@@ -114,6 +130,7 @@ pub struct Navigation {
     pub right: Vec<String>,
 }
 
+/// Individual tab item configuration.
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct TabConfig {
     pub id: String,
@@ -121,6 +138,7 @@ pub struct TabConfig {
     pub default: Option<String>,
 }
 
+/// Serial communication settings for a hardware profile.
 #[derive(Debug, Deserialize)]
 pub struct Connection {
     pub id: String,
@@ -129,6 +147,7 @@ pub struct Connection {
     pub baudrate: u32,
 }
 
+/// Target hardware board details.
 #[derive(Debug, Deserialize)]
 pub struct Device {
     pub id: String,
@@ -136,6 +155,7 @@ pub struct Device {
     pub fbqn: String,
 }
 
+/// MQTT broker credentials and connection settings.
 #[derive(Debug, Deserialize)]
 pub struct Mqtt {
     pub id: String,
@@ -145,6 +165,7 @@ pub struct Mqtt {
     pub password: String,
 }
 
+/// Mapping of a firmware source to its required connection, device, and mqtt profiles.
 #[derive(Debug, Deserialize)]
 pub struct Sketch {
     pub id: String,
@@ -154,6 +175,7 @@ pub struct Sketch {
     pub mqtt: String,
 }
 
+/// The root profile configuration object representing `config.yaml`.
 #[derive(Debug, Deserialize)]
 pub struct ProfileConfig {
     pub connections: Vec<Connection>,
@@ -164,7 +186,7 @@ pub struct ProfileConfig {
 
 use crate::commands::Settings;
 
-
+/// Loads the hardware profile configuration from `config.yaml`.
 pub fn load_profile_config() -> Result<ProfileConfig> {
     let config_path = std::path::PathBuf::from("config.yaml");
     let mut file = match File::open(&config_path) {
@@ -191,6 +213,7 @@ pub fn load_profile_config() -> Result<ProfileConfig> {
     }
 }
 
+/// Resolves the command settings (paths, ports, baudrate) for the first available sketch profile.
 pub fn load_command_settings() -> Result<Settings> {
     // Try to load from profile config
     let profile_config = load_profile_config()?;
@@ -227,10 +250,10 @@ pub fn load_command_settings() -> Result<Settings> {
     Err(eyre::eyre!("No valid sketch configuration found in config.yaml"))
 }
 
+/// Loads the global TUI application configuration from `build-config.yaml`.
 pub fn load_config() -> Result<Config> {
-// ... (existing content) ...
-    // For now, we only load of build-config.yaml
-    // Later, we will implement of search and merge for config.yaml
+    // TODO For now, we only load of build-config.yaml Later, we will implement of search and merge for config.yaml
+    
     let mut file = File::open("build-config.yaml")?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
@@ -240,6 +263,7 @@ pub fn load_config() -> Result<Config> {
     Ok(config)
 }
 
+/// Loads the specialized widget configuration for UI components like Toasts.
 pub fn load_widget_config() -> Result<ToastConfig> {
     let config_path = std::path::PathBuf::from("src/widgets/widget-config.yaml");
     let mut file = match File::open(&config_path) {

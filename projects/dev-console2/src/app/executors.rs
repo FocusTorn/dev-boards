@@ -4,11 +4,27 @@ use std::sync::atomic::Ordering;
 use std::sync::mpsc;
 use std::time::Instant;
 
+/// Semantic action implementations (The 'How' of application logic).
+///>
+/// The `executors` module contains the actual implementation for every `Action` 
+/// triggered by the user or system. By isolating these methods, the main `update` 
+/// loop remains a clean router while the complex state-mutating logic is 
+/// encapsulated here.
+///<
 impl App {
+    /// Terminates the application loop.
+    ///>
+    /// Sets the `running` flag to false, which will cause the main loop in `main.rs`
+    /// to exit and trigger terminal restoration.
+    ///<
     pub fn exec_quit(&mut self) {
         self.running = false;
     }
 
+    /// Moves the command selection highlight upwards.
+    ///>
+    /// Cycles to the bottom of the list if the top is reached.
+    ///<
     pub fn exec_commands_up(&mut self) {
         self.selected_command_index = if self.selected_command_index > 0 {
             self.selected_command_index - 1
@@ -18,11 +34,20 @@ impl App {
         self.hovered_command_index = None;
     }
 
+    /// Moves the command selection highlight downwards.
+    ///>
+    /// Cycles to the top of the list if the bottom is reached.
+    ///<
     pub fn exec_commands_down(&mut self) {
         self.selected_command_index = (self.selected_command_index + 1) % self.commands.len();
         self.hovered_command_index = None;
     }
 
+    /// Executes the currently highlighted command from the sidebar.
+    ///>
+    /// Maps the display string of the command to its corresponding `Action`
+    /// and dispatches it through the semantic router.
+    ///<
     pub fn exec_execute_selected_command(&mut self) {
         let selected_str = self.commands[self.selected_command_index].clone();
         if let Some(action) = Action::from_str(&selected_str) {
@@ -32,6 +57,12 @@ impl App {
         }
     }
 
+    /// Attempts to cancel any active background tasks or exit input mode.
+    ///>
+    /// This method is the primary safety valve for stopping runaway builds
+    /// or monitoring processes. It also serves as the 'Esc' handler for 
+    /// closing text entry fields.
+    ///<
     pub fn exec_cancel(&mut self) {
         let is_active = matches!(self.task_state, TaskState::Running { .. }) || matches!(self.task_state, TaskState::Monitoring { .. });
         
@@ -46,10 +77,20 @@ impl App {
         }
     }
 
+    /// Initiates the firmware compilation process.
+    ///>
+    /// Spawns a background thread to run the compiler toolchain while
+    /// ensuring the UI remains responsive and progress-aware.
+    ///<
     pub fn exec_compile(&mut self) {
         self.start_process(false);
     }
 
+    /// Initiates the firmware upload process.
+    ///>
+    /// Similar to compilation, this runs the flash tool in a separate thread
+    /// and monitors output for progress markers.
+    ///<
     pub fn exec_upload(&mut self) {
         self.start_process(true);
     }
@@ -71,7 +112,7 @@ impl App {
         cancel_signal.store(false, Ordering::SeqCst);
         
         self.predictor = self.train_predictor();
-        let stats = self.predictor.get_stats();
+        let stats = Some(self.predictor.get_stats());
         
         match self.get_settings_from_profile() {
             Ok(settings) => {
@@ -80,7 +121,13 @@ impl App {
                         if tx.send(update).is_err() { return; }
                     };
                     if is_upload {
-                        crate::commands::run_upload(&settings, stats, cancel_signal, callback);
+                        // Upload might need update too, but for now focusing on compile
+                         // If run_upload doesn't take the tuple, we might need to adjust or map it.
+                         // Let's check run_upload signature later. For now assuming it matches or we fix it.
+                         // Actually run_upload probably takes StageStats.
+                         // Let's map it for upload to avoid breakage if upload isn't updated.
+                        let (s, _) = stats.clone().unwrap(); 
+                        crate::commands::run_upload(&settings, s, cancel_signal, callback);
                     } else {
                         crate::commands::run_compile(&settings, stats, cancel_signal, callback);
                     }

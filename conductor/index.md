@@ -8,6 +8,8 @@
 ## Workflow
 - [Workflow](./workflow.md)
 - [Code Style Guides](./code_styleguides/)
+- [Workspace Style Overrides](../.gemini/_docs/style-guides/)
+- [General Style Overrides](../.gemini/_docs/style-guides/general-styleguide-modifications.md)
 
 ## Management
 - [Tracks Registry](./tracks.md)

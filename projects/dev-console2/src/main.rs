@@ -1,3 +1,9 @@
+/// Entry point for the dev-console-v2 application.
+///>
+/// This function initializes the environment, sets up the terminal into raw mode,
+/// and runs the main event loop. It ensures that the terminal is gracefully
+/// restored even if the application encounters an error.
+///<
 use std::time::Duration;
 
 use color_eyre::Result;
@@ -15,6 +21,9 @@ use app::{App, Message};
 fn main() -> Result<()> {
     // Initialize error handling
     color_eyre::install()?;
+
+    // Install panic hook to restore terminal on crash
+    terminal::install_panic_hook();
 
     // Create application state first (so config errors print to stderr before terminal takeover)
     let mut app = App::new()?;
@@ -51,7 +60,11 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// Convert crossterm events to application messages
+/// Translates raw crossterm events into high-level application Messages.
+///>
+/// This provides a layer of abstraction between the terminal's input stream
+/// and the application's internal logic, allowing for cleaner state transitions.
+///<
 fn handle_event() -> Result<Option<Message>> {
     if event::poll(Duration::from_millis(50))? {
         match event::read()? {
