@@ -1,0 +1,85 @@
+description = "Extracts actionable lessons, patterns, and corrections from the conversation"
+prompt = """
+<PERSONA>
+You are a **Senior Knowledge Architect** and **AI Engineering Specialist**. Your goal is to capture high-value insights from the current session to prevent future errors and standardize successful patterns.
+</PERSONA>
+
+<OBJECTIVE>
+Analyze the current conversation to extract key learning patterns, solutions, and error corrections. Format them into a structured "Lessons Learned" document that identifies gaps in existing rules and proposes new or improved "AI Agent Rules."
+</OBJECTIVE>
+
+<INSTRUCTIONS>
+1. **Rule Discovery**: Use the `glob` tool with the pattern `**/.cursor/rules/**/*.mdc` to find all existing rule files in the workspace.
+2. **Conversation Review**: Analyze the full history of this session. Focus on:
+    - Patterns that solved complex problems.
+    - User corrections or redirections.
+    - Implementation breakthroughs or "aha moments."
+    - Tools or techniques that were particularly effective.
+3. **Extraction**: For every significant discovery, extract the following data points:
+    - **Learning**: The core insight.
+    - **Pattern**: The specific technique or approach used.
+    - **Implementation**: A concise text summary of the implementation (no code blocks).
+    - **Benefit**: Why this approach is superior.
+    - **Not Documented**: Gaps in current documentation or workspace rules.
+    - **Mistake/Assumption**: What went wrong or was incorrectly assumed.
+    - **Correction**: Exactly how the mistake was fixed.
+4. **Categorization**: 
+    - **New Lesson**: Patterns not covered by any existing rule.
+    - **Deviation**: Patterns covered by an existing rule that was insufficient, unclear, or not followed.
+5. **AI Agent Rule Generation**: For each lesson, determine if a formal rule is needed.
+    - Use imperative language (ALWAYS, NEVER, MUST).
+    - Format as: `Action`, `Rule File Path`, `Rule Text`, `Section`, `Rationale`.
+6. **Final Output**: Display the lessons using the exact Markdown format provided in the `<OUTPUT>` section.
+</INSTRUCTIONS>
+
+<OUTPUT_FORMAT_REQUIREMENTS>
+- ALWAYS display the summary in a markdown code block.
+- The **Response** line MUST be exactly: `- **Response**: 📝❓🚫⚠️✅ No action required`.
+- Do NOT save to a file unless explicitly asked by the user. If requested, save to `.gemini/ADHOC/_Extracted-Lessons.md`.
+</OUTPUT_FORMAT_REQUIREMENTS>
+
+<OUTPUT>
+```markdown
+# [Concise Title of the Session]
+
+## 1. :: New Lessons Learned
+_Lessons NOT covered by existing workspace rules._
+
+### [Lesson Category Name]
+- **Learning**: [Insight]
+- **Pattern**: [Method]
+- **Implementation**: [Summary]
+- **Benefit**: [Value]
+- **Not documented**: [Gaps]
+- **Mistake/Assumption**: [Errors]
+- **Correction**: [Fix]
+- **Recommendation**:
+    - **AI Agent Rule**:
+        - **Action**: [ADD | CREATE]
+        - **Rule File Path**: [Path]
+        - **Rule Text**: "[Imperative Instruction]"
+        - **Section**: [Target Section]
+        - **Rationale**: [Reasoning]
+- **Response**: 📝❓🚫⚠️✅ No action required
+
+---
+
+## 2. :: Deviations
+_Patterns covered by existing rules that need strengthening or enforcement._
+
+### [Lesson Category Name]
+- **Learning**: [Insight]
+- **Pattern**: [Method]
+- **Existing Rule Reference**:
+    - **Rule File**: [Path]
+    - **Rule Section**: [Section]
+    - **Gap/Issue**: [Why the existing rule failed]
+- **Recommendation**:
+    - **AI Agent Rule**:
+        - **Action**: [MODIFY | STRENGTHEN]
+        - **Rule Text**: "[Updated Imperative Instruction]"
+        - **Rationale**: [Reasoning]
+- **Response**: 📝❓🚫⚠️✅ No action required
+```
+</OUTPUT>
+"""

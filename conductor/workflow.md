@@ -29,3 +29,14 @@
     4. **User Approval:** Present the phase results to the user for explicit verification and approval.
     5. Summarize the phase in the main tracks.md file.
 - **Merge Protocol:** A track may only be merged into `main` after all phases are complete and approved by the user.
+
+## 4. Pause Track Protocol
+When requested to "pause" a track, the agent MUST:
+1. **Sync Plan:** Analyze changes and mark completed tasks in the track's `plan.md` with `[x]`.
+2. **Update Metadata:** Update the `updated_at` timestamp in the track's `metadata.json`.
+3. **Handover Note:** Update `conductor/tracks/<track_id>/NOTES.md` with:
+    - **Current Context:** Exactly what logic was being worked on at the moment of the pause.
+    - **Next Action:** The specific first step to take upon resuming.
+    - **Open Issues:** Any bugs or blockers identified but not resolved.
+4. **Checkpoint Commit:** Commit all changes to the track branch with message: `conductor(pause): <track_id> - <percentage>% complete`.
+5. **Final Summary:** Report the pause status and the next task to be performed.

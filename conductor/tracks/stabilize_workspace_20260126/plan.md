@@ -10,15 +10,15 @@
 - [x] Task: Install terminal panic hook in `main.rs`.
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Infrastructure' (Protocol in workflow.md)
 
-## Phase 2: Documentation Audit - Core & Shell
+## Phase 2: Documentation Audit - Core & Shell (IN PROGRESS)
 - [ ] Task: Audit `src/main.rs`: docstrings, folding markers, small blocks.
 - [ ] Task: Audit `src/terminal.rs`: docstrings, folding markers, small blocks.
 - [ ] Task: Audit `src/config.rs`: docstrings, folding markers, small blocks.
 - [ ] Task: Audit `src/app/mod.rs`: docstrings, folding markers, small blocks.
 - [ ] Task: Audit `src/app/view.rs`: docstrings, folding markers, small blocks.
-- [ ] Task: Audit `src/app/executors.rs`: docstrings, folding markers, small blocks.
-- [ ] Task: Audit `src/app/system.rs`: docstrings, folding markers, small blocks.
-- [ ] Task: Audit `src/app/ansi.rs`: docstrings, folding markers, small blocks.
+- [x] Task: Audit `src/app/executors.rs`: docstrings, folding markers, small blocks.
+- [x] Task: Audit `src/app/system.rs`: docstrings, folding markers, small blocks.
+- [x] Task: Audit `src/app/ansi.rs`: docstrings, folding markers, small blocks.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Core Audit' (Protocol in workflow.md)
 
 ## Phase 3: Documentation Audit - Commands
