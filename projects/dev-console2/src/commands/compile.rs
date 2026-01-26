@@ -1,80 +1,33 @@
-/// MCU firmware compilation orchestrator.
-/// 
-/// This module handles the execution of external compiler toolchains (like `arduino-cli`)
-/// and translates their raw text output into structured progress data for the TUI.
 use super::{compile_state, compile_parser, path_utils, process::ProcessHandler};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
 
-/// Environment and board-specific settings for a compilation task.
 #[derive(Clone, Debug)]
 pub struct Settings {
-    /// Directory containing the source code.
     pub sketch_directory: String,
-    /// Name of the main source file (without extension).
     pub sketch_name: String,
-    /// Fully Qualified Board Name (e.g., esp32:esp32:esp32s3).
     pub fqbn: String,
-    /// Hardware port for subsequent upload steps.
     pub port: String,
-    /// Serial communication speed.
     pub baudrate: u32,
-    /// Broad category of board (e.g., "ESP32-S3") for library path resolution.
     pub board_model: String,
-    /// Target environment (e.g., "arduino", "windows").
     pub env: String,
 }
 
-/// Structured updates emitted during the compilation lifecycle.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ProgressUpdate {
-    /// A raw line of output from the compiler.
     OutputLine(String),
-    /// Calculated percentage of task completion (0.0 to 100.0).
     Percentage(f64),
-    /// Human-readable name of the current build stage (e.g., "Linking").
     Stage(String),
-    /// Final performance metrics emitted upon success.
     CompletedWithMetrics {
-        /// Map of stage identifiers to their actual duration in seconds.
         stage_times: std::collections::HashMap<crate::commands::predictor::CompileStage, f64>,
-        /// Number of source files processed during this build.
-        total_files: usize,
     },
-    /// Error message emitted if the build fails.
     Failed(String),
 }
 
-/// Executes the compilation process in a background thread.
-/// 
-/// This function:
-/// 1. Validates the environment and workspace structure.
-/// 2. Sets up a temporary build directory if the project structure is non-standard.
-/// 3. Spawns the compiler process and pipes its output through a progress parser.
-/// 4. Emits `ProgressUpdate` events back to the main UI thread.
-pub fn run_compile(settings: &Settings, history_data: Option<(crate::commands::history::StageStats, Option<usize>)>, cancel_signal: Arc<AtomicBool>, progress_callback: impl FnMut(ProgressUpdate) + Send + 'static) {
+pub fn run_compile(settings: &Settings, stats: crate::commands::history::StageStats, cancel_signal: Arc<AtomicBool>, progress_callback: impl FnMut(ProgressUpdate) + Send + 'static) {
     let callback = Arc::new(Mutex::new(progress_callback));
-
-    // Resolve build statistics to provide accurate ETAs
-    let (stats, estimated_files) = if let Some((s, f)) = history_data {
-        (s, f)
-    } else {
-        // Fallback to generic weights if no history exists for this sketch
-        let mut defaults = std::collections::HashMap::new();
-        defaults.insert(crate::commands::predictor::CompileStage::Initializing, 5.0);
-        defaults.insert(crate::commands::predictor::CompileStage::DetectingLibraries, 10.0);
-        defaults.insert(crate::commands::predictor::CompileStage::Compiling, 45.0);
-        defaults.insert(crate::commands::predictor::CompileStage::Linking, 15.0);
-        defaults.insert(crate::commands::predictor::CompileStage::Generating, 5.0);
-        
-        let stats = crate::commands::history::StageStats {
-            weights: crate::commands::predictor::WorkloadProfile::default().stage_weights,
-            averages: defaults,
-        };
-        (stats, None)
-    };
 
     callback.lock().unwrap()(ProgressUpdate::Stage("Initializing".to_string()));
 
@@ -94,8 +47,7 @@ pub fn run_compile(settings: &Settings, history_data: Option<(crate::commands::h
         }
     };
 
-    // Arduino CLI requires the .ino file to be in a directory of the same name.
-    // We create a temporary structure if the project layout doesn't match.
+    // Temp directory logic
     let (compile_dir, temp_dir_guard) = match setup_compile_directory(&sketch_dir, &sketch_file, &project_root) {
         Ok((dir, guard)) => (dir, guard),
         Err(e) => {
@@ -134,7 +86,7 @@ pub fn run_compile(settings: &Settings, history_data: Option<(crate::commands::h
         }
     };
 
-    let compile_state = Arc::new(Mutex::new(compile_state::CompileState::new(stats.weights, stats.averages, estimated_files)));
+    let compile_state = Arc::new(Mutex::new(compile_state::CompileState::new(stats.weights, stats.averages)));
     callback.lock().unwrap()(ProgressUpdate::Stage("Compiling".to_string()));
 
     let callback_clone = callback.clone();
@@ -142,12 +94,9 @@ pub fn run_compile(settings: &Settings, history_data: Option<(crate::commands::h
     let result = process_handler.read_output(cancel_signal.clone(), move |line| {
         let mut cb = callback_clone.lock().unwrap();
         let mut state = state_clone.lock().unwrap();
-        
-        // Check for stage transitions (e.g., from "Compiling" to "Linking")
         let (stage_changed, should_continue) = compile_parser::detect_stage_change(&line, &mut state, 0.0, &mut |msg| {
             cb(ProgressUpdate::OutputLine(msg));
         });
-        
         if !should_continue {
             cb(ProgressUpdate::OutputLine(line));
             return;
@@ -157,13 +106,13 @@ pub fn run_compile(settings: &Settings, history_data: Option<(crate::commands::h
              cb(ProgressUpdate::Stage(format!("{:?}", state.stage)));
         }
 
-        // Update internal progress counters based on compiler output
         compile_parser::parse_compilation_info(&line, &mut state);
         let progress = state.calculate_progress();
         cb(ProgressUpdate::Percentage(progress));
         cb(ProgressUpdate::OutputLine(line));
 
-        // Watchdog: Check if the build is stuck without progress markers
+        // Watchdog: Check if we are stuck in a stage without markers
+        // This method now handles its own internal "has_warned" state
         if let Some(warning) = state.check_for_missing_markers() {
             cb(ProgressUpdate::OutputLine(warning));
         }
@@ -172,15 +121,14 @@ pub fn run_compile(settings: &Settings, history_data: Option<(crate::commands::h
     let mut cb = callback.lock().unwrap();
     match result {
         Ok(true) => {
-            // Finalize stage durations for history tracking
+            // Capture final stage duration
             let mut state = compile_state.lock().unwrap();
             let duration = state.last_marker_time.elapsed().as_secs_f64();
             let stage = state.stage;
             state.stage_durations.insert(stage, duration);
             
             cb(ProgressUpdate::CompletedWithMetrics { 
-                stage_times: state.stage_durations.clone(),
-                total_files: state.total_files
+                stage_times: state.stage_durations.clone() 
             });
         },
         Ok(false) => {
@@ -194,7 +142,7 @@ pub fn run_compile(settings: &Settings, history_data: Option<(crate::commands::h
     }
 }
 
-/// RAII guard for ensuring temporary build directories are cleaned up.
+// RAII guard for cleaning up temp directory
 struct TempDirGuard(PathBuf);
 impl Drop for TempDirGuard {
     fn drop(&mut self) {
@@ -202,11 +150,6 @@ impl Drop for TempDirGuard {
     }
 }
 
-/// Ensures the sketch is in a valid structure for the Arduino CLI.
-/// 
-/// The toolchain requires the directory name to match the main `.ino` file name.
-/// If this condition isn't met, this function creates a temporary mirrored 
-/// structure that satisfies the requirement.
 fn setup_compile_directory(sketch_dir: &Path, sketch_file: &Path, project_root: &Path) -> Result<(PathBuf, Option<TempDirGuard>), String> {
     let sketch_file_name = sketch_file.file_stem().and_then(|s| s.to_str()).unwrap_or("");
     let dir_name = sketch_dir.file_name().and_then(|s| s.to_str()).unwrap_or("");

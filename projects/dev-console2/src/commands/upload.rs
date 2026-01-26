@@ -1,10 +1,3 @@
-/// Hardware firmware upload orchestrator.
-///>
-/// This module manages the execution of flashing tools (like `arduino-cli` 
-/// and `esptool`) to transfer compiled binaries to the MCU. It parses 
-/// the tool's output to provide real-time progress percentages and 
-/// stage transitions (e.g., Resetting, Writing, Verifying).
-///<
 use super::{compile_state, path_utils, process::ProcessHandler};
 use std::path::{PathBuf};
 use std::process::Command;
@@ -12,14 +5,6 @@ use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
 use crate::commands::compile::{Settings, ProgressUpdate};
 
-/// Executes the firmware upload process in a background thread.
-///>
-/// This function:
-/// 1. Locates the correct toolchain and workspace paths.
-/// 2. Spawns the upload process with verbose output enabled.
-/// 3. Ingests and parses the raw output stream to detect esptool-style percentages.
-/// 4. Emits `ProgressUpdate` events to keep the TUI informed of the upload status.
-///<
 pub fn run_upload(settings: &Settings, stats: crate::commands::history::StageStats, cancel_signal: Arc<AtomicBool>, progress_callback: impl FnMut(ProgressUpdate) + Send + 'static) {
     let callback = Arc::new(Mutex::new(progress_callback));
 
@@ -57,7 +42,7 @@ pub fn run_upload(settings: &Settings, stats: crate::commands::history::StageSta
         }
     };
 
-    let upload_state = Arc::new(Mutex::new(compile_state::CompileState::new(stats.weights, stats.averages, None)));
+    let upload_state = Arc::new(Mutex::new(compile_state::CompileState::new(stats.weights, stats.averages)));
     
     let callback_clone = callback.clone();
     let state_clone = upload_state.clone();
@@ -95,7 +80,8 @@ pub fn run_upload(settings: &Settings, stats: crate::commands::history::StageSta
             let re_progress = regex::Regex::new(r"\((\d+)\s*%\)").unwrap();
             if let Some(cap) = re_progress.captures(&cleaned) {
                 if let Ok(p) = cap[1].parse::<f64>() {
-                    // Pass the percentage to state tracking for bar smoothing
+                    // Only update if it's an increase, or if we just started a new segment (low percentage after high)
+                    // Actually, let's just pass it through and let calculate_progress handle the monotonicity
                     state.update_stage_progress(p);
                 }
             }
@@ -115,8 +101,7 @@ pub fn run_upload(settings: &Settings, stats: crate::commands::history::StageSta
             state.stage_durations.insert(stage, duration);
             
             cb(ProgressUpdate::CompletedWithMetrics { 
-                stage_times: state.stage_durations.clone(),
-                total_files: 0
+                stage_times: state.stage_durations.clone() 
             });
         },
         Ok(false) => {

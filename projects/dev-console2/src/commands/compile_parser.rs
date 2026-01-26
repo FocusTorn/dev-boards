@@ -1,50 +1,41 @@
-/// Parsing logic for MCU compiler output streams.
-/// 
-/// This module provides the regex-based analysis needed to extract semantic meaning 
-/// from the raw text emitted by tools like `arduino-cli`. It detects stage 
-/// transitions (e.g., from Compiling to Linking) and tracks file-level progress.
+// Compilation output parsing and stage detection
+
 use crate::commands::compile_state::CompileState;
 use crate::commands::utils::remove_ansi_escapes;
 use regex::Regex;
 use lazy_static::lazy_static;
 
 lazy_static! {
-    /// Matches file paths in compilation commands to identify which file is being processed.
     static ref RE_COMPILE_COMMAND: Regex = Regex::new(
         r"@([^\s]+\.(cpp|c|ino|S))|([^\s/\\]+\.(cpp|c|ino|S))"
     ).unwrap();
-    /// Matches explicit "compiling" log lines often found in higher-level build tools.
     static ref RE_COMPILE_LINE: Regex = Regex::new(
         r"(?i)compiling\s+([^\s]+\.(cpp|c|ino|S))"
     ).unwrap();
-    /// Matches successful compilation markers or archive creation to increment the file count.
     static ref RE_COMPILED_FILE: Regex = Regex::new(
         r"(?i)\.(cpp|c|ino|S)\.o|gcc-ar|compiled\s+[^\s]+\.(cpp|c|ino|S)|using previously compiled file"
     ).unwrap();
 }
 
-/// Analyzes a single line of output to detect transitions between build stages.
-/// 
-/// This function returns a tuple of `(stage_changed, should_continue)`.
-/// - `stage_changed`: True if a new stage marker (e.g., "Linking") was found.
-/// - `should_continue`: False if a fatal error was detected, signaling the process should stop.
+/// Parse a line and detect compilation stage changes
+/// Returns (stage_changed, should_continue)
 pub fn detect_stage_change(line: &str, compile_state: &mut CompileState, current_progress: f64, callback: &mut impl FnMut(String)) -> (bool, bool) {
     let cleaned = remove_ansi_escapes(line);
     let line_lower = cleaned.to_lowercase();
     let trimmed = cleaned.trim();
     
     if trimmed.is_empty() {
-        return (false, true); // Ignore empty lines but keep processing
+        return (false, true); // Continue processing
     }
     
-    // Stop processing if we encounter known failure markers
+    // Detect errors - skip further processing
     if line_lower.contains("error") || line_lower.contains("fatal") {
-        return (false, false); 
+        return (false, false); // Don't continue processing
     }
     
     let mut next_stage = None;
 
-    // Detect keyword markers that signal a change in the build phase
+    // Detect markers
     if line_lower.contains("detecting libraries") || line_lower.contains("detecting library") {
         next_stage = Some(crate::commands::compile_state::CompileStage::DetectingLibraries);
     } else if line_lower.contains("generating function prototypes") || line_lower.contains("generating prototypes") {
@@ -66,19 +57,19 @@ pub fn detect_stage_change(line: &str, compile_state: &mut CompileState, current
     }
 
     if let Some(stage) = next_stage {
-        // Enforce monotonic transitions: we should never go 'backwards' in the build sequence
+        // Monotonic transition: only move forward
         if stage.rank() > compile_state.stage.rank() {
             compile_state.previous_stage_progress = current_progress;
             let skipped = compile_state.transition_to(stage);
             
-            // Log if we missed a marker (e.g., build tool skipped library detection)
+            // Notify about skips
             for s in skipped {
                 callback(format!("[WARNING] Skipped stage marker: {:?}", s));
             }
 
             compile_state.last_marker_time = std::time::Instant::now();
             
-            // Record timestamps for duration-based progress calculation
+            // Setup timers
             match stage {
                 crate::commands::compile_state::CompileStage::DetectingLibraries => {
                     if compile_state.detect_libs_stage_start.is_none() {
@@ -111,23 +102,19 @@ pub fn detect_stage_change(line: &str, compile_state: &mut CompileState, current
         }
     }
     
-    (false, true)
+    (false, true) // Continue processing
 }
 
-/// Extracts specific file and command information from a compiler output line.
-/// 
-/// This populates the `CompileState` with the name of the file currently being 
-/// processed and increments the total file count when new compilation commands 
-/// are encountered.
+/// Parse compilation commands and files from a line
 pub fn parse_compilation_info(line: &str, compile_state: &mut CompileState) {
     let cleaned = remove_ansi_escapes(line);
     let line_lower = cleaned.to_lowercase();
     let trimmed = cleaned.trim();
     
-    // Detect toolchain-specific compilation commands (gcc/g++)
+    // Detect compilation commands/files
     if line.contains("xtensa-esp32s3-elf-g++") || line.contains("xtensa-esp32s3-elf-gcc") {
         if line.contains("-c") {
-            // Ensure we are in the 'Compiling' stage if we see compiler flags
+            // Only move to Compiling if we are currently in an earlier stage
             if compile_state.stage.rank() < crate::commands::compile_state::CompileStage::Compiling.rank() {
                 compile_state.stage = crate::commands::compile_state::CompileStage::Compiling;
             }
@@ -136,7 +123,6 @@ pub fn parse_compilation_info(line: &str, compile_state: &mut CompileState) {
                 compile_state.compile_stage_start = Some(std::time::Instant::now());
             }
             
-            // Extract the source file path being processed
             if let Some(captures) = RE_COMPILE_COMMAND.captures(line) {
                 if let Some(file_match) = captures.get(1).or_else(|| captures.get(3)) {
                     let file_path = file_match.as_str();
@@ -149,7 +135,6 @@ pub fn parse_compilation_info(line: &str, compile_state: &mut CompileState) {
             }
         }
     } else if let Some(captures) = RE_COMPILE_LINE.captures(&line_lower) {
-        // Generic "Compiling <file>" pattern
         if let Some(file_match) = captures.get(1) {
             let file_path = file_match.as_str();
             compile_state.current_file = file_path.to_string();
@@ -163,7 +148,6 @@ pub fn parse_compilation_info(line: &str, compile_state: &mut CompileState) {
             }
         }
     } else if RE_COMPILED_FILE.is_match(&line_lower) {
-        // Increment the count of successfully processed files
         if !compile_state.compiled_lines_seen.contains(trimmed) {
             compile_state.compiled_lines_seen.insert(trimmed.to_string());
             compile_state.files_compiled = compile_state.compiled_lines_seen.len();

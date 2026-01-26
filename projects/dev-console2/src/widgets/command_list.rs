@@ -1,9 +1,3 @@
-/// Sidebar command list with mouse interactivity.
-///>
-/// This widget renders the list of available build and management actions. 
-/// It supports both keyboard selection and mouse-based hover/click 
-/// interactions, providing a responsive sidebar experience.
-///<
 use ratatui::{
     buffer::Buffer,
     layout::{Rect, Position},
@@ -13,7 +7,6 @@ use ratatui::{
 };
 use crossterm::event::{MouseEvent, MouseButton, MouseEventKind};
 
-/// A stateful widget representing the list of executable commands.
 pub struct CommandListWidget<'a> {
     commands: &'a [String],
     selected_index: usize,
@@ -24,7 +17,6 @@ pub struct CommandListWidget<'a> {
 }
 
 impl<'a> CommandListWidget<'a> {
-    /// Creates a new CommandList with provided selection and hover states.
     pub fn new(commands: &'a [String], selected_index: usize, hovered_index: Option<usize>) -> Self {
         Self { 
             commands, 
@@ -36,30 +28,22 @@ impl<'a> CommandListWidget<'a> {
         }
     }
 
-    /// Sets the visual style for the component borders.
     pub fn border_style(mut self, style: Style) -> Self {
         self.border_style = style;
         self
     }
 
-    /// Sets the visual style for the "Commands" title text.
     pub fn title_style(mut self, style: Style) -> Self {
         self.title_style = style;
         self
     }
 
-    /// Sets the background and text style for the active/hovered item.
     pub fn highlight_style(mut self, style: Style) -> Self {
         self.highlight_style = style;
         self
     }
 
-    /// Detects and returns user interactions with the sidebar.
-///>
-    /// This follows the 'Widget Interactivity Delegation' mandate by 
-    /// encapsulating hit-box detection and coordinate mapping within 
-    /// the widget itself.
-    ///<
+    /// Handles mouse events and returns either a Click(index) or Hover(index)
     pub fn handle_mouse_event(&self, area: Rect, mouse_event: MouseEvent) -> Option<CommandListInteraction> {
         let mouse_pos = Position::new(mouse_event.column, mouse_event.row);
         
@@ -82,20 +66,12 @@ impl<'a> CommandListWidget<'a> {
     }
 }
 
-/// Result of a mouse interaction with the command list.
 pub enum CommandListInteraction {
-    /// User clicked a specific command.
     Click(usize),
-    /// User moved the mouse over a specific command.
     Hover(usize),
 }
 
 impl<'a> Widget for CommandListWidget<'a> {
-    /// Renders the sidebar into the terminal buffer.
-///>
-    /// Handles the drawing of the bordered block, the command strings, 
-    /// and the full-width background highlight for the active item.
-    ///<
     fn render(self, area: Rect, buf: &mut Buffer) {
         let block = Block::bordered()
             .title(Span::styled(" Commands ", self.title_style))
@@ -112,7 +88,6 @@ impl<'a> Widget for CommandListWidget<'a> {
             let is_selected = idx == self.selected_index;
             let is_hovered = self.hovered_index == Some(idx);
             
-            // Mouse hover takes precedence over keyboard selection for highlighting
             let is_highlighted = if self.hovered_index.is_some() {
                 is_hovered
             } else {
@@ -126,7 +101,7 @@ impl<'a> Widget for CommandListWidget<'a> {
             };
 
             if is_highlighted {
-                // Fill the entire row background for a modern 'row selector' look
+                // Fill background border to border
                 for x in inner_area.left()..inner_area.right() {
                     buf[(x, item_y)].set_style(style);
                 }

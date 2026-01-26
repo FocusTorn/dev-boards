@@ -5,8 +5,6 @@ mod system;
 mod view;
 mod ansi;
 pub mod theme;
-#[cfg(test)]
-mod tests;
 
 use crate::app::theme::Theme;
 
@@ -102,7 +100,7 @@ pub enum TaskState {
 
 const MAX_OUTPUT_LINES: usize = 2000;
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy)]
 pub struct AppLayout {
     pub title: Rect,
     pub main: Rect,
@@ -115,98 +113,53 @@ pub struct AppLayout {
 }
 
 #[derive(Debug)]
-/// The primary application state and orchestrator for dev-console-v2.
-///>
-/// The `App` struct manages the terminal UI lifecycle, user input, background task
-/// orchestration, and project-specific configurations. It follows the Elm Architecture
-/// pattern, where state is updated via messages and rendered through a pure view function.
-///<
 pub struct App {
-    /// Flag indicating if the application loop should continue running.
     pub running: bool,
-    /// Collection of top-level tab items for the main content area.
     tabs: Vec<TabBarItem>,
-    /// Global application configuration (theme, layout, components).
     config: crate::config::Config,
-    /// Fast lookup map for tab bar configurations by their unique ID.
     tab_bar_map: HashMap<String, crate::config::TabBarConfig>,
-    /// Flag set if the terminal dimensions are below minimum requirements.
     terminal_too_small: bool,
-    /// List of available build/management commands (e.g., Compile, Upload).
     commands: Vec<String>,
-    /// Current selection index in the command list.
     selected_command_index: usize,
-    /// Current hovered index in the command list (for mouse interaction).
     hovered_command_index: Option<usize>,
-    /// Temporary storage for the command index before a hover event.
     command_index_before_hover: Option<usize>,
-    /// Buffer of output lines received from background processes.
     output_lines: Vec<String>,
-    /// Current vertical scroll offset for the output panel.
     output_scroll: u16,
-    /// Active mouse/scroll interaction state for the output panel.
     output_scroll_interaction: ScrollBarInteraction,
-    /// Flag to enable/disable automatic scrolling to the bottom of the output.
     output_autoscroll: bool,
-    /// Current execution state of background tasks (Idle, Running, Monitoring).
     task_state: TaskState,
-    /// Transmitter for sending updates from background commands back to the App.
     command_tx: mpsc::Sender<ProgressUpdate>,
-    /// Receiver for consuming background command updates.
     command_rx: mpsc::Receiver<ProgressUpdate>,
-    /// Global status message displayed in the bottom bar.
     status_text: String,
-    /// Orchestrator for transient UI notifications (toasts).
     toast_manager: ToastManager,
-    /// Active project profiles loaded from config.yaml.
     profile_config: Option<ProfileConfig>,
-    /// Current selected profile index.
     selected_profile_index: usize,
-    /// List of profile IDs for quick selection and display.
     profile_ids: Vec<String>,
-    /// Shared signal used to stop running background processes.
     cancel_signal: Arc<AtomicBool>,
-    /// The physical area of the terminal currently available for rendering.
     view_area: Rect,
-    /// Pre-calculated layout geometry for the current view area.
     layout: AppLayout,
-    /// Visual theme configuration (colors, styles).
     pub theme: Theme,
-    /// Statistics-based predictor for estimating task completion times.
     predictor: crate::commands::ProgressPredictor,
-    /// Buffer for raw keyboard/mouse input debug info.
     last_raw_input: String,
-    /// Timestamp of the last processed frame (for animation timing).
     last_frame_time: Instant,
-    /// Flag indicating if the UI needs to be redrawn in the next frame.
     pub should_redraw: bool,
 
-    /// Input state for text-entry fields.
+    // Input state
     pub input: tui_input::Input,
-    /// Flag set when a text-entry field is currently focused.
     pub input_active: bool,
-    /// Transmitter for sending commands to an active serial connection.
     pub serial_tx: Option<mpsc::Sender<crate::commands::SerialCommand>>,
-    /// Transmitter for sending messages to an active MQTT broker.
     pub mqtt_tx: Option<mpsc::Sender<crate::commands::MqttCommand>>,
 }
 
 impl App {
-    /// Initializes a new instance of the application.
-///>
-    /// This includes loading configurations, initializing state managers,
-    /// and setting up the communication channels for background tasks.
-    ///<
     pub fn new() -> Result<Self> {
         let config = crate::config::load_config()?;
         
-        // Index tab bar configurations for O(1) lookups during rendering
         let mut tab_bar_map: HashMap<String, crate::config::TabBarConfig> = HashMap::new();
         for tb in config.tab_bars.iter() {
             tab_bar_map.insert(tb.id.clone(), tb.clone());
         }
 
-        // Initialize the main content tabs based on the 'MainContentTabBar' configuration
         let tabs = config.tab_bars.iter()
             .find(|t| t.id == "MainContentTabBar")
             .map(|c| c.tabs.iter().map(|t| TabBarItem {
@@ -216,7 +169,6 @@ impl App {
             }).collect())
             .unwrap_or_default();
 
-        // Determine default autoscroll state from the UI configuration
         let output_autoscroll = config.tab_bars.iter()
             .find(|t| t.id == "OutputPanelStaticOptions")
             .and_then(|t| t.tabs.iter().find(|tab| tab.id == "autoscroll"))
@@ -241,7 +193,6 @@ impl App {
         let toast_config = crate::config::load_widget_config()?;
         let toast_manager = ToastManager::new(toast_config);
 
-        // Load project profiles and set initial status text
         let initial_status = match crate::config::load_profile_config() {
             Ok(config) => {
                 profile_ids = config.sketches.iter().map(|s| s.id.clone()).collect();
@@ -364,13 +315,7 @@ impl App {
     
     
     
-    /// The primary state transition function (The 'Update' in Elm Architecture).
-    ///>
-    /// This method is the single entry point for all state mutations. It consumes a 
-    /// `Message`, which represents an event that has occurred (user input, system timer,
-    /// background task update), and applies the necessary logic to transition the
-    /// application state.
-    ///<
+    /// Primary Update Loop - Decoupled from physical input interpretation
     pub fn update(&mut self, msg: Message) {
         self.should_redraw = true;
         
@@ -408,13 +353,7 @@ impl App {
         if parts.is_empty() { "None".to_string() } else { parts.join("+") }
     }
 
-    /// Translates physical key events into semantic application actions.
-    ///>
-    /// This dispatcher handles:
-    /// 1. Text input management when `input_active` is true.
-    /// 2. Global and tab-specific keyboard shortcuts defined in `config.yaml`.
-    /// 3. Context-sensitive navigation (e.g., switching profiles or tabs).
-    ///<
+    /// Event Dispatcher: Physical Key -> Semantic Message
     fn dispatch_key(&mut self, key: event::KeyEvent) {
         if key.kind != KeyEventKind::Press { return; }
 
