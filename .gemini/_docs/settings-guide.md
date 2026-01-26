@@ -41,6 +41,9 @@ When you approve a command with "Allow for all future sessions," the Gemini CLI 
 - **Manual Editing:** While it is possible to manually edit `settings.json` files, it is recommended to use the `/settings` command to ensure the JSON structure remains valid and compatible with the current version of the CLI.
 - **Precedence Logic:** Upon startup, the CLI loads the default settings, then layers the **System** settings, followed by the **User** settings, and finally the **Workspace** settings. The last value loaded for any given key is the one used during the session.
 
+
+
+
 ---
 
 ## Available Settings
@@ -136,3 +139,12 @@ If settings are not taking effect:
 1.  **Restart the CLI:** Most settings require a restart to be fully applied.
 2.  **Check Precedence:** Ensure a Workspace setting isn't overriding your User setting.
 3.  **Validate JSON:** Manual edits to `settings.json` must be valid JSON.
+
+
+
+
+---
+
+## Shown Tips
+
+1. 

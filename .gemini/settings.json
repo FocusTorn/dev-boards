@@ -1,5 +1,4 @@
 
-
 // https://github.com/abagames/slash-criticalthink
 // gemini extensions install https://github.com/abagames/slash-criticalthink
 
@@ -15,20 +14,21 @@
 // https://github.com/udapy/rust-agentic-skills
 // gemini extensions install https://github.com/udapy/rust-agentic-skills
 
-
-
 {
-  
-  
     "coreTools": {
-        "includeDirectories": ["D:\\_dev\\_Projects\\dev-boards\\projects\\dev-console2"]
+        "includeDirectories": [
+            "D:/_dev/_Projects/dev-boards/projects/dev-console2",
+            "D:/_dev/_Projects/dev-boards/_shared-resources"
+        
+        ]
     }   
-    
-    
-    
-    
   
-    // "mcpServers": {
+  
+}
+//
+//
+//
+// "mcpServers": {
 //     "carrot-pm": {
 //       "command": "node",
 //       "args": ["D:/_dev/_Projects/dev-boards/carrot-ai-pm/dist/src/server.js"],
@@ -37,8 +37,3 @@
 //       }
 //     }
 //   }
-  
-  
-  
-  
-}

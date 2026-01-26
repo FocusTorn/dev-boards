@@ -1,3 +1,10 @@
+/// High-performance ANSI escape sequence parsing for TUI rendering.
+///>
+/// This module provides the logic for translating raw terminal output (containing 
+/// color and style codes) into `ratatui::text::Line` objects. It is designed to 
+/// handle standard SGR (Select Graphic Rendition) codes, 256-color palettes, 
+/// and true-color (RGB) sequences.
+///<
 use ratatui::{
     style::{Color, Modifier, Style},
     text::{Line, Span},
@@ -6,11 +13,15 @@ use regex::Regex;
 use lazy_static::lazy_static;
 
 lazy_static! {
-    // Match ANSI escape sequences: \x1b[ followed by codes and ending with m
+    /// Matches standard ANSI escape sequences: \x1b[ followed by codes and ending with a command character.
     static ref ANSI_REGEX: Regex = Regex::new(r"\x1b\[([0-9;]*)([a-zA-Z])").unwrap();
 }
 
-/// Parse a line with ANSI color codes and convert to ratatui Line
+/// Translates a raw string line into a styled Ratatui Line.
+///>
+/// If the input contains ANSI escape codes, it triggers the full regex-based 
+/// parser. Otherwise, it returns a simple raw line, avoiding unnecessary overhead.
+///<
 pub fn parse_ansi_line(line: &str) -> Line<'static> {
     if line.contains('\x1b') || line.contains('\u{001b}') {
         parse_ansi_to_spans(line)
@@ -19,7 +30,7 @@ pub fn parse_ansi_line(line: &str) -> Line<'static> {
     }
 }
 
-/// Parse ANSI escape sequences and convert to ratatui Spans
+/// Internal parser that iterates through ANSI matches and constructs styled Spans.
 fn parse_ansi_to_spans(text: &str) -> Line<'static> {
     let mut spans = Vec::new();
     let mut last_end = 0;
@@ -61,6 +72,7 @@ fn parse_ansi_to_spans(text: &str) -> Line<'static> {
     }
 }
 
+/// Resolves a semicolon-separated string of ANSI codes into a Ratatui Style.
 fn parse_ansi_codes_to_style(codes: &str, mut current_style: Style) -> Style {
     if codes.is_empty() {
         return Style::default();
@@ -101,6 +113,7 @@ fn parse_ansi_codes_to_style(codes: &str, mut current_style: Style) -> Style {
     current_style
 }
 
+/// Maps standard ANSI color indices to Ratatui Color variants.
 fn parse_ansi_color(code: u8) -> Color {
     match code {
         0 => Color::Black,
@@ -123,6 +136,7 @@ fn parse_ansi_color(code: u8) -> Color {
     }
 }
 
+/// Maps the 256-color palette to Ratatui Color.
 fn parse_256_color(code: u16) -> Color {
     if code < 16 {
         parse_ansi_color(code as u8)

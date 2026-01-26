@@ -4,11 +4,20 @@ use std::sync::atomic::Ordering;
 use std::sync::mpsc;
 use std::time::Instant;
 
+/// Semantic action implementations (The 'How' of application logic).
+///>
+/// The `executors` module contains the actual implementation for every `Action` 
+/// triggered by the user or system. By isolating these methods, the main `update` 
+/// loop remains a clean router while the complex state-mutating logic is 
+/// encapsulated here.
+///< 
 impl App {
+    /// Terminates the application loop.
     pub fn exec_quit(&mut self) {
         self.running = false;
     }
 
+    /// Moves the command selection highlight upwards.
     pub fn exec_commands_up(&mut self) {
         self.selected_command_index = if self.selected_command_index > 0 {
             self.selected_command_index - 1
@@ -18,11 +27,13 @@ impl App {
         self.hovered_command_index = None;
     }
 
+    /// Moves the command selection highlight downwards.
     pub fn exec_commands_down(&mut self) {
         self.selected_command_index = (self.selected_command_index + 1) % self.commands.len();
         self.hovered_command_index = None;
     }
 
+    /// Executes the currently highlighted command from the sidebar.
     pub fn exec_execute_selected_command(&mut self) {
         let selected_str = self.commands[self.selected_command_index].clone();
         if let Some(action) = Action::from_str(&selected_str) {
@@ -32,6 +43,7 @@ impl App {
         }
     }
 
+    /// Attempts to cancel any active background tasks or exit input mode.
     pub fn exec_cancel(&mut self) {
         let is_active = matches!(self.task_state, TaskState::Running { .. }) || matches!(self.task_state, TaskState::Monitoring { .. });
         
@@ -46,14 +58,21 @@ impl App {
         }
     }
 
+    /// Initiates the firmware compilation process.
     pub fn exec_compile(&mut self) {
         self.start_process(false);
     }
 
+    /// Initiates the firmware upload process.
     pub fn exec_upload(&mut self) {
         self.start_process(true);
     }
 
+    /// Core logic for spawning background build/upload threads.
+    ///>
+    /// This method resets progress, trains the time predictor with latest history,
+    /// and dispatches the long-running task to a background thread.
+    ///< 
     fn start_process(&mut self, is_upload: bool) {
         let now = Instant::now();
         self.task_state = TaskState::Running {
@@ -94,6 +113,7 @@ impl App {
         }
     }
 
+    /// Opens a serial port and begins monitoring hardware output.
     pub fn exec_monitor_serial(&mut self) {
         let now = Instant::now();
         self.task_state = TaskState::Monitoring {
@@ -131,6 +151,7 @@ impl App {
         }
     }
 
+    /// Connects to the MQTT broker defined in the current profile.
     pub fn exec_monitor_mqtt(&mut self) {
         let now = Instant::now();
         self.task_state = TaskState::Monitoring {
