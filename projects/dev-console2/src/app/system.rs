@@ -64,12 +64,12 @@ impl App {
                     *stage = s;
                 }
             }
-            ProgressUpdate::CompletedWithMetrics { stage_times } => {
+            ProgressUpdate::CompletedWithMetrics { stage_times, total_files } => {
                 let sketch_id = self.get_current_sketch_id().unwrap_or_else(|| "default".to_string());
                 let history_path = std::path::Path::new(".dev-console/progress_history.json");
                 
                 let mut manager = crate::commands::HistoryManager::load(history_path);
-                manager.record_run(&sketch_id, stage_times);
+                manager.record_run(&sketch_id, stage_times, total_files);
                 let _ = manager.save(history_path);
 
                 self.task_state = TaskState::Idle;
