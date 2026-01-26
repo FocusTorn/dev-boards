@@ -15,6 +15,7 @@ use app::{App, Message};
 fn main() -> Result<()> {
     // Initialize error handling
     color_eyre::install()?;
+    terminal::install_panic_hook();
 
     // Create application state first (so config errors print to stderr before terminal takeover)
     let mut app = App::new()?;

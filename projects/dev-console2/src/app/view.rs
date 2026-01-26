@@ -12,7 +12,6 @@ use crate::widgets::progress_bar::ProgressBarWidget;
 use crate::widgets::status_box::StatusBoxWidget;
 use crate::widgets::smooth_scrollbar::{ScrollBar, ScrollLengths};
 use crate::widgets::toast::ToastWidget;
-use crate::app::ansi::parse_ansi_line;
 
 impl App {
     pub fn view(&mut self, frame: &mut Frame) {
@@ -153,22 +152,22 @@ impl App {
             ));
         }
 
-        let total_lines = self.output_lines.len();
+        let total_lines = self.output_cached_lines.len();
         let total_count = if self.output_autoscroll { total_lines + 1 } else { total_lines };
         let show_scrollbar = total_count > actual_text_area.height as usize;
 
         let mut text_area = actual_text_area.inner(Margin { vertical: 0, horizontal: 1 });
         if show_scrollbar { text_area.width = text_area.width.saturating_sub(1); }
 
-        let visible_lines: Vec<Line> = if self.output_lines.is_empty() {
+        let display_lines = if self.output_cached_lines.is_empty() {
             vec![Line::from(Span::styled("No output yet.", Style::default().fg(Color::DarkGray)))]
         } else {
-            self.output_lines.iter().map(|s| parse_ansi_line(s)).collect()
+            self.output_cached_lines.clone()
         };
 
         // Standard Paragraph with native scrolling
         frame.render_widget(
-            Paragraph::new(visible_lines)
+            Paragraph::new(display_lines)
                 .scroll((self.output_scroll, 0)),
             text_area
         );

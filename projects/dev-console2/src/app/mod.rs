@@ -124,6 +124,7 @@ pub struct App {
     hovered_command_index: Option<usize>,
     command_index_before_hover: Option<usize>,
     output_lines: Vec<String>,
+    output_cached_lines: Vec<ratatui::text::Line<'static>>,
     output_scroll: u16,
     output_scroll_interaction: ScrollBarInteraction,
     output_autoscroll: bool,
@@ -220,7 +221,8 @@ impl App {
             selected_command_index: 0,
             hovered_command_index: None,
             command_index_before_hover: None,
-            output_lines: initial_output,
+            output_lines: initial_output.clone(),
+            output_cached_lines: initial_output.iter().map(|l| crate::app::ansi::parse_ansi_line(l)).collect(),
             output_scroll: 0,
             output_scroll_interaction: ScrollBarInteraction::new(),
             output_autoscroll,
@@ -725,10 +727,14 @@ impl App {
     
                                 
     fn push_line(&mut self, line: String) {
+        let cached = crate::app::ansi::parse_ansi_line(&line);
         self.output_lines.push(line);
+        self.output_cached_lines.push(cached);
+
         if self.output_lines.len() > MAX_OUTPUT_LINES {
             let to_remove = self.output_lines.len() - MAX_OUTPUT_LINES;
             self.output_lines.drain(0..to_remove);
+            self.output_cached_lines.drain(0..to_remove);
         }
         self.should_redraw = true;
         self.sync_autoscroll();

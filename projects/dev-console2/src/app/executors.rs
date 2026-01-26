@@ -66,6 +66,7 @@ impl App {
             smoothed_eta: None,
         };
         self.output_lines.clear();
+        self.output_cached_lines.clear();
         let tx = self.command_tx.clone();
         let cancel_signal = self.cancel_signal.clone();
         cancel_signal.store(false, Ordering::SeqCst);
@@ -100,6 +101,7 @@ impl App {
             start_time: now,
         };
         self.output_lines.clear();
+        self.output_cached_lines.clear();
         self.log("action", "Starting Serial Monitor...");
         
         // Activate Input Field Automatically
@@ -136,6 +138,7 @@ impl App {
             start_time: now,
         };
         self.output_lines.clear();
+        self.output_cached_lines.clear();
         self.log("action", "Starting MQTT Monitor...");
         
         // Activate Input Field Automatically
