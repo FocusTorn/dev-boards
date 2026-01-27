@@ -3,40 +3,66 @@
     "previewFeatures": false,
     "vimMode": false,
     "disableAutoUpdate": false,
+    "enableAutoUpdateNotification": true,
     "enablePromptCompletion": false,
     "debugKeystrokeLogging": false,
+    "retryFetchErrors": false,
+    "preferredEditor": null,
     "sessionRetention": {
+      "enabled": false,
+      "maxAge": null,
+      "maxCount": null,
+      "minRetention": "1d"
+    },
+    "checkpointing": {
       "enabled": false
     }
   },
   "ui": {
     "theme": "Default",
+    "customThemes": {},
     "hideWindowTitle": false,
     "showStatusInTitle": false,
     "dynamicWindowTitle": true,
+    "showHomeDirectoryWarning": true,
+    "hideTips": false,
+    "hideBanner": false,
     "hideContextSummary": false,
+    "hideFooter": false,
     "showMemoryUsage": false,
     "showLineNumbers": true,
+    "showCitations": false,
+    "showModelInfoInChat": false,
     "useFullWidth": true,
     "useAlternateBuffer": false,
     "incrementalRendering": true,
     "footer": {
       "hideCWD": false,
+      "hideSandboxStatus": false,
       "hideModelInfo": false,
       "hideContextPercentage": true
+    },
+    "accessibility": {
+      "enableLoadingPhrases": true,
+      "screenReader": false
     }
   },
   "output": {
     "format": "text"
   },
   "ide": {
-    "enabled": false
+    "enabled": false,
+    "preferredEditor": "vscode"
+  },
+  "privacy": {
+    "usageStatisticsEnabled": true
   },
   "model": {
     "maxSessionTurns": -1,
     "compressionThreshold": 0.5,
     "skipNextSpeakerCheck": true
   },
+  "contextFileName": "GEMINI.md",
   "context": {
     "discoveryMaxDirs": 200,
     "loadMemoryFromIncludeDirectories": false,
@@ -55,9 +81,13 @@
     "truncateToolOutputLines": 1000,
     "disableLLMCorrection": false,
     "shell": {
+      "executable": "pwsh.exe",
       "enableInteractiveShell": true,
       "showColor": false
-    }
+    },
+    "sandbox": false,
+    "toolDiscoveryCommand": "",
+    "toolCallCommand": ""
   },
   "security": {
     "disableYoloMode": false,
@@ -87,13 +117,15 @@
   "coreTools": {
     "includeDirectories": []
   },
+  "excludeTools": [],
   "mcpServers": {
-    "example-mcp-server": {
+    "example-server": {
       "command": "node",
-      "args": [
-        "path/to/server.js"
-      ],
-      "env": {}
+      "args": ["server.js"],
+      "env": {},
+      "cwd": ".",
+      "timeout": 600000,
+      "trust": false
     }
   }
 }
