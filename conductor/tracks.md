@@ -2,7 +2,24 @@
 
 This file tracks all major tracks for the project. Each track has its own detailed plan in its respective folder.
 
+## 1. :: Open
+
+## 2. :: Closed <!-- Start Fold -->
+
+
 ---
 
-- [~] **Track: stabilize_workspace_20260126**
-  *Link: [./tracks/stabilize_workspace_20260126/](./tracks/stabilize_workspace_20260126/)*
+<!-- Close Fold -->
+
+## 3. :: Archived <!-- Start Fold -->
+
+- [A] **Track: stabilize_workspace_20260126**
+  *Link: [./archive/stabilize_workspace_20260126/](./archive/stabilize_workspace_20260126/)*
+  
+---
+
+  <!-- Close Fold -->
+---
+
+- [ ] **Track: dc2: Implement port autodetection and Profile Management UI**
+*Link: [./tracks/device_mgmt_20260127/](./tracks/device_mgmt_20260127/)*

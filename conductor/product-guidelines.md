@@ -20,7 +20,17 @@
 - **Real-time Debugging:** Work toward a dedicated **Debug Tab** or panel within the TUI to monitor hardware communication and application state without leaving the interface.
 
 ## 4. Development & Documentation Standards
-- **Code Structure:** Prioritize small, focused blocks and functions to keep files manageable.
+- **Small Blocks:** Enforce the principle of small, focused code blocks and functions to improve maintainability.
 - **Self-Documentation:** Use expressive naming to make code intent clear.
-- **Doc-Comments:** Employ heavy documentation (/// in Rust) to explain the "why" behind complex logic and hardware interactions.
+- **Why-Focused Docstrings:** Every public and internal function, struct, and enum must have a docstring (using `///` in Rust) that explains the "Why" and "How" rather than just the "What".
+- **Folding Markers:** 
+    - Multi-line docstrings must use `///>` after the title and `///<` before the code to support folding.
+    - All existing folding arrows (`//>`, `//<`, `==>>`, etc.) must be preserved and correctly indented.
+- **Clean Attributes:** Keep attributes clean; remove all comments from `#[allow(dead_code)]` or similar declarations.
 - **Architecture Guides:** Maintain high-level Markdown documentation to serve as a persistent reference for system design and project context.
+
+## 5. Performance & Stability
+- **Allocation Minimization:** Minimize heap allocations (clones, strings) in high-frequency loops (view/update cycles).
+- **Caching:** Use caching mechanisms (e.g., ANSI line caching) to reduce render-pass latency and processing overhead.
+- **Reactive Synchronization:** Ensure derived state is only updated when source data changes.
+- **Crash Resilience:** Always install terminal panic hooks in TUI applications to prevent terminal corruption.

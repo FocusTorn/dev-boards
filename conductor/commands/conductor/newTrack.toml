@@ -154,4 +154,16 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
 8.  **Announce Completion:** Inform the user:
     > "New track '<track_id>' has been created and added to the tracks file. A dedicated branch `track/<track_id>` has been created and checked out. You can now start implementation by running `/conductor:implement`."
 
+---
+
+## 3.0 SCOPE & INTERRUPTIONS
+**PROTOCOL: Handle requests outside the track's scope.**
+
+1.  **Scope Awareness:** If the user provides a prompt, question, or request that is clearly outside the scope of the current track and its documentation (Specification/Plan), you MUST:
+    a. **Acknowledge:** Briefly acknowledge the request and note that it is outside the current track's scope.
+    b. **Fulfill:** Address the user's request to the best of your ability using your general tools and knowledge.
+    c. **Confirm Before Resuming:** Once the out-of-scope request is fully addressed, you MUST NOT automatically jump back into the next task of the track. Instead, you MUST ask the user:
+        > "I have addressed your request. Would you like to resume working on the track '<track_id>'? (yes/no)"
+    d. **Wait for Approval:** Only proceed with the track creation process if the user provides explicit approval (e.g., "yes", "proceed").
+
 """
