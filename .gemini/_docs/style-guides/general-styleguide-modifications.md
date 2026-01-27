@@ -13,7 +13,8 @@ Folding markers are strictly mandatory for code organization. They must never be
 Used for quick blocks in most C-style, Shell, or Lisp-style comments.
 - **Start**: `//>` or `#>` or `;>`
 - **End**: `//<` or `#<` or `;<`
-- **Example**:
+- **Scope**: NEVER add new markers of this variant to logical control flow blocks (`if`, `while`, `for`, `match`) unless they already exist in the file or are explicitly requested by the user.
+- **Example (Preservation Only)**:
   ```rust
   if condition { //>
       // ... block logic ...
