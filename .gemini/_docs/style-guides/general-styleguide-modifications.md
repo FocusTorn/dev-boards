@@ -61,6 +61,18 @@ If a requested change is too large to implement in a single turn without elision
 
 ---
 
-## 3. Formatting Persistence
+## 3. Newline & EOL Consistency
+
+### The Mandate
+This workspace strictly uses Unix-style line endings (`LF` / `\n`). To prevent "phantom" blank lines and ensure cross-platform compatibility, all file modifications must use the `LF` character.
+
+### Modification Rules
+- **Tool Selection**: For complex multi-line changes or when adding documentation blocks, prefer `write_file` over `replace`. `write_file` ensures a clean write of the entire content buffer.
+- **Verification**: If blank lines or `\r` characters appear after an edit, the agent must immediately verify the file content and use `write_file` to normalize the entire file back to its correct `LF` state.
+- **Git Config**: The workspace is configured with `core.autocrlf = input` to prevent automatic conversion back to CRLF on Windows.
+
+---
+
+## 4. Formatting Persistence
 - **The Rule**: If you encounter these markers in existing code, preserve them exactly as they are.
 - **The Rule**: Do not add extra whitespace between the comment character and the arrow (e.g., use `//>` not `// >`) unless the existing file context consistently uses a space.

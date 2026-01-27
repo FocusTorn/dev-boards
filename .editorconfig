@@ -1,13 +1,16 @@
-# EditorConfig for PowerShell scripts
-# Ensures UTF-8 with BOM encoding for proper Unicode character support
-
+# EditorConfig for Dev Boards Workspace
 root = true
 
-[*.ps1]
-charset = utf-8-bom
+[*]
 end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 indent_style = space
 indent_size = 4
+charset = utf-8
 
+[*.ps1]
+charset = utf-8-bom
+
+[*.{js,ts,json,yml,yaml,md}]
+indent_size = 2

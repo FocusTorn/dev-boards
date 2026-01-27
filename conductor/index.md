@@ -7,9 +7,11 @@
 
 ## Workflow
 - [Workflow](./workflow.md)
-- [Code Style Guides](./code_styleguides/)
-- [Workspace Style Overrides](../.gemini/_docs/style-guides/)
-- [General Style Overrides](../.gemini/_docs/style-guides/general-styleguide-modifications.md)
+- [Standard Style Guides](./code_styleguides/)
+- [Added Modifications (Workspace Overrides)](../.gemini/_docs/style-guides/)
+  - [General Overrides](../.gemini/_docs/style-guides/general-styleguide-modifications.md)
+  - [Rust Overrides](../.gemini/_docs/style-guides/rust-styleguide-modifications.md)
+  - [Rust TUI Best Practices](../.gemini/_docs/style-guides/optimized-Rust-TUI-best-practices.md)
 
 ## Management
 - [Tracks Registry](./tracks.md)

@@ -1,0 +1,2 @@
+description = 'Resume a track by typing its name manually'
+prompt = 'I want to resume work on a Conductor track. Track specified: {{args}}. Please check if this track exists in conductor/tracks/ and proceed.'
