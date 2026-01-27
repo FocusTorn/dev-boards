@@ -3,7 +3,12 @@
 use std::time::Instant;
 pub use crate::commands::predictor::CompileStage;
 
-/// Compilation state tracking structure
+/// Tracks the lifecycle and progress of a single compilation or upload run.
+///>
+/// This structure maintains the state-machine for compilation stages, 
+/// calculates weighted progress percentages based on historical and real-time 
+/// data, and detects anomalies like missing markers or stuck stages.
+///<
 pub struct CompileState {
     pub stage: CompileStage,
     pub stage_weights: std::collections::HashMap<CompileStage, f64>,
@@ -27,6 +32,7 @@ pub struct CompileState {
 }
 
 impl CompileState {
+    /// Initializes a new state tracker with provided weights and durations.
     pub fn new(weights: std::collections::HashMap<CompileStage, f64>, expected_durations: std::collections::HashMap<CompileStage, f64>) -> Self {
         Self {
             stage: CompileStage::Initializing,
@@ -51,20 +57,28 @@ impl CompileState {
         }
     }
 
+    /// Updates internal progress within the current stage.
+    ///>
+    /// Clamps progress to prevent backward jumps unless a clear segment 
+    /// reset is detected (common during multi-stage uploads).
+    ///<
     pub fn update_stage_progress(&mut self, progress: f64) {
         // esptool does multiple segments. 
         // If we see a significant drop (e.g. 100% -> 5%), it's a new segment.
-        // We'll treat the overall stage progress as a weighted average or just keep it moving.
-        if progress < self.stage_progress && self.stage_progress > 90.0 {
+        if progress < self.stage_progress && self.stage_progress > 90.0 { //>
             // New segment started. We'll "nudge" the floor up but allow 0-100 again.
-            // For now, let's just allow it to reset so the bar keeps moving.
             self.stage_progress = progress;
         } else if progress > self.stage_progress {
             self.stage_progress = progress.clamp(0.0, 100.0);
-        }
+        } //<
     }
     
-    /// Transitions to a new stage and returns a list of any skipped stages
+    /// Transitions the state machine to a new stage.
+    ///>
+    /// Returns a list of any stages that were skipped based on the jump in 
+    /// rank. This ensures the progress bar remains monotonic even if markers 
+    /// are missing from the input stream.
+    ///<
     pub fn transition_to(&mut self, next_stage: CompileStage) -> Vec<CompileStage> {
         let mut skipped = Vec::new();
         let current_rank = self.stage.rank();
@@ -74,14 +88,14 @@ impl CompileState {
         let duration = self.last_marker_time.elapsed().as_secs_f64();
         self.stage_durations.insert(self.stage, duration);
 
-        if next_rank > current_rank + 1 {
+        if next_rank > current_rank + 1 { //>
             // We skipped one or more stages
-            for rank in (current_rank + 1)..next_rank {
-                if let Some(skipped_stage) = CompileStage::from_rank(rank) {
+            for rank in (current_rank + 1)..next_rank { //>
+                if let Some(skipped_stage) = CompileStage::from_rank(rank) { //>
                     skipped.push(skipped_stage);
-                }
-            }
-        }
+                } //<
+            } //<
+        } //<
 
         // Before moving, snap previous_stage_progress to the START of the next stage
         // to prevent jumps in calculate_progress
@@ -94,6 +108,7 @@ impl CompileState {
         skipped
     }
 
+    /// Determines the 0-100 range occupied by a stage based on its weight.
     fn get_stage_range(&self, stage: CompileStage) -> (f64, f64) {
         let stages_in_order = [
             CompileStage::Initializing,
@@ -108,17 +123,21 @@ impl CompileState {
         ];
 
         let mut start_pct = 0.0;
-        for s in &stages_in_order {
+        for s in &stages_in_order { //>
             let weight = *self.stage_weights.get(s).unwrap_or(&0.0);
-            if *s == stage {
+            if *s == stage { //>
                 return (start_pct * 100.0, (start_pct + weight) * 100.0);
-            }
+            } //<
             start_pct += weight;
-        }
+        } //<
         (0.0, 100.0)
     }
 
-    /// Calculate progress percentage based on current stage and state
+    /// Calculates the global progress percentage (0-100).
+    ///>
+    /// Combines stage weights, file-based counts, and time-based estimates 
+    /// to provide a smooth, monotonic progress indicator.
+    ///<
     pub fn calculate_progress(&mut self) -> f64 {
         let (start_range, end_range) = self.get_stage_range(self.stage);
         let range_width = end_range - start_range;
@@ -126,7 +145,7 @@ impl CompileState {
         // Use max_progress as floor to ensure no jumps backwards
         let progress_floor: f64 = start_range.max(self.max_progress);
 
-        let current = match self.stage {
+        let current = match self.stage { //>
             CompileStage::Initializing => {
                 let elapsed = self.start_time.elapsed().as_secs_f64();
                 let typical = *self.expected_durations.get(&self.stage).unwrap_or(&5.0);
@@ -144,7 +163,7 @@ impl CompileState {
                     .map(|t| t.elapsed().as_secs_f64())
                     .unwrap_or(0.0);
                 
-                if self.total_files > 0 {
+                if self.total_files > 0 { //>
                     let file_progress = self.files_compiled as f64 / self.total_files as f64;
                     let file_based = start_range + (file_progress * range_width);
                     let typical = *self.expected_durations.get(&self.stage).unwrap_or(&45.0);
@@ -159,14 +178,13 @@ impl CompileState {
                         start_range + (compile_elapsed / typical * range_width)
                     };
                     base.min(start_range + range_width * 0.9)
-                }
+                } //<
             }
             CompileStage::Linking => {
                 let link_elapsed = self.link_stage_start
                     .map(|t| t.elapsed().as_secs_f64())
                     .unwrap_or(0.0);
                 let typical = *self.expected_durations.get(&self.stage).unwrap_or(&15.0);
-                // Continue from wherever we were, but at least start_range
                 progress_floor + (link_elapsed / typical * range_width).min(end_range - progress_floor).min(range_width * 0.9)
             }
             CompileStage::Generating => {
@@ -185,12 +203,11 @@ impl CompileState {
                 let elapsed = self.last_marker_time.elapsed().as_secs_f64();
                 let typical = *self.expected_durations.get(&self.stage).unwrap_or(&30.0);
                 
-                // CRITICAL: Use the actual reported percentage if we have it
-                if self.stage_progress > 0.0 {
+                if self.stage_progress > 0.0 { //>
                     start_range + (self.stage_progress / 100.0 * range_width)
                 } else {
                     progress_floor + (elapsed / typical * (end_range - progress_floor)).min(end_range - progress_floor).min(range_width * 0.9)
-                }
+                } //<
             }
             CompileStage::Verifying => {
                 let elapsed = self.last_marker_time.elapsed().as_secs_f64();
@@ -198,25 +215,27 @@ impl CompileState {
                 progress_floor + (elapsed / typical * (end_range - progress_floor)).min(end_range - progress_floor).min(range_width * 0.9)
             }
             CompileStage::Complete => 100.0,
-        };
+        }; //<
 
-        if current > self.max_progress {
+        if current > self.max_progress { //>
             self.max_progress = current;
-        }
+        } //<
         self.max_progress
     }
 
-    /// Checks if a stage marker has been missing for too long
+    /// Monitors for parser stalls where markers are expected but missing.
+    ///>
+    /// If more than 30 seconds pass without a stage transition, this 
+    /// returns a warning message to be displayed in the TUI output.
+    ///<
     pub fn check_for_missing_markers(&mut self) -> Option<String> {
-        if self.has_warned_current_stage {
+        if self.has_warned_current_stage { //>
             return None;
-        }
+        } //<
 
         let elapsed_since_marker = self.last_marker_time.elapsed().as_secs();
         
-        // If we've been in a stage for more than 30 seconds without a transition
-        // and we aren't in the final stage, it might indicate a parser failure.
-        if elapsed_since_marker > 30 && self.stage != CompileStage::Complete {
+        if elapsed_since_marker > 30 && self.stage != CompileStage::Complete { //>
             self.has_warned_current_stage = true;
             Some(format!(
                 "[WARNING] No stage markers seen for {}s. Current stage: {:?}", 
@@ -224,6 +243,6 @@ impl CompileState {
             ))
         } else {
             None
-        }
+        } //<
     }
 }

@@ -3,6 +3,13 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Widget},
 };
 
+/// A detailed status and progress visualization widget.
+///>
+/// Displays a multi-line status box containing structured metrics 
+/// (percentage, elapsed time, ETA, stage) and a high-resolution progress 
+/// bar. Used to provide feedback during long-running tasks like firmware 
+/// compilation or hardware flashing.
+///<
 #[derive(Clone, Debug)]
 pub struct ProgressBarWidget<'a> {
     title: Line<'a>,
@@ -16,6 +23,7 @@ pub struct ProgressBarWidget<'a> {
 }
 
 impl<'a> ProgressBarWidget<'a> {
+    /// Creates a new progress bar with initial metrics and stage info.
     pub fn new(title: String, progress: f64, stage: String) -> Self {
         Self {
             title: Line::from(title),
@@ -29,29 +37,38 @@ impl<'a> ProgressBarWidget<'a> {
         }
     }
 
+    /// Sets the style for the widget's surrounding block borders.
     pub fn border_style(mut self, style: Style) -> Self {
         self.border_style = style;
         self
     }
 
+    /// Sets the style for the widget's title text.
     pub fn title_style(mut self, style: Style) -> Self {
         self.title_style = style;
         self
     }
 
+    /// Updates the displayed elapsed time string (e.g., "01:23").
     pub fn elapsed(mut self, elapsed: String) -> Self {
         self.elapsed_text = elapsed;
         self
     }
 
+    /// Updates the displayed estimated time remaining string (e.g., "00:45").
     pub fn eta(mut self, eta: String) -> Self {
         self.eta_text = eta;
         self
     }
-
 }
 
 impl<'a> Widget for ProgressBarWidget<'a> {
+    /// Renders the status metrics and progress bar into the provided area.
+    ///>
+    /// Dynamically calculates bar width and fills based on the current 
+    /// percentage. Provides a structured header for at-a-glance readability 
+    /// of build performance.
+    ///<
     fn render(self, area: Rect, buf: &mut Buffer) {
         let block = Block::default()
             .borders(Borders::ALL)
@@ -66,9 +83,9 @@ impl<'a> Widget for ProgressBarWidget<'a> {
             horizontal: 1,
         });
 
-        if content_area.height < 1 {
+        if content_area.height < 1 { //>
             return;
-        }
+        } //<
 
         // Row 1: Structured Status Info
         let line1 = format!(
@@ -79,7 +96,7 @@ impl<'a> Widget for ProgressBarWidget<'a> {
             self.stage_text
         );
 
-        // Row 2: Pure Progress Bar (Percentage moved to structured header)
+        // Row 2: Pure Progress Bar
         let bar_width = (content_area.width as usize).saturating_sub(2);
         let filled_width = ((bar_width as f64 * self.progress_percentage / 100.0).round() as usize).min(bar_width);
         let empty_width = bar_width.saturating_sub(filled_width);
@@ -91,9 +108,9 @@ impl<'a> Widget for ProgressBarWidget<'a> {
             Line::from(Span::styled(bar_text, Style::default().fg(Color::Green))),
         ];
 
-        if !self.file_text.is_empty() && content_area.height > 2 {
+        if !self.file_text.is_empty() && content_area.height > 2 { //>
             lines.push(Line::from(Span::styled(format!("File: {}", self.file_text), Style::default())));
-        }
+        } //<
 
         Paragraph::new(lines).render(content_area, buf);
     }

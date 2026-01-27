@@ -4,12 +4,18 @@ use std::sync::mpsc;
 use crate::commands::compile::ProgressUpdate;
 use serialport;
 
+/// Commands sent from the TUI to the background serial thread.
 pub enum SerialCommand {
     SendData(String),
 }
 
-/// A high-performance Serial Monitor implementation with byte-level line buffering
-/// and semantic message tagging for the Theme Engine.
+/// A high-performance Serial Monitor implementation with byte-level line buffering.
+///>
+/// Operates in a background thread to prevent blocking the TUI. Handles 
+/// bidirectional communication with hardware, split-line reassembly for 
+/// UTF-8 data, and semantic tagging for different message types to support 
+/// consistent UI theming.
+///<
 pub fn run_serial_monitor(
     port_name: String,
     baud_rate: u32,

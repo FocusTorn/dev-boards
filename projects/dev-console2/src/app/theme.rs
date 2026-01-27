@@ -34,7 +34,15 @@ impl Theme {
             message_templates: config.message_types.clone(),
         }
     }
+}
 
+impl Default for Theme {
+    fn default() -> Self {
+        Self::new(&ThemeConfig::default())
+    }
+}
+
+impl Theme {
     /// Formats a semantic message into an ANSI string for the output panel
     pub fn format_message(&self, kind: &str, message: &str) -> String {
         let template = self.message_templates.get(kind).cloned().unwrap_or_else(|| {

@@ -1,6 +1,7 @@
 use std::time::{Duration, Instant};
 use std::collections::HashMap;
 
+/// Semantic stages of the firmware development lifecycle.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum CompileStage {
     Initializing,
@@ -15,6 +16,7 @@ pub enum CompileStage {
 }
 
 impl CompileStage {
+    /// Returns the sort order of the stage for progress calculations.
     pub fn rank(&self) -> usize {
         match self {
             CompileStage::Initializing => 0,
@@ -29,6 +31,7 @@ impl CompileStage {
         }
     }
 
+    /// Maps a rank back to its corresponding `CompileStage` variant.
     pub fn from_rank(rank: usize) -> Option<Self> {
         match rank {
             0 => Some(CompileStage::Initializing),
@@ -45,6 +48,7 @@ impl CompileStage {
     }
 }
 
+/// Baseline expectations for how much time each stage contributes to the whole.
 #[derive(Debug)]
 pub struct WorkloadProfile {
     // Percentage of total time each stage typically takes (0.0 - 1.0)
@@ -71,6 +75,12 @@ impl Default for WorkloadProfile {
 
 use crate::commands::history::StageStats;
 
+/// High-performance time estimator for long-running build processes.
+///>
+/// Combines historical performance data with real-time process velocity to 
+/// provide smooth ETA updates. Uses a smoothed performance ratio to adapt 
+/// to varying system loads during a single run.
+///<
 #[derive(Debug)]
 pub struct ProgressPredictor {
     profile: WorkloadProfile,
@@ -82,16 +92,18 @@ pub struct ProgressPredictor {
 }
 
 impl ProgressPredictor {
+    /// Creates a new predictor with default profile settings.
     pub fn new() -> Self {
         Self::with_stats(None)
     }
 
+    /// Creates a predictor using historical stats for better initial accuracy.
     pub fn with_stats(stats: Option<StageStats>) -> Self {
         let now = Instant::now();
         let mut stage_starts = HashMap::new();
         stage_starts.insert(CompileStage::Initializing, now);
         
-        let (profile, expected_durations) = if let Some(s) = stats {
+        let (profile, expected_durations) = if let Some(s) = stats { //>
             (WorkloadProfile { stage_weights: s.weights }, s.averages)
         } else {
             let mut defaults = HashMap::new();
@@ -101,7 +113,7 @@ impl ProgressPredictor {
             defaults.insert(CompileStage::Linking, 15.0);
             defaults.insert(CompileStage::Generating, 5.0);
             (WorkloadProfile::default(), defaults)
-        };
+        }; //<
 
         Self {
             profile,
@@ -113,13 +125,15 @@ impl ProgressPredictor {
         }
     }
 
+    /// Records the transition into a new compilation stage.
     pub fn enter_stage(&mut self, stage: CompileStage) {
-        if self.current_stage != stage {
+        if self.current_stage != stage { //>
             self.current_stage = stage;
             self.stage_starts.insert(stage, Instant::now());
-        }
+        } //<
     }
 
+    /// Returns the current configuration and averages used for prediction.
     pub fn get_stats(&self) -> StageStats {
         StageStats {
             weights: self.profile.stage_weights.clone(),
@@ -127,6 +141,7 @@ impl ProgressPredictor {
         }
     }
 
+    /// Calculates the 0.0-1.0 progress range for a specific stage.
     fn get_stage_range(&self, stage: CompileStage) -> (f64, f64) {
         let stages_in_order = [
             CompileStage::Initializing,
@@ -141,16 +156,22 @@ impl ProgressPredictor {
         ];
 
         let mut start_pct = 0.0;
-        for s in &stages_in_order {
+        for s in &stages_in_order { //>
             let weight = *self.profile.stage_weights.get(s).unwrap_or(&0.0);
-            if *s == stage {
+            if *s == stage { //>
                 return (start_pct, start_pct + weight);
-            }
+            } //<
             start_pct += weight;
-        }
+        } //<
         (0.0, 1.0)
     }
 
+    /// Calculates the estimated time remaining based on current velocity.
+    ///>
+    /// Uses a dual-strategy approach:
+    /// 1. Within-stage velocity for the immediate future.
+    /// 2. Historical weights scaled by a performance ratio for future stages.
+    ///<
     pub fn predict_remaining(&mut self, total_progress: f64) -> Option<Duration> {
         let elapsed_total = self.start_time.elapsed().as_secs_f64();
         let stage_start = self.stage_starts.get(&self.current_stage)?;
@@ -159,32 +180,29 @@ impl ProgressPredictor {
         let stage_weight = stage_end_pct - stage_start_pct;
 
         // 1. Calculate relative progress WITHIN the current stage
-        // Fix: Clamp total_progress to at least the start of the current stage to avoid negative progress holes
         let effective_total_pct = (total_progress / 100.0).max(stage_start_pct);
         
-        let mut relative_progress = if stage_weight > 0.0 {
+        let mut relative_progress = if stage_weight > 0.0 { //>
             (effective_total_pct - stage_start_pct) / stage_weight
         } else {
             0.0
-        };
+        }; //<
 
         // 2. Synthetic Heartbeat if no output is arriving
-        if relative_progress < 0.01 {
+        if relative_progress < 0.01 { //>
             let typical_duration = *self.expected_durations.get(&self.current_stage).unwrap_or(&15.0);
             relative_progress = (elapsed_in_stage / typical_duration).min(0.90);
-        }
+        } //<
         relative_progress = relative_progress.min(1.0).max(0.001);
 
         // 3. Performance Ratio calculation
-        // Fix: Use a 'Warm-up' period. Don't adjust the ratio for the first 3 seconds
-        // to let the velocity stabilize.
-        let ratio = if elapsed_total > 3.0 {
+        let ratio = if elapsed_total > 3.0 { //>
             let typical_total_so_far = effective_total_pct * 60.0;
-            let instant_performance_ratio = if typical_total_so_far > 0.5 {
+            let instant_performance_ratio = if typical_total_so_far > 0.5 { //>
                 elapsed_total / typical_total_so_far
             } else {
                 1.0
-            };
+            }; //<
 
             // Smooth the ratio to prevent jumps (Alpha 0.05 = very high inertia)
             let alpha = 0.05;
@@ -192,12 +210,12 @@ impl ProgressPredictor {
             self.smoothed_performance_ratio.clamp(0.3, 5.0)
         } else {
             1.0 // Use baseline during warm-up
-        };
+        }; //<
 
         // 4. Calculate remaining time
-        if elapsed_in_stage < 0.2 {
+        if elapsed_in_stage < 0.2 { //>
             return None;
-        }
+        } //<
 
         let velocity_in_stage = relative_progress / elapsed_in_stage;
         let remaining_in_stage = (1.0 - relative_progress) / velocity_in_stage;
@@ -217,14 +235,14 @@ impl ProgressPredictor {
         ];
 
         let mut found_current = false;
-        for s in &stages_in_order {
-            if found_current {
+        for s in &stages_in_order { //>
+            if found_current { //>
                 future_weight_sum += self.profile.stage_weights.get(s).unwrap_or(&0.0);
-            }
-            if *s == self.current_stage {
+            } //<
+            if *s == self.current_stage { //>
                 found_current = true;
-            }
-        }
+            } //<
+        } //<
 
         // Future prediction = (Future Weights as Seconds) * Smoothed Ratio
         let future_time_projection = (future_weight_sum * 60.0) * ratio;

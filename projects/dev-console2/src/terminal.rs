@@ -10,7 +10,12 @@ use ratatui::{
     Terminal,
 };
 
-/// Initialize the terminal for TUI application
+/// Configures the terminal for raw mode and enters the alternate screen.
+///>
+/// Enables mouse capture and the Kitty Keyboard Protocol enhancement flags 
+/// for improved modifier key detection. Returns a `Terminal` instance ready 
+/// for rendering.
+///<
 pub fn init_terminal() -> io::Result<Terminal<CrosstermBackend<io::Stdout>>> {
     enable_raw_mode()?;
     io::stdout().execute(EnterAlternateScreen)?;
@@ -29,7 +34,11 @@ pub fn init_terminal() -> io::Result<Terminal<CrosstermBackend<io::Stdout>>> {
     Ok(terminal)
 }
 
-/// Restore the terminal to its original state
+/// Teardown terminal configuration and restore original state.
+///>
+/// Disables mouse capture, leaves the alternate screen, and disables raw 
+/// mode to return the terminal to the user in a clean state.
+///<
 pub fn restore_terminal() -> io::Result<()> {
     let _ = io::stdout().execute(PopKeyboardEnhancementFlags);
     io::stdout().execute(DisableMouseCapture)?;
@@ -38,8 +47,13 @@ pub fn restore_terminal() -> io::Result<()> {
     Ok(())
 }
 
-/// Install panic hook to ensure terminal is restored on panic
-#[allow(dead_code)] // Available for future use
+/// Installs a custom panic hook to prevent terminal corruption.
+///>
+/// If the application crashes, this hook ensures the terminal is restored to 
+/// its original state before the error message is printed, preventing the 
+/// "frozen terminal" state common in failed TUI apps.
+///<
+#[allow(dead_code)]
 pub fn install_panic_hook() {
     let original_hook = panic::take_hook();
     panic::set_hook(Box::new(move |panic_info| {

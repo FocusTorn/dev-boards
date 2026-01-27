@@ -12,6 +12,12 @@ mod commands;
 
 use app::{App, Message};
 
+/// Entry point for the dev-console-v2 application.
+///>
+/// Initializes error handling, terminal state, and the main event loop.
+/// The application follows the Elm Architecture (Model-Update-View), with 
+/// background tasks translated into internal messages.
+///<
 fn main() -> Result<()> {
     // Initialize error handling
     color_eyre::install()?;
@@ -52,7 +58,11 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// Convert crossterm events to application messages
+/// Translates raw terminal events into internal application Messages.
+///>
+/// Polls for keyboard, mouse, and resize events with a short timeout to 
+/// maintain UI responsiveness and allow background processing.
+///<
 fn handle_event() -> Result<Option<Message>> {
     if event::poll(Duration::from_millis(50))? {
         match event::read()? {

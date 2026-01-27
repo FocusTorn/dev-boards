@@ -24,7 +24,12 @@ use std::sync::atomic::{AtomicBool};
 use std::time::Instant;
 use color_eyre::Result;
 
-/// Semantic actions that can be triggered by user input or system events
+/// Semantic actions that can be triggered by user input or system events.
+///>
+/// This enum maps human-readable strings from configuration files to internal 
+/// executable functions. It is the primary means of decoupling input 
+/// (keys/mouse) from application behavior.
+///<
 use strum_macros::{EnumString, Display};
 
 #[derive(Debug, Clone, Copy, PartialEq, EnumString, Display)]
@@ -66,13 +71,13 @@ pub enum Action {
 }
 
 impl Action {
+    /// Attempts to parse a string into an `Action` variant.
     pub fn from_str(s: &str) -> Option<Self> {
         <Self as std::str::FromStr>::from_str(s).ok()
     }
 }
 
-
-/// Represents the current state of a background task
+/// Category of hardware monitor currently active.
 #[derive(Debug, Clone, Copy, PartialEq, EnumString, Display)]
 #[strum(serialize_all = "snake_case")]
 pub enum MonitorType {
@@ -80,6 +85,11 @@ pub enum MonitorType {
     Mqtt,
 }
 
+/// Represents the current state of a background task or monitoring process.
+///>
+/// The `Running` variant includes metrics used for progress smoothing and 
+/// ETA calculation, while `Monitoring` tracks long-lived hardware connections.
+///<
 #[derive(Debug, Clone, PartialEq)]
 pub enum TaskState {
     Idle,
@@ -100,7 +110,12 @@ pub enum TaskState {
 
 const MAX_OUTPUT_LINES: usize = 2000;
 
-#[derive(Debug, Clone, Copy)]
+/// Spatial coordinates for primary UI regions.
+///>
+/// This structure is cached on the `App` struct and recalculated only when 
+/// the terminal is resized, ensuring high-performance rendering.
+///<
+#[derive(Debug, Clone, Copy, Default)]
 pub struct AppLayout {
     pub title: Rect,
     pub main: Rect,
@@ -112,6 +127,12 @@ pub struct AppLayout {
     pub output: Rect,
 }
 
+/// The central application state following the Elm Architecture (Model).
+///>
+/// `App` owns all UI components, background task channels, and configuration 
+/// state. It acts as the coordinator between user input and hardware 
+/// execution.
+///<
 #[derive(Debug)]
 pub struct App {
     pub running: bool,
@@ -153,6 +174,12 @@ pub struct App {
 }
 
 impl App {
+    /// Initializes a new application state from configuration files.
+    ///>
+    /// Loads the main UI configuration, hardware profiles, and widget 
+    /// settings. If configuration loading fails, errors are captured and 
+    /// displayed in the initial output log.
+    ///<
     pub fn new() -> Result<Self> {
         let config = crate::config::load_config()?;
         
@@ -258,6 +285,12 @@ impl App {
         })
     }
 
+    /// Recalculates the geometry of all UI regions based on available area.
+    ///>
+    /// This method partitions the terminal into semantic blocks (Title, Sidebar, 
+    /// Output, etc.) while respecting widget-specific height requirements 
+    /// defined in the configuration.
+    ///<
     pub fn calculate_layout(&self, area: Rect) -> AppLayout {
         let vertical_layout = Layout::vertical([
             Constraint::Length(1),
@@ -312,41 +345,39 @@ impl App {
         }
     }
 
-    
-    
-    
-    
-    
-    /// Primary Update Loop - Decoupled from physical input interpretation
+    /// Primary Update Loop - Decoupled from physical input interpretation.
+    ///>
+    /// Processes messages from user input or system updates and transitions 
+    /// the application state accordingly.
+    ///<
     pub fn update(&mut self, msg: Message) {
         self.should_redraw = true;
         
         match msg {
-            
             // Raw Inputs -> Route through interpretation dispatcher
-            Message::Key(key_event) => { //>
+            Message::Key(key_event) => {
                 self.dispatch_key(key_event);
-            } //<
-            Message::Mouse(mouse_event) => { //>
+            }
+            Message::Mouse(mouse_event) => {
                 self.dispatch_mouse(mouse_event);
-            } //<
-            Message::SystemUpdate(update) => { //>
+            }
+            Message::SystemUpdate(update) => {
                 self.exec_system_update(update);
-            } //<
+            }
             
             // System Actions
-            Message::Resize(w, h) => { //>
+            Message::Resize(w, h) => {
                 self.should_redraw = true;
                 let new_area = Rect::new(0, 0, w, h);
                 self.view_area = new_area;
                 self.layout = self.calculate_layout(new_area);
                 self.check_terminal_size(new_area);
                 self.sync_autoscroll();
-            } //<
-       
+            }
         }
     }
 
+    /// Formats key modifiers into a display string (e.g., "Ctrl+Shift").
     fn get_modifiers_display(&self, mods: KeyModifiers) -> String {
         let mut parts = Vec::new();
         if mods.contains(KeyModifiers::CONTROL) { parts.push("Ctrl"); }
@@ -355,7 +386,11 @@ impl App {
         if parts.is_empty() { "None".to_string() } else { parts.join("+") }
     }
 
-    /// Event Dispatcher: Physical Key -> Semantic Message
+    /// Event Dispatcher: Translates physical keyboard input into semantic actions.
+    ///>
+    /// Handles input field capture, global hotkeys, and context-sensitive 
+    /// bindings defined in `build-config.yaml`.
+    ///<
     fn dispatch_key(&mut self, key: event::KeyEvent) {
         if key.kind != KeyEventKind::Press { return; }
 
@@ -431,10 +466,14 @@ impl App {
                 }
             }
         }
-
     }
 
-    /// Event Dispatcher: Physical Mouse -> Semantic Message
+    /// Event Dispatcher: Translates physical mouse input into semantic actions.
+    ///>
+    /// Coordinates interactions between modular widgets (TabBars, Scrollbars, 
+    /// CommandLists) and provides global hover/click detection for status 
+    /// and output regions.
+    ///<
     pub fn dispatch_mouse(&mut self, mouse_event: event::MouseEvent) {
         // RAW LOGGING (Ignore Move noise)
         if mouse_event.kind != event::MouseEventKind::Moved {
@@ -444,11 +483,9 @@ impl App {
         }
 
         let mouse_pos = Position::new(mouse_event.column, mouse_event.row);
-        let layout = self.layout; // Use cached layout
+        let layout = self.layout;
 
-        // 1. Tab Bar Widget Interactions (Encapsulated)
-        
-        // 1.1 Main Content Tabs
+        // 1. Tab Bar Widget Interactions
         if let Some(_) = self.tab_bar_map.get("MainContentTabBar") {
             if let Some((tab_bar, horiz, vert, off_x, off_y)) = TabBarWidget::from_config(&self.config, &self.tabs, "MainContentTabBar") {
                 if let Some(tab_idx) = tab_bar.handle_mouse_event(layout.main, horiz, vert, off_x, off_y, mouse_event) {
@@ -476,31 +513,26 @@ impl App {
         let command_list = CommandListWidget::new(&self.commands, self.selected_command_index, self.hovered_command_index);
         match command_list.handle_mouse_event(layout.commands, mouse_event) {
             Some(crate::widgets::command_list::CommandListInteraction::Click(idx)) => {
-                // COMMIT: User clicked, so the change is permanent. Clear the rollback point.
                 self.selected_command_index = idx;
                 self.command_index_before_hover = None; 
                 self.dispatch_command(Action::Execute);
                 self.should_redraw = true;
             }
             Some(crate::widgets::command_list::CommandListInteraction::Hover(idx)) => {
-                // CAPTURE: If this is the first move into the box, save current selection for rollback
                 if self.hovered_command_index.is_none() {
                     self.command_index_before_hover = Some(self.selected_command_index);
                 }
-                
                 if self.hovered_command_index != Some(idx) {
                     self.hovered_command_index = Some(idx);
                     self.should_redraw = true;
                 }
             }
             None => {
-                // ROLLBACK: If we have a saved index and we are leaving the box, restore it.
                 if let Some(old_idx) = self.command_index_before_hover {
                     self.selected_command_index = old_idx;
                     self.command_index_before_hover = None;
                     self.should_redraw = true;
                 }
-                
                 if self.hovered_command_index.is_some() {
                     self.hovered_command_index = None;
                     self.should_redraw = true;
@@ -508,9 +540,9 @@ impl App {
             }
         }
 
+        // 3. Status/Output Box Region Interactivity
         match mouse_event.kind {
-            event::MouseEventKind::Down(_) => { //>
-                // Clipboard logic (decoupled via messages)
+            event::MouseEventKind::Down(_) => {
                 if layout.status.contains(mouse_pos) && mouse_event.modifiers.contains(KeyModifiers::CONTROL) {
                     self.dispatch_command(Action::CopyStatus);
                     return;
@@ -523,149 +555,74 @@ impl App {
                     }
                     return;
                 }
-
-        // 3. Output Box Interaction
-        let output_area = layout.output;
-        let inner_output = Block::bordered().inner(output_area);
-        
-        if inner_output.contains(mouse_pos) {
-            match mouse_event.kind {
-                event::MouseEventKind::Down(event::MouseButton::Left) => {
-                    // Check if we are clicking on the Scrollbar area (last column of inner)
-                    let is_scrollbar_click = mouse_pos.x >= inner_output.right().saturating_sub(1);
-                    let is_control_held = mouse_event.modifiers.contains(event::KeyModifiers::CONTROL);
-                    
-                    if !is_scrollbar_click && is_control_held {
-                        self.exec_copy_output(false); // Copy visible text
-                        return;
-                    }
-                }
-                _ => {}
             }
+            _ => {}
         }
 
         // 4. Scrollbar interaction
-                                let inner_output = Block::bordered().inner(layout.output);
-                                let scrollbar = ScrollBar::vertical(ScrollLengths {
-                                    content_len: self.output_lines.len() + 1,
-                                    viewport_len: inner_output.height as usize,
-                                }).offset(self.output_scroll as usize);
-                                
-                                match scrollbar.handle_event(inner_output, ScrollEvent::from(mouse_event), &mut self.output_scroll_interaction) {
-                                    Some(ScrollCommand::SetOffset(next)) => {
-                                        self.output_scroll = next as u16;
-                                        self.output_autoscroll = false;
-                                    }
-                                    Some(ScrollCommand::ReachedBottom) => {
-                                        self.output_autoscroll = true;
-                                        self.sync_autoscroll();
-                                    }
-                                    None => {}
-                                }
-                            }
-                            event::MouseEventKind::ScrollUp | event::MouseEventKind::ScrollDown | event::MouseEventKind::Drag(_) => {
-                                let inner_output = Block::bordered().inner(layout.output);
-                                let scrollbar = ScrollBar::vertical(ScrollLengths {
-                                    content_len: self.output_lines.len() + 1,
-                                    viewport_len: inner_output.height as usize,
-                                }).offset(self.output_scroll as usize);
-                                
-                                match scrollbar.handle_event(inner_output, ScrollEvent::from(mouse_event), &mut self.output_scroll_interaction) {
-                                    Some(ScrollCommand::SetOffset(next)) => {
-                                        self.output_scroll = next as u16;
-                                        self.output_autoscroll = false;
-                                    }
-                                    Some(ScrollCommand::ReachedBottom) => {
-                                        self.output_autoscroll = true;
-                                        self.sync_autoscroll();
-                                    }
-                                    None => {}
-                                }
-                            }            _ => {}
+        let inner_output = Block::bordered().inner(layout.output);
+        let scrollbar = ScrollBar::vertical(ScrollLengths {
+            content_len: self.output_lines.len() + 1,
+            viewport_len: inner_output.height as usize,
+        }).offset(self.output_scroll as usize);
         
+        match scrollbar.handle_event(inner_output, ScrollEvent::from(mouse_event), &mut self.output_scroll_interaction) {
+            Some(ScrollCommand::SetOffset(next)) => {
+                self.output_scroll = next as u16;
+                self.output_autoscroll = false;
+            }
+            Some(ScrollCommand::ReachedBottom) => {
+                self.output_autoscroll = true;
+                self.sync_autoscroll();
+            }
+            None => {}
         }
     }
 
-        fn key_matches(&self, key: event::KeyEvent, binding_key: &str) -> bool {
+    /// Checks if a physical key event matches a string binding (e.g., "[Ctrl+Q]").
+    fn key_matches(&self, key: event::KeyEvent, binding_key: &str) -> bool {
+        let inner = binding_key.trim_matches(|c| c == '[' || c == ']');
+        let parts: Vec<String> = inner.split('+').map(|s| s.to_lowercase()).collect();
+        let mut req_mods = KeyModifiers::empty();
+        let mut target = String::new();
 
-            let inner = binding_key.trim_matches(|c| c == '[' || c == ']');
-
-            let parts: Vec<String> = inner.split('+').map(|s| s.to_lowercase()).collect();
-
-            let mut req_mods = KeyModifiers::empty();
-
-            let mut target = String::new();
-
-            for part in &parts {
-
-                match part.as_str() {
-
-                    "alt" => req_mods.insert(KeyModifiers::ALT),
-
-                    "ctrl" | "control" => req_mods.insert(KeyModifiers::CONTROL),
-
-                    "shift" => req_mods.insert(KeyModifiers::SHIFT),
-
-                    k => target = k.to_string(),
-
-                }
-
+        for part in &parts {
+            match part.as_str() {
+                "alt" => req_mods.insert(KeyModifiers::ALT),
+                "ctrl" | "control" => req_mods.insert(KeyModifiers::CONTROL),
+                "shift" => req_mods.insert(KeyModifiers::SHIFT),
+                k => target = k.to_string(),
             }
-
-            let significant = KeyModifiers::SHIFT | KeyModifiers::CONTROL | KeyModifiers::ALT;
-
-            if (key.modifiers & significant) != req_mods { return false; }
-
-            
-
-            match target.as_str() {
-
-                "q" => matches!(key.code, KeyCode::Char('q') | KeyCode::Char('Q')),
-
-                "enter" | "return" => matches!(key.code, KeyCode::Enter),
-
-                "esc" | "escape" => matches!(key.code, KeyCode::Esc),
-
-                "up" => matches!(key.code, KeyCode::Up),
-
-                "down" => matches!(key.code, KeyCode::Down),
-
-                "left" => matches!(key.code, KeyCode::Left),
-
-                "right" => matches!(key.code, KeyCode::Right),
-
-                "pgup" | "pageup" => matches!(key.code, KeyCode::PageUp),
-
-                "pgdn" | "pagedown" => matches!(key.code, KeyCode::PageDown),
-
-                "home" => matches!(key.code, KeyCode::Home),
-
-                "end" => matches!(key.code, KeyCode::End),
-
-                "backspace" => matches!(key.code, KeyCode::Backspace),
-
-                "tab" => matches!(key.code, KeyCode::Tab),
-
-                "delete" | "del" => matches!(key.code, KeyCode::Delete),
-
-                _ => {
-
-                    if target.len() == 1 {
-
-                        let c = target.chars().next().unwrap();
-
-                        matches!(key.code, KeyCode::Char(key_c) if key_c.to_ascii_lowercase() == c.to_ascii_lowercase())
-
-                    } else { false }
-
-                }
-
-            }
-
         }
 
-    
+        let significant = KeyModifiers::SHIFT | KeyModifiers::CONTROL | KeyModifiers::ALT;
+        if (key.modifiers & significant) != req_mods { return false; }
 
+        match target.as_str() {
+            "q" => matches!(key.code, KeyCode::Char('q') | KeyCode::Char('Q')),
+            "enter" | "return" => matches!(key.code, KeyCode::Enter),
+            "esc" | "escape" => matches!(key.code, KeyCode::Esc),
+            "up" => matches!(key.code, KeyCode::Up),
+            "down" => matches!(key.code, KeyCode::Down),
+            "left" => matches!(key.code, KeyCode::Left),
+            "right" => matches!(key.code, KeyCode::Right),
+            "pgup" | "pageup" => matches!(key.code, KeyCode::PageUp),
+            "pgdn" | "pagedown" => matches!(key.code, KeyCode::PageDown),
+            "home" => matches!(key.code, KeyCode::Home),
+            "end" => matches!(key.code, KeyCode::End),
+            "backspace" => matches!(key.code, KeyCode::Backspace),
+            "tab" => matches!(key.code, KeyCode::Tab),
+            "delete" | "del" => matches!(key.code, KeyCode::Delete),
+            _ => {
+                if target.len() == 1 {
+                    let c = target.chars().next().unwrap();
+                    matches!(key.code, KeyCode::Char(key_c) if key_c.to_ascii_lowercase() == c.to_ascii_lowercase())
+                } else { false }
+            }
+        }
+    }
+
+    /// Resolves the current hardware settings based on the active profile.
     fn get_settings_from_profile(&self) -> Result<crate::commands::Settings> {
         if let (Some(profile_config), Some(profile_id)) = (&self.profile_config, self.profile_ids.get(self.selected_profile_index)) {
             if let Some(sketch) = profile_config.sketches.iter().find(|s| s.id == *profile_id) {
@@ -690,9 +647,12 @@ impl App {
         crate::config::load_command_settings().map_err(|e| color_eyre::eyre::eyre!(e))
     }
 
+    /// Dispatches a semantic action to its corresponding executor.
+    ///>
+    /// This is the final stage of input routing, ensuring all commands flow 
+    /// through a single centralized bottleneck for logging and state tracking.
+    ///<
     fn dispatch_command(&mut self, action: Action) {
-        // [INPUT DECOUPLING] All bindings now flow through here.
-        // Append dispatch info to the raw physical info already in last_raw_input
         self.last_raw_input = format!("{} >> ACTION: {:?}", self.last_raw_input, action);
         self.should_redraw = true;
 
@@ -725,7 +685,7 @@ impl App {
         }
     }
     
-                                
+    /// Internal helper for adding lines to the output buffer.
     fn push_line(&mut self, line: String) {
         let cached = crate::app::ansi::parse_ansi_line(&line);
         self.output_lines.push(line);
@@ -740,11 +700,13 @@ impl App {
         self.sync_autoscroll();
     }
 
+    /// Adds a themed message to the application log.
     pub fn log(&mut self, kind: &str, message: &str) {
         let formatted = self.theme.format_message(kind, message);
         self.push_line(formatted);
     }
 
+    /// Recalculates output scroll offset if autoscroll is enabled.
     pub fn sync_autoscroll(&mut self) {
         if self.output_autoscroll {
             let layout = self.calculate_layout(self.view_area);
@@ -754,16 +716,17 @@ impl App {
         }
     }
 
+    /// Updates internal flag if terminal dimensions fall below minimums.
     pub fn check_terminal_size(&mut self, area: Rect) {
         self.terminal_too_small = area.width < self.config.application.min_width || area.height < self.config.application.min_height;
     }
 
-    /// Returns the ID of the currently selected sketch profile
+    /// Returns the ID of the currently selected sketch profile.
     pub fn get_current_sketch_id(&self) -> Option<String> {
         self.profile_ids.get(self.selected_profile_index).cloned()
     }
 
-    /// Loads history and creates a predictor with optimized weights
+    /// Loads history and creates a predictor with optimized weights.
     fn train_predictor(&self) -> crate::commands::ProgressPredictor {
         let history_path = std::path::Path::new(".dev-console/progress_history.json");
         let manager = crate::commands::HistoryManager::load(history_path);
@@ -773,15 +736,17 @@ impl App {
         crate::commands::ProgressPredictor::with_stats(stats)
     }
 
+    /// Returns true if a build or upload task is currently executing.
     pub fn is_task_running(&self) -> bool {
         matches!(self.task_state, TaskState::Running { .. })
     }
 
+    /// Returns true if any toast notifications are currently visible.
     pub fn is_toast_animating(&self) -> bool {
         !self.toast_manager.toasts.is_empty()
     }
 
-    /// Unified error reporting pipeline
+    /// Unified error reporting pipeline for status bars, logs, and toasts.
     pub fn report_error(&mut self, e: impl std::fmt::Display) {
         let msg = format!("{}", e);
         self.status_text = format!("[Error] {}", msg);
@@ -790,6 +755,7 @@ impl App {
     }
 }
 
+/// Events that drive application state transitions.
 #[derive(PartialEq, Debug, Clone)]
 pub enum Message {
     Key(event::KeyEvent),
@@ -797,3 +763,6 @@ pub enum Message {
     SystemUpdate(ProgressUpdate),
     Resize(u16, u16),
 }
+
+#[cfg(test)]
+mod tests;

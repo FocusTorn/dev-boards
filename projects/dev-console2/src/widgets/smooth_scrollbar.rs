@@ -6,12 +6,14 @@ use ratatui::{
 };
 use crossterm::event::{KeyEvent, MouseEvent, MouseButton, MouseEventKind};
 
+/// Semantic commands emitted by the scrollbar based on interaction.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ScrollCommand {
     SetOffset(usize),
     ReachedBottom,
 }
 
+/// Unified wrapper for events that can trigger scroll behavior.
 #[derive(Debug, Clone, Copy)]
 pub enum ScrollEvent {
     Key(KeyEvent),
@@ -20,6 +22,7 @@ pub enum ScrollEvent {
 }
 
 impl From<crossterm::event::Event> for ScrollEvent {
+    /// Maps physical crossterm events to the internal `ScrollEvent` wrapper.
     fn from(event: crossterm::event::Event) -> Self {
         match event {
             crossterm::event::Event::Key(k) => Self::Key(k),
@@ -36,6 +39,11 @@ impl From<MouseEvent> for ScrollEvent {
     }
 }
 
+/// Persistent state for an active scrollbar interaction.
+///>
+/// Tracks drag coordinates and relative offsets to ensure "non-jumping" 
+/// thumb manipulation during mouse interaction.
+///<
 #[derive(Debug, Default, Clone)]
 pub struct ScrollBarInteraction {
     pub is_dragging: bool,
@@ -50,12 +58,14 @@ impl ScrollBarInteraction {
     }
 }
 
+/// Logical dimensions required for scrollbar proportionality.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ScrollLengths {
     pub content_len: usize,
     pub viewport_len: usize,
 }
 
+/// Optional decorative arrows for the scrollbar track.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[allow(dead_code)]
 pub enum ScrollBarArrows {
@@ -65,6 +75,12 @@ pub enum ScrollBarArrows {
     Both,
 }
 
+/// A high-precision vertical scrollbar with sub-cell rendering.
+///>
+/// This widget provides proportional thumb sizing and sub-cell rendering 
+/// (using block characters) to represent fractional scroll positions. It 
+/// handles mouse dragging, clicking on the track, and scroll-wheel events.
+///<
 pub struct ScrollBar {
     lengths: ScrollLengths,
     offset: usize,
@@ -74,6 +90,7 @@ pub struct ScrollBar {
 }
 
 impl ScrollBar {
+    /// Creates a new vertical scrollbar with default styling.
     pub fn vertical(lengths: ScrollLengths) -> Self {
         Self {
             lengths,
@@ -84,21 +101,30 @@ impl ScrollBar {
         }
     }
 
+    /// Sets the current content offset.
     pub fn offset(mut self, offset: usize) -> Self {
         self.offset = offset;
         self
     }
 
+    /// Sets the style for the scrollbar track (background).
     pub fn track_style(mut self, style: Style) -> Self {
         self.track_style = style;
         self
     }
 
+    /// Sets the style for the scrollbar thumb (foreground).
     pub fn thumb_style(mut self, style: Style) -> Self {
         self.thumb_style = style;
         self
     }
 
+    /// Processes mouse input and updates interaction state.
+    ///>
+    /// Maps physical coordinates to proportional offsets. If the user clicks 
+    /// on the track, the thumb jumps to center at the mouse. If clicking on 
+    /// the thumb, it initiates a drag operation.
+    ///<
     pub fn handle_event(
         &self,
         area: Rect,
@@ -110,9 +136,9 @@ impl ScrollBar {
             _ => return None,
         };
 
-        if self.lengths.content_len <= self.lengths.viewport_len {
+        if self.lengths.content_len <= self.lengths.viewport_len { //>
             return None;
-        }
+        } //<
 
         let mouse_pos = Position::new(mouse_event.column, mouse_event.row);
         let height = area.height as f64;
@@ -122,14 +148,14 @@ impl ScrollBar {
         let thumb_height = (self.lengths.viewport_len as f64 / self.lengths.content_len as f64 * height).max(1.0);
         let travel_dist = height - thumb_height;
 
-        match mouse_event.kind {
-            MouseEventKind::Down(MouseButton::Left) => {
-                if area.contains(mouse_pos) {
+        match mouse_event.kind { //>
+            MouseEventKind::Down(MouseButton::Left) => { //>
+                if area.contains(mouse_pos) { //>
                     let relative_y = (mouse_pos.y.saturating_sub(area.y)) as f64;
                     let current_thumb_top = (self.offset as f64 / max_offset) * travel_dist;
                     
                     // If clicking ON the thumb, start dragging without jumping
-                    if relative_y >= current_thumb_top && relative_y <= current_thumb_top + thumb_height {
+                    if relative_y >= current_thumb_top && relative_y <= current_thumb_top + thumb_height { //>
                         interaction.is_dragging = true;
                         interaction.drag_start_y = mouse_pos.y;
                         interaction.drag_start_offset = self.offset;
@@ -137,75 +163,81 @@ impl ScrollBar {
                     } else {
                         // Clicked track: jump to center the thumb at mouse
                         let new_top = (relative_y - thumb_height / 2.0).clamp(0.0, travel_dist);
-                        let new_offset = if travel_dist > 0.0 {
+                        let new_offset = if travel_dist > 0.0 { //>
                             (new_top / travel_dist * max_offset) as usize
-                        } else { 0 };
+                        } else { 0 }; //<
                         
                         interaction.is_dragging = true;
                         interaction.drag_start_y = mouse_pos.y;
                         interaction.drag_start_offset = new_offset;
                         interaction.thumb_grab_offset_rows = thumb_height / 2.0;
                         
-                        if new_offset >= max_offset as usize {
+                        if new_offset >= max_offset as usize { //>
                             return Some(ScrollCommand::ReachedBottom);
-                        }
+                        } //<
                         return Some(ScrollCommand::SetOffset(new_offset));
-                    }
-                }
-            }
+                    } //<
+                } //<
+            } //<
             MouseEventKind::Up(MouseButton::Left) => {
                 interaction.is_dragging = false;
             }
-            MouseEventKind::Drag(MouseButton::Left) => {
-                if interaction.is_dragging && travel_dist > 0.0 {
+            MouseEventKind::Drag(MouseButton::Left) => { //>
+                if interaction.is_dragging && travel_dist > 0.0 { //>
                     let relative_y = (mouse_pos.y.saturating_sub(area.y)) as f64;
                     let new_top = (relative_y - interaction.thumb_grab_offset_rows).clamp(0.0, travel_dist);
                     let new_offset = (new_top / travel_dist * max_offset) as usize;
                     
-                    if new_offset >= max_offset as usize {
+                    if new_offset >= max_offset as usize { //>
                         return Some(ScrollCommand::ReachedBottom);
-                    }
+                    } //<
                     return Some(ScrollCommand::SetOffset(new_offset));
-                }
-            }
+                } //<
+            } //<
             MouseEventKind::ScrollUp => {
                 return Some(ScrollCommand::SetOffset(self.offset.saturating_sub(3)));
             }
-            MouseEventKind::ScrollDown => {
+            MouseEventKind::ScrollDown => { //>
                 let max_offset = self.lengths.content_len.saturating_sub(self.lengths.viewport_len);
                 let next_offset = self.offset.saturating_add(3);
-                if next_offset >= max_offset {
+                if next_offset >= max_offset { //>
                     return Some(ScrollCommand::ReachedBottom);
-                }
+                } //<
                 return Some(ScrollCommand::SetOffset(next_offset));
-            }
+            } //<
             _ => {}
-        }
+        } //<
         None
     }
 }
 
 impl Widget for &ScrollBar {
+    /// Renders the scrollbar with high-precision sub-cell thumb positioning.
+    ///>
+    /// Uses block characters (e.g., ▂, ▃, ▄) to represent fractional vertical 
+    /// positions, providing a smoother visual experience than standard 
+    /// cell-based scrollbars.
+    ///<
     fn render(self, area: Rect, buf: &mut Buffer) {
-        if area.width == 0 || area.height == 0 || self.lengths.content_len == 0 {
+        if area.width == 0 || area.height == 0 || self.lengths.content_len == 0 { //>
             return;
-        }
+        } //<
 
         let track_bg = self.track_style.bg.unwrap_or(Color::Rgb(45, 45, 45));
         let thumb_fg = self.thumb_style.fg.unwrap_or(Color::White);
 
         // 1. Draw Background Track
-        for y in area.top()..area.bottom() {
+        for y in area.top()..area.bottom() { //>
             buf[(area.x, y)].set_style(self.track_style).set_symbol(" ");
-        }
+        } //<
 
-        if self.lengths.content_len <= self.lengths.viewport_len {
+        if self.lengths.content_len <= self.lengths.viewport_len { //>
             return;
-        }
+        } //<
 
         // 2. Render Arrows if requested
         let mut scroll_area = area;
-        match self.arrows {
+        match self.arrows { //>
             ScrollBarArrows::Top => {
                 buf[(area.x, area.y)].set_symbol("↑").set_style(self.thumb_style);
                 scroll_area.y += 1;
@@ -222,7 +254,7 @@ impl Widget for &ScrollBar {
                 scroll_area.height = scroll_area.height.saturating_sub(2);
             }
             ScrollBarArrows::None => {}
-        }
+        } //<
 
         if scroll_area.height == 0 { return; }
 
@@ -241,24 +273,24 @@ impl Widget for &ScrollBar {
 
         let blocks = [" ", "▂", "▃", "▄", "▅", "▆", "▇", "█"];
 
-        for y in 0..scroll_area.height {
+        for y in 0..scroll_area.height { //>
             let cell_top = (y * 8) as f64;
             let cell_bottom = ((y + 1) * 8) as f64;
             
             let intersect_t = start_sub.max(cell_top);
             let intersect_b = end_sub.min(cell_bottom);
             
-            if intersect_b > intersect_t {
+            if intersect_b > intersect_t { //>
                 let cell = &mut buf[(scroll_area.x, scroll_area.y + y)];
                 let h_filled = intersect_b - intersect_t;
                 
-                if h_filled >= 7.9 {
+                if h_filled >= 7.9 { //>
                     cell.set_symbol("█").set_style(self.thumb_style);
                 } else {
                     let is_at_top = intersect_t > cell_top;
                     let is_at_bottom = intersect_b < cell_bottom;
                     
-                    if is_at_top && !is_at_bottom {
+                    if is_at_top && !is_at_bottom { //>
                         let idx = (h_filled.round() as usize).min(7);
                         cell.set_symbol(blocks[idx]).set_style(self.thumb_style);
                     } else if !is_at_top && is_at_bottom {
@@ -269,9 +301,9 @@ impl Widget for &ScrollBar {
                     } else {
                         let idx = (h_filled.round() as usize).min(7);
                         cell.set_symbol(blocks[idx]).set_style(self.thumb_style);
-                    }
-                }
-            }
-        }
+                    } //<
+                } //<
+            } //<
+        } //<
     }
 }

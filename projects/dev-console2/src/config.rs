@@ -80,6 +80,11 @@ pub struct TabBarConfig {
     pub tab_bindings: std::collections::HashMap<String, BindingsConfig>,
 }
 
+/// High-level configuration container for the application.
+///>
+/// Combines general application settings, theme definitions, and tab bar 
+/// configurations into a single structure for deserialization from YAML.
+///<
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct Config {
     #[serde(default)]
@@ -165,6 +170,11 @@ pub struct ProfileConfig {
 use crate::commands::Settings;
 
 
+/// Loads the hardware profile configuration from `config.yaml`.
+///>
+/// This file defines connections (baud, port), devices (models, FQBNS), 
+/// MQTT brokers, and specific sketch-to-hardware mappings.
+///<
 pub fn load_profile_config() -> Result<ProfileConfig> {
     let config_path = std::path::PathBuf::from("config.yaml");
     let mut file = match File::open(&config_path) {
@@ -191,6 +201,11 @@ pub fn load_profile_config() -> Result<ProfileConfig> {
     }
 }
 
+/// Extracts initial hardware settings from the first available sketch profile.
+///>
+/// Used during startup to provide default values for the compiler and 
+/// serial monitors before the user manually switches profiles.
+///<
 pub fn load_command_settings() -> Result<Settings> {
     // Try to load from profile config
     let profile_config = load_profile_config()?;
@@ -227,8 +242,12 @@ pub fn load_command_settings() -> Result<Settings> {
     Err(eyre::eyre!("No valid sketch configuration found in config.yaml"))
 }
 
+/// Loads the main application UI configuration from `build-config.yaml`.
+///>
+/// This includes global settings like title, minimum dimensions, 
+/// theme references, and tab layout definitions.
+///<
 pub fn load_config() -> Result<Config> {
-// ... (existing content) ...
     // For now, we only load of build-config.yaml
     // Later, we will implement of search and merge for config.yaml
     let mut file = File::open("build-config.yaml")?;
@@ -240,6 +259,11 @@ pub fn load_config() -> Result<Config> {
     Ok(config)
 }
 
+/// Loads the specialized widget configuration for UI components.
+///>
+/// Specifically handles the `ToastConfig` which controls duration and 
+/// positioning of on-screen notifications.
+///<
 pub fn load_widget_config() -> Result<ToastConfig> {
     let config_path = std::path::PathBuf::from("src/widgets/widget-config.yaml");
     let mut file = match File::open(&config_path) {

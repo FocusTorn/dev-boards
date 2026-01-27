@@ -72,6 +72,10 @@ This workspace strictly uses Unix-style line endings (`LF` / `\n`). To prevent "
 - **Verification**: If blank lines or `\r` characters appear after an edit, the agent must immediately verify the file content and use `write_file` to normalize the entire file back to its correct `LF` state.
 - **Git Config**: The workspace is configured with `core.autocrlf = input` to prevent automatic conversion back to CRLF on Windows.
 
+### Automatic Rectification
+- **FIX ON SIGHT**: If a `read_file` call reveals double-spacing (blank lines between code lines) or `\r` characters in an LF-enforced file, you MUST immediately use `write_file` to normalize the entire file before proceeding with any other task.
+- **COMPLEX CHANGES**: For any task that adds more than 3 lines of logic, ALWAYS use `write_file` with the full intended content. NEVER use sequential `replace` calls to build up complex blocks.
+
 ---
 
 ## 4. Formatting Persistence

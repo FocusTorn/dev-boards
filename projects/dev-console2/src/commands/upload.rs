@@ -5,6 +5,12 @@ use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
 use crate::commands::compile::{Settings, ProgressUpdate};
 
+/// Spawns a background thread to upload firmware to hardware via `arduino-cli`.
+///>
+/// Handles the transition into specific upload stages (Resetting, Uploading, 
+/// Verifying) and parses `esptool` percentage output to provide high-fidelity 
+/// progress updates to the TUI.
+///<
 pub fn run_upload(settings: &Settings, stats: crate::commands::history::StageStats, cancel_signal: Arc<AtomicBool>, progress_callback: impl FnMut(ProgressUpdate) + Send + 'static) {
     let callback = Arc::new(Mutex::new(progress_callback));
 
