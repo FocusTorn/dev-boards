@@ -1,3 +1,6 @@
+https://github.com/google-gemini/gemini-cli/blob/main/docs/index.md
+
+
 # Gemini CLI Settings Guide
 
 This document provides a comprehensive overview of the settings available in the Gemini CLI, their descriptions, and the hierarchy of how they are managed and persisted.

@@ -1,0 +1,9 @@
+# Tool Usage Standards
+
+Standards for tool selection, persistence, and error recovery to ensure maximum efficiency and accuracy.
+
+## Preferred Tool Persistence
+
+- **OPTIMIZED SEARCH**: `search_file_content` is the MANDATORY first choice for all codebase-wide searches.
+- **ERROR RECOVERY**: If a tool call fails with a syntax, regex, or usage error, you MUST analyze the error message and attempt at least one corrected call before pivoting to a less efficient tool (like `read_file` or manual shell commands).
+- **CLOSED LOOP**: If a tool provides optimization suggestions (e.g., '--multiline' or '--fixed-strings'), you MUST consider and apply them if they align with the task objective.

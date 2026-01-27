@@ -12,7 +12,6 @@ struct WidgetConfig {
     toast_widget: ToastConfig,
 }
 
-
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct ApplicationConfig {
     pub title: String,
@@ -168,7 +167,6 @@ pub struct ProfileConfig {
 }
 
 use crate::commands::Settings;
-
 
 /// Loads the hardware profile configuration from `config.yaml`.
 ///>

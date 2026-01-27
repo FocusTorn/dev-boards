@@ -48,13 +48,10 @@ Analyze the current conversation to extract key learning patterns, solutions, an
 </INSTRUCTIONS>
 
 <OUTPUT_FORMAT_REQUIREMENTS>
-- ALWAYS display the summary in a markdown code block.
-- The **Response** line MUST be exactly: `- **Response**: 📝❓🚫⚠️✅ No action required`.
 - Do NOT save to a file unless explicitly asked by the user. If requested, save to `.gemini/ADHOC/_Extracted-Lessons.md`.
 </OUTPUT_FORMAT_REQUIREMENTS>
 
 <OUTPUT>
-```markdown
 # [Concise Title of the Session]
 
 ## 1. :: New Lessons Learned
@@ -76,7 +73,6 @@ _Lessons NOT covered by existing workspace rules._
         - **Rule Text**: "[Imperative Instruction]"
         - **Section**: [Target Section]
         - **Rationale**: [Reasoning]
-- **Response**: 📝❓🚫⚠️✅ No action required
 
 ---
 
@@ -95,7 +91,5 @@ _Patterns covered by existing rules that need strengthening or enforcement._
         - **Action**: [MODIFY | STRENGTHEN]
         - **Rule Text**: "[Updated Imperative Instruction]"
         - **Rationale**: [Reasoning]
-- **Response**: 📝❓🚫⚠️✅ No action required
-```
 </OUTPUT>
 """

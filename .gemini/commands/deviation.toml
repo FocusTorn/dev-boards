@@ -42,12 +42,10 @@ Perform a systematic Root Cause Analysis (RCA) following the mandatory protocol 
 </INSTRUCTIONS>
 
 <OUTPUT_FORMAT_REQUIREMENTS>
-- ALWAYS display the summary in a markdown code block.
 - The **Response** line MUST be exactly: `- **Response**: ⚠️ **WAITING FOR USER APPROVAL**. Do NOT proceed with remediation until approved.`
 </OUTPUT_FORMAT_REQUIREMENTS>
 
 <OUTPUT>
-```markdown
 # Deviation Analysis: {{args}}
 
 ## 1. :: Root Cause Analysis
@@ -70,6 +68,5 @@ Perform a systematic Root Cause Analysis (RCA) following the mandatory protocol 
     - **Rationale**: [Detailed explanation of how this rule prevents recurrence]
 
 - **Response**: ⚠️ **WAITING FOR USER APPROVAL**. Do NOT proceed with remediation until approved.
-```
 </OUTPUT>
 """

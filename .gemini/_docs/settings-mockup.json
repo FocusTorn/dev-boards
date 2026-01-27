@@ -1,0 +1,99 @@
+{
+  "general": {
+    "previewFeatures": false,
+    "vimMode": false,
+    "disableAutoUpdate": false,
+    "enablePromptCompletion": false,
+    "debugKeystrokeLogging": false,
+    "sessionRetention": {
+      "enabled": false
+    }
+  },
+  "ui": {
+    "theme": "Default",
+    "hideWindowTitle": false,
+    "showStatusInTitle": false,
+    "dynamicWindowTitle": true,
+    "hideContextSummary": false,
+    "showMemoryUsage": false,
+    "showLineNumbers": true,
+    "useFullWidth": true,
+    "useAlternateBuffer": false,
+    "incrementalRendering": true,
+    "footer": {
+      "hideCWD": false,
+      "hideModelInfo": false,
+      "hideContextPercentage": true
+    }
+  },
+  "output": {
+    "format": "text"
+  },
+  "ide": {
+    "enabled": false
+  },
+  "model": {
+    "maxSessionTurns": -1,
+    "compressionThreshold": 0.5,
+    "skipNextSpeakerCheck": true
+  },
+  "context": {
+    "discoveryMaxDirs": 200,
+    "loadMemoryFromIncludeDirectories": false,
+    "fileFiltering": {
+      "respectGitIgnore": true,
+      "respectGeminiIgnore": true,
+      "enableRecursiveFileSearch": true,
+      "disableFuzzySearch": false
+    }
+  },
+  "tools": {
+    "autoAccept": false,
+    "useRipgrep": true,
+    "enableToolOutputTruncation": true,
+    "truncateToolOutputThreshold": 4000000,
+    "truncateToolOutputLines": 1000,
+    "disableLLMCorrection": false,
+    "shell": {
+      "enableInteractiveShell": true,
+      "showColor": false
+    }
+  },
+  "security": {
+    "disableYoloMode": false,
+    "enablePermanentToolApproval": false,
+    "blockGitExtensions": false,
+    "folderTrust": {
+      "enabled": false
+    },
+    "environmentVariableRedaction": {
+      "enabled": false
+    }
+  },
+  "experimental": {
+    "skills": false,
+    "useOSC52Paste": false,
+    "codebaseInvestigatorSettings": {
+      "enabled": true,
+      "maxNumTurns": 10
+    },
+    "cliHelpAgentSettings": {
+      "enabled": true
+    }
+  },
+  "hooks": {
+    "notifications": true
+  },
+  "coreTools": {
+    "includeDirectories": []
+  },
+  "mcpServers": {
+    "example-mcp-server": {
+      "command": "node",
+      "args": [
+        "path/to/server.js"
+      ],
+      "env": {}
+    }
+  }
+}

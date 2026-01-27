@@ -3,7 +3,6 @@ use std::time::Duration;
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyEventKind};
 
-
 mod app;
 mod config;
 mod terminal;

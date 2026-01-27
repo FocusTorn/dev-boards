@@ -72,8 +72,6 @@ impl Theme {
         )
     }
 
-
-
     pub fn style(&self, name: &str) -> Style {
         self.resolved.get(name).cloned().unwrap_or_else(|| {
             // Provide sensible defaults if the key is missing from YAML

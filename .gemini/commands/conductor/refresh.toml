@@ -1,8 +1,0 @@
-description = "Syncs Conductor track directories to the slash-command menu (Cross-platform)"
-prompt = """
-Syncing Conductor tracks to the TUI menu...
-
-!{python conductor/scripts/sync_conductor_tracks.py}
-
-The tracks have been synchronized.
-"""
