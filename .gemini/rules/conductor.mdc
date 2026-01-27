@@ -1,0 +1,13 @@
+# Conductor Process Rules
+
+Standards for managing tracks and session transitions using the Conductor methodology.
+
+## Track Management
+
+- **Mandatory Branching**: Before starting a new track, ALWAYS create a dedicated branch named `track/<track_id>`. All implementation tasks must occur on this branch.
+- **Pause Track Protocol**: When pausing work on a track, MUST follow the 'Pause Track Protocol' defined in `conductor/workflow.md`. This includes:
+    - Synchronizing the implementation plan (`plan.md`).
+    - Updating metadata timestamps.
+    - Creating a Handover Note (`NOTES.md`) with explicit 'Next Action' context.
+    - Performing a Checkpoint Commit on the track branch.
+- **Resume Branch Protocol**: When resuming work, verify the current active branch matches `track/<track_id>`. If the tree is dirty on the wrong branch, commit it as a checkpoint before switching.

@@ -13,11 +13,12 @@ This document defines the strict mandates for Rust code within this workspace, s
 
 ---
 
-## 2. Universal Docstrings (Universal Documentation Mandate)
+### Universal Docstrings (Universal Documentation Mandate)
 - **The Rule**: Every public and internal function, struct, and enum must have a "Why-focused" docstring using `///`.
 - **Folding Requirement**:
     - Add `///>` immediately after the first concise title line of the docstring.
     - Add `///<` between the last line of the docstring and the start of the code block.
+- **Alignment Requirement**: Indent documentation folding markers (`///>` and `///<`) to match the indentation of the triple-slash docstring block they are part of.
 - **Example Usage**:
   ```rust
   /// Installs a custom panic hook to prevent terminal corruption.
@@ -33,6 +34,10 @@ This document defines the strict mandates for Rust code within this workspace, s
 ---
 
 ## 3. TUI & Performance Optimizations
+
+### High-Performance TUI Rendering
+- **The Rule**: ALWAYS cache parsed TUI elements (like ANSI-styled Lines) during data ingestion. NEVER perform complex string parsing or heavy allocations within the render/view loop.
+- **Rationale**: To maintain 60 FPS UI responsiveness and prevent "overly long loop turn" warnings.
 
 ### State Integrity
 - **The Rule**: Represent complex states (like background tasks or multi-step processes) using Enums with data payloads rather than multiple independent primitive variables.

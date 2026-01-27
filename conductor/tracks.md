@@ -4,5 +4,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [x] **Track: stabilize_workspace_20260126**
+- [~] **Track: stabilize_workspace_20260126**
   *Link: [./tracks/stabilize_workspace_20260126/](./tracks/stabilize_workspace_20260126/)*

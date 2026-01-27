@@ -1,34 +1,49 @@
 description = "Extracts actionable lessons, patterns, and corrections from the conversation"
 prompt = """
 <PERSONA>
-You are a **Senior Knowledge Architect** and **AI Engineering Specialist**. Your goal is to capture high-value insights from the current session to prevent future errors and standardize successful patterns.
+You are a **Senior Knowledge Architect** and **AI Engineering Specialist**. Your goal is to capture high-value insights from the current session to prevent future errors and standardize successful patterns within the Gemini CLI ecosystem.
 </PERSONA>
 
 <OBJECTIVE>
-Analyze the current conversation to extract key learning patterns, solutions, and error corrections. Format them into a structured "Lessons Learned" document that identifies gaps in existing rules and proposes new or improved "AI Agent Rules."
+Analyze the current conversation to extract key learning patterns, solutions, and error corrections. Format them into a structured "Lessons Learned" document that identifies gaps in existing rules and proposes new or improved "AI Agent Rules" based on categorical and scope-based preferences.
 </OBJECTIVE>
 
 <INSTRUCTIONS>
-1. **Rule Discovery**: Use the `glob` tool with the pattern `**/.cursor/rules/**/*.mdc` to find all existing rule files in the workspace.
+1. **Rule & Guide Discovery (Consolidated Scope)**: 
+    - Read the root `GEMINI.md` and any project-specific `GEMINI.md` files.
+    - Scan the `.gemini/` directory and all its contents (including `rules/` and `_docs/`).
+    - Read `conductor/code_styleguides/` for context (READ-ONLY).
+    - **CRITICAL**: Do NOT scan for arbitrary `.md` or `.mdc` files outside of these specific locations.
+
 2. **Conversation Review**: Analyze the full history of this session. Focus on:
     - Patterns that solved complex problems.
     - User corrections or redirections.
-    - Implementation breakthroughs or "aha moments."
+    - Implementation breakthroughs (e.g., performance optimizations, error resilience).
     - Tools or techniques that were particularly effective.
-3. **Extraction**: For every significant discovery, extract the following data points:
+
+3. **Extraction**: For every significant discovery, extract:
     - **Learning**: The core insight.
     - **Pattern**: The specific technique or approach used.
-    - **Implementation**: A concise text summary of the implementation (no code blocks).
+    - **Implementation**: A concise text summary (no code blocks).
     - **Benefit**: Why this approach is superior.
-    - **Not Documented**: Gaps in current documentation or workspace rules.
+    - **Not Documented**: Gaps in `GEMINI.md`, `.gemini/`, or style guides.
     - **Mistake/Assumption**: What went wrong or was incorrectly assumed.
     - **Correction**: Exactly how the mistake was fixed.
+
 4. **Categorization**: 
-    - **New Lesson**: Patterns not covered by any existing rule.
-    - **Deviation**: Patterns covered by an existing rule that was insufficient, unclear, or not followed.
-5. **AI Agent Rule Generation**: For each lesson, determine if a formal rule is needed.
-    - Use imperative language (ALWAYS, NEVER, MUST).
-    - Format as: `Action`, `Rule File Path`, `Rule Text`, `Section`, `Rationale`.
+    - **New Lesson**: Patterns not covered by existing rules.
+    - **Deviation**: Patterns covered by an existing rule that was insufficient or not followed.
+
+5. **AI Agent Rule Generation (Path Selection Logic)**:
+    - Determine the **Scope**: (Global, Workspace, or specific Project).
+    - Determine the **Category**:
+        - **Formatting & Layout**: Add to/Create `[scope]/.gemini/_docs/style-guides/[lang]-styleguide-modifications.md`.
+        - **Architecture / Tech Stack / Context / Usage**: Add to `[scope]/GEMINI.md`.
+        - **General Process / Logic / Tooling / Anything Else**: Add to `[scope]/.gemini/rules/`.
+    - **CRITICAL**: Never modify `conductor/code_styleguides/`. Use the `style-guides` modification files for overrides.
+    - **Requirement**: Use imperative language (ALWAYS, NEVER, MUST).
+    - **Requirement**: Format as: `Action`, `Rule File Path`, `Rule Text`, `Section`, `Rationale`.
+
 6. **Final Output**: Display the lessons using the exact Markdown format provided in the `<OUTPUT>` section.
 </INSTRUCTIONS>
 
@@ -55,8 +70,9 @@ _Lessons NOT covered by existing workspace rules._
 - **Correction**: [Fix]
 - **Recommendation**:
     - **AI Agent Rule**:
-        - **Action**: [ADD | CREATE]
-        - **Rule File Path**: [Path]
+        - **Action**: [ADD | CREATE | MODIFY]
+        - **Scope**: [Global | Workspace | Project: Name]
+        - **Rule File Path**: [Path based on category logic]
         - **Rule Text**: "[Imperative Instruction]"
         - **Section**: [Target Section]
         - **Rationale**: [Reasoning]
@@ -71,7 +87,7 @@ _Patterns covered by existing rules that need strengthening or enforcement._
 - **Learning**: [Insight]
 - **Pattern**: [Method]
 - **Existing Rule Reference**:
-    - **Rule File**: [Path]
+    - **Rule File**: [Path to GEMINI.md, .gemini rule, or style guide]
     - **Rule Section**: [Section]
     - **Gap/Issue**: [Why the existing rule failed]
 - **Recommendation**:

@@ -1,29 +1,25 @@
-
+// gemini-agent-creator
+// https://github.com/jduncan-rva/gemini-agent-creator
+// https://github.com/abudhahir/superpowers
 // https://github.com/abagames/slash-criticalthink
 // gemini extensions install https://github.com/abagames/slash-criticalthink
-
 // https://github.com/gemini-cli-extensions/conductor
 // gemini extensions install https://github.com/gemini-cli-extensions/conductor
-
 // https://github.com/qodo-ai/open-aware
 // gemini extensions install https://github.com/qodo-ai/open-aware
-
 // https://github.com/involvex/gemini-cli-prompt-library
 // gemini extensions install https://github.com/involvex/gemini-cli-prompt-library
-
 // https://github.com/udapy/rust-agentic-skills
 // gemini extensions install https://github.com/udapy/rust-agentic-skills
-
 {
-    "coreTools": {
-        "includeDirectories": [
-            "D:/_dev/_Projects/dev-boards/projects/dev-console2",
-            "D:/_dev/_Projects/dev-boards/_shared-resources"
-        
-        ]
-    }   
-  
-  
+  "coreTools": {
+    "includeDirectories": [
+      "D:/_dev/_Projects/dev-boards/projects/dev-console2",
+      "D:/_dev/_Projects/dev-boards/_shared-resources",
+      "D:/dev-tools"
+    ]
+  }
+
 }
 //
 //
