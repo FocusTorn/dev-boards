@@ -7,6 +7,9 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [~] **Track: testing_100_coverage_20260128**
   *Link: [./tracks/testing_100_coverage_20260128/](./tracks/testing_100_coverage_20260128/)*
 
+- [ ] **Track: dc2: Implement port autodetection and Profile Management UI**
+*Link: [./tracks/device_mgmt_20260127/](./tracks/device_mgmt_20260127/)*
+
 ---
 
 ## 2. :: Closed <!-- Start Fold -->
@@ -26,5 +29,4 @@ This file tracks all major tracks for the project. Each track has its own detail
   <!-- Close Fold -->
 ---
 
-- [ ] **Track: dc2: Implement port autodetection and Profile Management UI**
-*Link: [./tracks/device_mgmt_20260127/](./tracks/device_mgmt_20260127/)*
+
