@@ -5,11 +5,11 @@ Standards for maintaining consistent file structure, line endings, and layout ac
 ## Newline & EOL Consistency
 
 - **LF Enforcement**: This workspace strictly uses Unix-style line endings (`LF` / `\n`). 
-- **Automatic Rectification**: If a `read_file` call reveals double-spacing (phantom blank lines) or `\r` (CR) characters, you MUST immediately use `write_file` to normalize the entire file buffer back to its correct `LF` state.
+- **Automatic Rectification**: If a `read_file` call reveals `\r` (CR) characters, you MUST normalize the entire file buffer back to its correct `LF` state.
 
 ## Tool-Specific Formatting Restrictions
 
-- **Replace vs. Write**: NEVER use the `replace` tool for modifications exceeding 5 lines or for strings containing triple backticks (`` ``` ``). This triggers tool regressions that corrupt file layouts.
-- **Mandatory Write**: You MUST use `write_file` for any complex modifications, documentation templates, or code blocks containing nested markdown to ensure `LF` consistency and structural integrity.
+- **Precision Replace**: When using the `replace` tool, you MUST include exactly 3 lines of context before and after the target text. This ensures precise targeting and prevents match failures due to minor whitespace differences.
+- **Structural Write**: Use `write_file` for structural changes, complex documentation, or when creating new files. For editing existing code logic, prefer the `replace` tool to minimize the risk of "punctuation drops" in high-volume generation.
 - **Buffer Integrity**: Before executing a `write_file` to fix formatting, ensure you have the complete and correct file content in your context to prevent accidental data loss or code elision.
 
