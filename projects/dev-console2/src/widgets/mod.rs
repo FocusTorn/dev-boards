@@ -4,3 +4,4 @@ pub mod status_box;
 pub mod command_list;
 pub mod smooth_scrollbar;
 pub mod toast;
+pub mod output_box;

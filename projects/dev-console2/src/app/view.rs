@@ -10,6 +10,7 @@ use crate::widgets::tab_bar::{TabBarItem, TabBarWidget};
 use crate::widgets::command_list::CommandListWidget;
 use crate::widgets::progress_bar::ProgressBarWidget;
 use crate::widgets::status_box::StatusBoxWidget;
+use crate::widgets::output_box::OutputBoxWidget;
 use crate::widgets::smooth_scrollbar::{ScrollBar, ScrollLengths};
 use crate::widgets::toast::ToastWidget;
 
@@ -141,71 +142,31 @@ impl App {
         } //< 
         
         // Output Panel with Scrolling and Scrollbar
-        let output_block = Block::bordered()
-            .title(Span::styled(" Output ", self.theme.style("output_title")))
-            .border_style(self.theme.style("output_border"));
-        let inner_output_area = output_block.inner(layout.output);
-        frame.render_widget(output_block, layout.output);
+        let display_lines = if self.output_cached_lines.is_empty() {
+            vec![Line::from(Span::styled("No output yet.", Style::default().fg(Color::DarkGray)))]
+        } else {
+            self.output_cached_lines.clone()
+        };
 
-        let mut actual_text_area = inner_output_area;
+        frame.render_widget(
+            OutputBoxWidget::new(&display_lines, self.output_scroll, &self.theme)
+                .autoscroll(self.output_autoscroll)
+                .input(self.input_active, self.input.value(), self.input.visual_cursor()),
+            layout.output
+        );
 
-        // Render Input Box if active
-        if self.input_active { //> 
-            let [text_part, input_part] = Layout::vertical([
+        if self.input_active {
+            let inner_output_area = Block::bordered().inner(layout.output);
+            let [_, input_part] = Layout::vertical([
                 Constraint::Min(0),
                 Constraint::Length(3),
             ]).areas(inner_output_area);
-            
-            actual_text_area = text_part;
-            
-            let input_block = Block::bordered()
-                .title(Span::styled(" Send Command ", self.theme.style("input_title")))
-                .border_style(self.theme.style("input_border"));
-            let input_inner = input_block.inner(input_part);
-            frame.render_widget(input_block, input_part);
-            frame.render_widget(Paragraph::new(self.input.value()).style(self.theme.style("input_text")), input_inner);
-            
+            let input_inner = Block::bordered().inner(input_part);
             frame.set_cursor_position(Position::new(
                 input_inner.x + self.input.visual_cursor() as u16,
                 input_inner.y
             ));
-        } //< 
-
-        // Handle Scrollbar calculations
-        let total_lines = self.output_cached_lines.len();
-        let total_count = if self.output_autoscroll { total_lines + 1 } else { total_lines };
-        let show_scrollbar = total_count > actual_text_area.height as usize;
-
-        let mut text_area = actual_text_area.inner(Margin { vertical: 0, horizontal: 1 });
-        if show_scrollbar { text_area.width = text_area.width.saturating_sub(1); }
-
-        let display_lines = if self.output_cached_lines.is_empty() { //> 
-            vec![Line::from(Span::styled("No output yet.", Style::default().fg(Color::DarkGray)))]
-        } else {
-            self.output_cached_lines.clone()
-        }; //< 
-
-        frame.render_widget(
-            Paragraph::new(display_lines)
-                .scroll((self.output_scroll, 0)),
-            text_area
-        );
-
-        if show_scrollbar { //> 
-            let scrollbar_area = Rect {
-                x: inner_output_area.right().saturating_sub(1),
-                y: inner_output_area.top(),
-                width: 1,
-                height: inner_output_area.height,
-            };
-
-            let scrollbar = ScrollBar::vertical(ScrollLengths {
-                content_len: total_count,
-                viewport_len: text_area.height as usize,
-            }).offset(self.output_scroll as usize);
-            
-            frame.render_widget(&scrollbar, scrollbar_area);
-        } //< 
+        }
         
         // Render Output Auto-Toggle (Static Tab)
         let output_static_tabs = vec![TabBarItem { id: "autoscroll".to_string(), name: "Auto".to_string(), active: self.output_autoscroll }];

@@ -33,6 +33,50 @@ impl From<crossterm::event::Event> for ScrollEvent {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crossterm::event::{MouseEvent, MouseButton, MouseEventKind, KeyModifiers};
+
+    #[test]
+    fn test_scrollbar_interaction() {
+        let lengths = ScrollLengths { content_len: 100, viewport_len: 10 };
+        let mut interaction = ScrollBarInteraction::new();
+        let scrollbar = ScrollBar::vertical(lengths).offset(0);
+        let area = Rect::new(0, 0, 1, 10);
+
+        // Click on bar
+        let event = ScrollEvent::from(MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            column: 0, row: 5,
+            modifiers: KeyModifiers::empty(),
+        });
+        let cmd = scrollbar.handle_event(area, event, &mut interaction);
+        assert!(cmd.is_some());
+
+        // Drag
+        let event = ScrollEvent::from(MouseEvent {
+            kind: MouseEventKind::Drag(MouseButton::Left),
+            column: 0, row: 8,
+            modifiers: KeyModifiers::empty(),
+        });
+        let cmd = scrollbar.handle_event(area, event, &mut interaction);
+        assert!(cmd.is_some());
+        
+        // Reached bottom - click track below thumb
+        let lengths_large = ScrollLengths { content_len: 100, viewport_len: 10 };
+        let scrollbar_mid = ScrollBar::vertical(lengths_large).offset(0);
+        let event = ScrollEvent::from(MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            column: 0, row: 9,
+            modifiers: KeyModifiers::empty(),
+        });
+        let cmd = scrollbar_mid.handle_event(area, event, &mut interaction);
+        // Should jump towards bottom
+        assert!(cmd.is_some());
+    }
+}
+
 impl From<MouseEvent> for ScrollEvent {
     fn from(m: MouseEvent) -> Self {
         Self::Mouse(m)

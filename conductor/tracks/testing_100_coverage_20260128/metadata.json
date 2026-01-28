@@ -1,8 +1,0 @@
-{
-  "track_id": "testing_100_coverage_20260128",
-  "type": "chore",
-  "status": "new",
-  "created_at": "2026-01-28T05:36:00Z",
-  "updated_at": "2026-01-28T05:36:00Z",
-  "description": "dc2: Create testing that covers 100% of the functionality"
-}

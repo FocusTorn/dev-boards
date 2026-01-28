@@ -1,4 +1,4 @@
-use crate::app::{App, TaskState, MonitorType, Action, Message};
+﻿use crate::app::{App, TaskState, MonitorType, Action, Message};
 use crate::commands::ProgressUpdate;
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -7,6 +7,20 @@ use std::time::Instant;
 use ratatui::layout::Rect;
 use crossterm::event::{KeyEvent, KeyCode, KeyModifiers, KeyEventKind, MouseEvent, MouseEventKind, MouseButton};
 use tui_input::backend::crossterm::EventHandler;
+use ratatui::Terminal;
+use ratatui::backend::TestBackend;
+use ratatui::buffer::Buffer;
+
+fn buffer_content(buffer: &Buffer) -> String {
+    let mut result = String::new();
+    for y in 0..buffer.area.height {
+        for x in 0..buffer.area.width {
+            result.push_str(buffer[(x, y)].symbol());
+        }
+        result.push('\n');
+    }
+    result
+}
 
 /// Helper to create a minimal App state for unit testing
 fn create_test_app() -> App {
@@ -15,14 +29,25 @@ fn create_test_app() -> App {
     config.application.min_width = 80;
     config.application.min_height = 21;
 
-    App {
+    let mut tab_bar_map = std::collections::HashMap::new();
+    let main_tab_bar_config = crate::config::TabBarConfig {
+        id: "MainContentTabBar".to_string(),
+        ..Default::default()
+    };
+    tab_bar_map.insert("MainContentTabBar".to_string(), main_tab_bar_config.clone());
+
+    let mut app = App {
         running: true,
         tabs: vec![
             crate::widgets::tab_bar::TabBarItem { id: "dashboard".to_string(), name: "Dashboard".to_string(), active: true },
             crate::widgets::tab_bar::TabBarItem { id: "tab2".to_string(), name: "Tab 2".to_string(), active: false },
         ],
-        config,
-        tab_bar_map: std::collections::HashMap::new(),
+        config: crate::config::Config {
+            application: config.application,
+            tab_bars: vec![main_tab_bar_config],
+            ..Default::default()
+        },
+        tab_bar_map,
         terminal_too_small: false,
         commands: vec!["Compile".to_string(), "Upload".to_string(), "Monitor-Serial".to_string()],
         selected_command_index: 0,
@@ -53,7 +78,9 @@ fn create_test_app() -> App {
         input_active: false,
         serial_tx: None,
         mqtt_tx: None,
-    }
+    };
+    app.layout = app.calculate_layout(app.view_area);
+    app
 }
 
 fn press(code: KeyCode, mods: KeyModifiers) -> KeyEvent {
@@ -734,3 +761,88 @@ fn test_app_various_action_executors() {
     app.exec_copy_output(false);
 
 }
+
+#[test]
+fn test_app_view_rendering() {
+    let mut app = create_test_app();
+    let backend = TestBackend::new(100, 50);
+    let mut terminal = Terminal::new(backend).unwrap();
+    
+    // Set up some state to verify
+    app.status_text = "System Ready".to_string();
+    app.output_lines = vec!["Initial log".to_string()];
+    app.output_cached_lines = vec![crate::app::ansi::parse_ansi_line("Initial log")];
+
+    terminal.draw(|f| {
+        app.view(f);
+    }).unwrap();
+
+    let buffer = terminal.backend().buffer();
+    let s = buffer_content(buffer);
+    
+    // 1. Verify Title Bar
+    assert!(s.contains("-")); 
+    
+    // 2. Verify Tab Bar
+    assert!(s.contains("Dashboard"));
+    
+    // 3. Verify Profile
+    assert!(s.contains("Profile"));
+    
+    // 4. Verify Command List
+    assert!(s.contains("Compile"));
+    assert!(s.contains("Upload"));
+    
+    // 5. Verify Status
+    assert!(s.contains("System Ready"));
+    
+    // 6. Verify Output
+    assert!(s.contains("Initial log"));
+}
+
+#[test]
+fn test_app_view_terminal_too_small() {
+    let mut app = create_test_app();
+    let backend = TestBackend::new(20, 10);
+    let mut terminal = Terminal::new(backend).unwrap();
+    
+    terminal.draw(|f| {
+        app.view(f);
+    }).unwrap();
+
+    let s = buffer_content(terminal.backend().buffer());
+    assert!(s.contains("Terminal Too Small"));
+}
+
+#[test]
+fn test_app_view_progress_bar_rendering() {
+    let mut app = create_test_app();
+    let backend = TestBackend::new(100, 50);
+    let mut terminal = Terminal::new(backend).unwrap();
+    
+    app.task_state = TaskState::Running {
+        percentage: 45.0,
+        visual_percentage: 45.0,
+        last_percentage: 40.0,
+        stage: "Compiling".to_string(),
+        start_time: Instant::now(),
+        last_updated: Instant::now(),
+        smoothed_eta: Some(10.0),
+    };
+
+    terminal.draw(|f| {
+        app.view(f);
+    }).unwrap();
+
+    let s = buffer_content(terminal.backend().buffer());
+    assert!(s.contains("Compiling"));
+    assert!(s.contains("45.0%"));
+    assert!(s.contains("█"));
+
+    let s = buffer_content(terminal.backend().buffer());
+    assert!(s.contains("Compiling"));
+    assert!(s.contains("45.0%"));
+    assert!(s.contains("█"));
+}
+
+

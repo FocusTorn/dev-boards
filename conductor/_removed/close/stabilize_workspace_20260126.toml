@@ -1,2 +1,0 @@
-description = 'Close the stabilize_workspace_20260126 track'
-prompt = 'Close the Conductor track: stabilize_workspace_20260126. Please verify that all tasks in conductor/tracks/stabilize_workspace_20260126/plan.md are complete, then follow the protocol to finalize the track, synchronize project documentation, and perform track cleanup as defined in the implement protocol.'

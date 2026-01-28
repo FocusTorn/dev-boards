@@ -5,7 +5,7 @@ use ratatui::{
     text::{Span},
     widgets::{Block, Widget},
 };
-use crossterm::event::{MouseEvent, MouseButton, MouseEventKind};
+use crossterm::event::{MouseEvent, MouseButton, MouseEventKind, KeyModifiers};
 
 /// Semantic result of a mouse interaction with the command list.
 pub enum CommandListInteraction {
@@ -83,7 +83,7 @@ impl<'a> CommandListWidget<'a> {
             }
         } else {
             None
-        } //<
+        } //< 
     }
 }
 
@@ -113,22 +113,108 @@ impl<'a> Widget for CommandListWidget<'a> {
                 is_hovered
             } else {
                 is_selected
-            }; //<
+            }; //< 
 
             let style = if is_highlighted { //>
                 self.highlight_style
             } else {
                 Style::default().fg(Color::DarkGray)
-            }; //<
+            }; //< 
 
             if is_highlighted { //>
                 // Fill background border to border
                 for x in inner_area.left()..inner_area.right() {
                     buf[(x, item_y)].set_style(style);
                 }
-            } //<
+            } //< 
 
             buf.set_string(item_area.x + 1, item_y, format!(" {}", cmd), style);
-        } //<
+        } //< 
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ratatui::backend::TestBackend;
+    use ratatui::Terminal;
+
+    fn buffer_to_string(buffer: &Buffer) -> String {
+        let mut result = String::new();
+        for y in 0..buffer.area.height {
+            for x in 0..buffer.area.width {
+                result.push_str(&buffer[(x, y)].symbol());
+            }
+            result.push('\n');
+        }
+        result
+    }
+
+    #[test]
+    fn test_command_list_render() {
+        let backend = TestBackend::new(20, 10);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let commands = vec!["C1".to_string(), "C2".to_string()];
+        
+        terminal.draw(|f| {
+            let widget = CommandListWidget::new(&commands, 0, None);
+            f.render_widget(widget, f.area());
+        }).unwrap();
+
+        let buffer = terminal.backend().buffer();
+        let s = buffer_to_string(buffer);
+        assert!(s.contains("Commands"));
+        assert!(s.contains("C1"));
+        assert!(s.contains("C2"));
+    }
+
+    #[test]
+    fn test_command_list_interaction() {
+        let commands = vec!["C1".to_string()];
+        let widget = CommandListWidget::new(&commands, 0, None);
+        let area = Rect::new(0, 0, 20, 5);
+        
+        // Hover
+        let event = MouseEvent {
+            kind: MouseEventKind::Moved,
+            column: 5,
+            row: 1,
+            modifiers: KeyModifiers::empty(),
+        };
+        let interaction = widget.handle_mouse_event(area, event).unwrap();
+        if let CommandListInteraction::Hover(idx) = interaction {
+            assert_eq!(idx, 0);
+        } else { panic!(); } //>
+
+        // Click
+        let event = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            column: 5,
+            row: 1,
+            modifiers: KeyModifiers::empty(),
+        };
+        let interaction = widget.handle_mouse_event(area, event).unwrap();
+        if let CommandListInteraction::Click(idx) = interaction {
+            assert_eq!(idx, 0);
+        } else { panic!(); }
+    }
+
+    #[test]
+    fn test_command_list_highlighting() {
+        let backend = TestBackend::new(20, 5);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let commands = vec!["C1".to_string()];
+        
+        // Selected, not hovered
+        terminal.draw(|f| {
+            let widget = CommandListWidget::new(&commands, 0, None);
+            f.render_widget(widget, f.area());
+        }).unwrap();
+
+        // Not selected, hovered
+        terminal.draw(|f| {
+            let widget = CommandListWidget::new(&commands, 1, Some(0));
+            f.render_widget(widget, f.area());
+        }).unwrap();
     }
 }
