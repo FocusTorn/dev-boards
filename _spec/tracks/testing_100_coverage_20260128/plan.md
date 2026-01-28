@@ -31,7 +31,6 @@
 - [x] Task: _spec - User Manual Verification 'UI & Widget Components' (Protocol in workflow.md)
 
 
-- [ ] MANDATORY STOP - USER APPROVAL REQUIRED TO CONTINUE
 
 ## Phase 4: Commands & Integration
 
@@ -41,7 +40,7 @@
 - [x] Task: Serial/Hardware Simulation
     - [x] Create stub implementations for serial port monitoring.
     - [x] Verify that the TUI responds correctly to simulated hardware events (e.g., connection lost).
-- [ ] Task: _spec - User Manual Verification 'Commands & Integration' (Protocol in workflow.md)
+- [x] Task: _spec - User Manual Verification 'Commands & Integration' (Protocol in workflow.md)
 
 ## Phase 5: Final Audit & Hardening
 
@@ -51,3 +50,6 @@
 - [ ] Task: Documentation & Cleanup
     - [ ] Document the testing strategy and how to run coverage reports in `README.md`.
     - [ ] Clean up any temporary test artifacts or debug logs.
+
+- [ ] MANDATORY STOP - USER APPROVAL REQUIRED TO CONTINUE
+
