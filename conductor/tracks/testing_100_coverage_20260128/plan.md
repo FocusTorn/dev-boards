@@ -10,13 +10,13 @@
 - [ ] Task: Conductor - User Manual Verification 'Foundation & Setup' (Protocol in workflow.md)
 
 ## Phase 2: Core Logic & Configuration
-- [ ] Task: `config.rs` Coverage
-    - [ ] Write tests for YAML parsing of `config.yaml` and `widget-config.yaml`.
-    - [ ] Implement validation logic tests (e.g., missing fields, invalid types).
-    - [ ] Ensure 100% coverage for all config-related structs and enums.
-- [ ] Task: `app.rs` State Transitions
-    - [ ] Write unit tests for the `update` function using a wide range of `Message` variants.
-    - [ ] Verify state transitions for tab switching, profile selection, and error handling.
+- [x] Task: `config.rs` Coverage
+    - [x] Write tests for YAML parsing of `config.yaml` and `widget-config.yaml`.
+    - [x] Implement validation logic tests (e.g., missing fields, invalid types).
+    - [x] Ensure 100% coverage for all config-related structs and enums.
+- [x] Task: `app.rs` State Transitions
+    - [x] Write unit tests for the `update` function using a wide range of `Message` variants.
+    - [x] Verify state transitions for tab switching, profile selection, and error handling.
 - [ ] Task: Conductor - User Manual Verification 'Core Logic & Configuration' (Protocol in workflow.md)
 
 ## Phase 3: UI & Widget Components

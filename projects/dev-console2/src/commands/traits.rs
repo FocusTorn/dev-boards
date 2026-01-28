@@ -38,9 +38,23 @@ pub trait SerialProvider: Send + Sync {
 }
 
 /// Trait for a serial port.
-#[cfg_attr(test, automock)]
 pub trait SerialPort: io::Read + io::Write + Send {
     fn try_clone(&self) -> Result<Box<dyn SerialPort>, serialport::Error>;
+}
+
+#[cfg(test)]
+mockall::mock! {
+    pub SerialPort {}
+    impl io::Read for SerialPort {
+        fn read(&mut self, buf: &mut [u8]) -> io::Result<usize>;
+    }
+    impl io::Write for SerialPort {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize>;
+        fn flush(&mut self) -> io::Result<()>;
+    }
+    impl SerialPort for SerialPort {
+        fn try_clone(&self) -> Result<Box<dyn SerialPort>, serialport::Error>;
+    }
 }
 
 /// Real implementation of CommandRunner.
