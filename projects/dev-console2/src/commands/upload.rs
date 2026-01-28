@@ -1,4 +1,4 @@
-use super::{compile_state, path_utils, process::ProcessHandler};
+use super::{compile_state, path_utils, process::ProcessHandler, traits::{CommandRunner, RealCommandRunner}};
 use std::path::{PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
@@ -6,12 +6,34 @@ use std::sync::atomic::AtomicBool;
 use crate::commands::compile::{Settings, ProgressUpdate};
 
 /// Spawns a background thread to upload firmware to hardware via `arduino-cli`.
+pub fn run_upload(
+    settings: &Settings,
+    stats: crate::commands::history::StageStats,
+    cancel_signal: Arc<AtomicBool>,
+    progress_callback: impl FnMut(ProgressUpdate) + Send + 'static
+) {
+    run_upload_with_runner(
+        &RealCommandRunner,
+        settings,
+        stats,
+        cancel_signal,
+        progress_callback,
+    )
+}
+
+/// Spawns a background thread to upload firmware to hardware via `arduino-cli` with a provided runner.
 ///>
 /// Handles the transition into specific upload stages (Resetting, Uploading, 
 /// Verifying) and parses `esptool` percentage output to provide high-fidelity 
 /// progress updates to the TUI.
 ///<
-pub fn run_upload(settings: &Settings, stats: crate::commands::history::StageStats, cancel_signal: Arc<AtomicBool>, progress_callback: impl FnMut(ProgressUpdate) + Send + 'static) {
+pub fn run_upload_with_runner(
+    runner: &dyn CommandRunner,
+    settings: &Settings,
+    stats: crate::commands::history::StageStats,
+    cancel_signal: Arc<AtomicBool>,
+    progress_callback: impl FnMut(ProgressUpdate) + Send + 'static
+) {
     let callback = Arc::new(Mutex::new(progress_callback));
 
     callback.lock().unwrap()(ProgressUpdate::Stage("Initializing".to_string()));
@@ -40,7 +62,7 @@ pub fn run_upload(settings: &Settings, stats: crate::commands::history::StageSta
         .arg(sketch_dir.join("build"))
         .arg("--verbose");
 
-    let process_handler = match ProcessHandler::spawn(cmd) {
+    let process_handler = match ProcessHandler::spawn(runner, cmd) {
         Ok(handler) => handler,
         Err(e) => {
             callback.lock().unwrap()(ProgressUpdate::Failed(format!("Failed to spawn arduino-cli: {}", e)));

@@ -20,3 +20,6 @@ rumqttc = { version = "0.24", default-features = false, features = ["use-native-
 tui-input = "0.11"
 strum = { version = "0.26", features = ["derive"] }
 strum_macros = "0.26"
+
+[dev-dependencies]
+mockall = "0.13"

@@ -1,4 +1,4 @@
-use super::{compile_state, compile_parser, path_utils, process::ProcessHandler};
+use super::{compile_state, compile_parser, path_utils, process::ProcessHandler, traits::{CommandRunner, FileSystem, RealCommandRunner, RealFileSystem}};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
@@ -39,12 +39,36 @@ pub enum ProgressUpdate {
 }
 
 /// Spawns a background thread to compile an Arduino sketch.
+pub fn run_compile(
+    settings: &Settings,
+    stats: crate::commands::history::StageStats,
+    cancel_signal: Arc<AtomicBool>,
+    progress_callback: impl FnMut(ProgressUpdate) + Send + 'static
+) {
+    run_compile_with_runners(
+        &RealCommandRunner,
+        &RealFileSystem,
+        settings,
+        stats,
+        cancel_signal,
+        progress_callback,
+    )
+}
+
+/// Spawns a background thread to compile an Arduino sketch with provided runners.
 ///>
 /// Handles workspace discovery, temporary directory setup for non-standard 
 /// layouts, and real-time output parsing via `compile_parser`. Emits 
 /// `ProgressUpdate` messages to the provided callback.
 ///<
-pub fn run_compile(settings: &Settings, stats: crate::commands::history::StageStats, cancel_signal: Arc<AtomicBool>, progress_callback: impl FnMut(ProgressUpdate) + Send + 'static) {
+pub fn run_compile_with_runners(
+    runner: &dyn CommandRunner,
+    fs: &dyn FileSystem,
+    settings: &Settings,
+    stats: crate::commands::history::StageStats,
+    cancel_signal: Arc<AtomicBool>,
+    progress_callback: impl FnMut(ProgressUpdate) + Send + 'static
+) {
     let callback = Arc::new(Mutex::new(progress_callback));
 
     callback.lock().unwrap()(ProgressUpdate::Stage("Initializing".to_string()));
@@ -52,7 +76,7 @@ pub fn run_compile(settings: &Settings, stats: crate::commands::history::StageSt
     let sketch_dir = PathBuf::from(&settings.sketch_directory);
     let sketch_file = sketch_dir.join(format!("{}.ino", settings.sketch_name));
 
-    if !sketch_file.exists() { //>
+    if !fs.exists(&sketch_file) { //>
         callback.lock().unwrap()(ProgressUpdate::Failed(format!("Sketch file not found: {:?}", sketch_file)));
         return;
     } //<
@@ -66,7 +90,7 @@ pub fn run_compile(settings: &Settings, stats: crate::commands::history::StageSt
     }; //<
 
     // Temp directory logic
-    let (compile_dir, temp_dir_guard) = match setup_compile_directory(&sketch_dir, &sketch_file, &project_root) { //>
+    let (compile_dir, temp_dir_guard) = match setup_compile_directory(fs, &sketch_dir, &sketch_file, &project_root) { //>
         Ok((dir, guard)) => (dir, guard),
         Err(e) => {
             callback.lock().unwrap()(ProgressUpdate::Failed(e));
@@ -96,7 +120,7 @@ pub fn run_compile(settings: &Settings, stats: crate::commands::history::StageSt
         .arg(&compile_dir)
         .current_dir(&compile_dir);
 
-    let process_handler = match ProcessHandler::spawn(cmd) { //>
+    let process_handler = match ProcessHandler::spawn(runner, cmd) { //>
         Ok(handler) => handler,
         Err(e) => {
             callback.lock().unwrap()(ProgressUpdate::Failed(format!("Failed to spawn arduino-cli: {}", e)));
@@ -160,10 +184,14 @@ pub fn run_compile(settings: &Settings, stats: crate::commands::history::StageSt
 }
 
 /// RAII guard for cleaning up temporary compile directories.
-struct TempDirGuard(PathBuf);
-impl Drop for TempDirGuard {
+pub struct TempDirGuard<'a> {
+    path: PathBuf,
+    fs: &'a dyn FileSystem,
+}
+
+impl<'a> Drop for TempDirGuard<'a> {
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
+        let _ = self.fs.remove_dir_all(&self.path);
     }
 }
 
@@ -173,7 +201,7 @@ impl Drop for TempDirGuard {
 /// creates a temporary workspace in `.dev-console/temp_compile` to satisfy 
 /// `arduino-cli` requirements.
 ///<
-fn setup_compile_directory(sketch_dir: &Path, sketch_file: &Path, project_root: &Path) -> Result<(PathBuf, Option<TempDirGuard>), String> {
+fn setup_compile_directory<'a>(fs: &'a dyn FileSystem, sketch_dir: &Path, sketch_file: &Path, project_root: &Path) -> Result<(PathBuf, Option<TempDirGuard<'a>>), String> {
     let sketch_file_name = sketch_file.file_stem().and_then(|s| s.to_str()).unwrap_or("");
     let dir_name = sketch_dir.file_name().and_then(|s| s.to_str()).unwrap_or("");
 
@@ -183,12 +211,12 @@ fn setup_compile_directory(sketch_dir: &Path, sketch_file: &Path, project_root: 
         let temp_dir_path = project_root.join(".dev-console").join("temp_compile").join(sketch_file_name);
         
         // Retry logic for Windows file locking
-        if temp_dir_path.exists() { //>
+        if fs.exists(&temp_dir_path) { //>
             let mut retries = 5;
             let mut last_err = None;
             
             while retries > 0 { //>
-                match std::fs::remove_dir_all(&temp_dir_path) {
+                match fs.remove_dir_all(&temp_dir_path) {
                     Ok(_) => break,
                     Err(e) => {
                         last_err = Some(e);
@@ -198,7 +226,7 @@ fn setup_compile_directory(sketch_dir: &Path, sketch_file: &Path, project_root: 
                 }
             } //<
             
-            if temp_dir_path.exists() { //>
+            if fs.exists(&temp_dir_path) { //>
                 return Err(format!(
                     "Failed to clean up old temp directory after 5 retries: {}. This usually happens if a previous process is still shutting down.", 
                     last_err.map(|e| e.to_string()).unwrap_or_default()
@@ -206,26 +234,25 @@ fn setup_compile_directory(sketch_dir: &Path, sketch_file: &Path, project_root: 
             } //<
         } //<
 
-        std::fs::create_dir_all(&temp_dir_path).map_err(|e| format!("Failed to create temporary compile directory: {}", e))?;
+        fs.create_dir_all(&temp_dir_path).map_err(|e| format!("Failed to create temporary compile directory: {}", e))?;
 
         let temp_sketch_file = temp_dir_path.join(format!("{}.ino", sketch_file_name));
-        std::fs::copy(sketch_file, &temp_sketch_file).map_err(|e| format!("Failed to copy sketch to temp directory: {}", e))?;
+        fs.copy(sketch_file, &temp_sketch_file).map_err(|e| format!("Failed to copy sketch to temp directory: {}", e))?;
 
-        if let Ok(entries) = std::fs::read_dir(sketch_dir) { //>
-            for entry in entries.filter_map(Result::ok) { //>
-                let path = entry.path();
-                if path.is_file() && path != sketch_file { //>
+        if let Ok(entries) = fs.read_dir(sketch_dir) { //>
+            for path in entries { //>
+                if fs.exists(&path) && !path.is_dir() && path != sketch_file { //>
                     // Skip other .ino files - only the main one should be in the temp dir root
                     if path.extension().and_then(|s| s.to_str()) == Some("ino") {
                         continue;
                     }
                     if let Some(file_name) = path.file_name() {
                         let dest = temp_dir_path.join(file_name);
-                        let _ = std::fs::copy(&path, &dest);
+                        let _ = fs.copy(&path, &dest);
                     }
                 } //<
             } //<
         } //<
-        Ok((temp_dir_path.clone(), Some(TempDirGuard(temp_dir_path))))
+        Ok((temp_dir_path.clone(), Some(TempDirGuard { path: temp_dir_path.clone(), fs })))
     } //<
 }

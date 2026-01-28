@@ -4,6 +4,7 @@ pub mod predictor;
 pub mod history;
 pub mod serial_v2;
 pub mod mqtt;
+pub mod traits;
 mod compile_state;
 mod compile_parser;
 mod utils;

@@ -2,11 +2,29 @@ use std::time::Duration;
 use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 use std::sync::mpsc;
 use crate::commands::compile::ProgressUpdate;
-use serialport;
+use super::traits::{SerialProvider, RealSerialProvider};
 
 /// Commands sent from the TUI to the background serial thread.
 pub enum SerialCommand {
     SendData(String),
+}
+
+/// A high-performance Serial Monitor implementation with byte-level line buffering.
+pub fn run_serial_monitor(
+    port_name: String,
+    baud_rate: u32,
+    cancel_signal: Arc<AtomicBool>,
+    command_rx: mpsc::Receiver<SerialCommand>,
+    callback: impl FnMut(ProgressUpdate) + Send + 'static,
+) {
+    run_serial_monitor_with_provider(
+        &RealSerialProvider,
+        port_name,
+        baud_rate,
+        cancel_signal,
+        command_rx,
+        callback,
+    )
 }
 
 /// A high-performance Serial Monitor implementation with byte-level line buffering.
@@ -15,8 +33,9 @@ pub enum SerialCommand {
 /// bidirectional communication with hardware, split-line reassembly for 
 /// UTF-8 data, and semantic tagging for different message types to support 
 /// consistent UI theming.
-///<
-pub fn run_serial_monitor(
+///< 
+pub fn run_serial_monitor_with_provider(
+    provider: &dyn SerialProvider,
     port_name: String,
     baud_rate: u32,
     cancel_signal: Arc<AtomicBool>,
@@ -24,9 +43,7 @@ pub fn run_serial_monitor(
     mut callback: impl FnMut(ProgressUpdate) + Send + 'static,
 ) {
     // 1. Open the port with a short timeout for responsive polling
-    let port_result = serialport::new(&port_name, baud_rate)
-        .timeout(Duration::from_millis(10))
-        .open();
+    let port_result = provider.open(&port_name, baud_rate);
 
     let mut port = match port_result {
         Ok(p) => {

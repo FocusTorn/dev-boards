@@ -129,6 +129,7 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
 5.  **Write Files:**
     *   Write the confirmed specification content to `<Tracks Directory>/<track_id>/spec.md`.
     *   Write the confirmed plan content to `<Tracks Directory>/<track_id>/plan.md`.
+    *   Write a basic `NOTES.md` file to `<Tracks Directory>/<track_id>/NOTES.md` with a placeholder for future notes.
     *   Write the index file to `<Tracks Directory>/<track_id>/index.md` with content:
         ```markdown
         # Track <track_id> Context
@@ -136,6 +137,7 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
         - [Specification](./spec.md)
         - [Implementation Plan](./plan.md)
         - [Metadata](./metadata.json)
+        - [Notes](./NOTES.md)
         ```
 6.  **Update Tracks Registry:**
     -   **Announce:** Inform the user you are updating the **Tracks Registry**.
