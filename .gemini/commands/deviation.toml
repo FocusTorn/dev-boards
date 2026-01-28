@@ -13,8 +13,8 @@ Perform a systematic Root Cause Analysis (RCA) following the mandatory protocol 
 1. **Rule & Guide Discovery**:
     - Read the root `GEMINI.md` and any project-specific `GEMINI.md` files.
     - Scan the `.gemini/` directory and all its contents (including `rules/` and `_docs/`).
-    - Read `conductor/index.md` and relevant track plans/specs if applicable to the current work.
-    - Read `conductor/code_styleguides/` for context (READ-ONLY).
+    - Scan the `conductor/` directory, specifically `code_styleguides/` and `commands/`.
+    - Note: Files in `conductor/` are eligible for modification if required.
 
 2. **Systematic Root Cause Analysis Protocol**:
     - **Rule Discovery Analysis**: Determine if relevant rules were checked before the task. Identify missing rule checks.
@@ -33,9 +33,10 @@ Perform a systematic Root Cause Analysis (RCA) following the mandatory protocol 
 4. **AI Agent Rule Generation (Path Selection Logic)**:
     - Determine the **Scope**: (Global, Workspace, or Project).
     - Determine the **Category**:
-        - **Formatting & Layout**: Style guide modifications.
-        - **Architecture / Tech Stack / Context / Usage**: GEMINI.md.
-        - **General Process / Logic / Tooling / Anything Else**: .gemini/rules/.
+        - **Formatting & Layout**: Style guide modifications or directly in `conductor/code_styleguides/`.
+        - **Architecture / Tech Stack / Context / Usage**: GEMINI.md or `conductor/`.
+        - **General Process / Logic / Tooling / Anything Else**: .gemini/rules/ or `conductor/commands/`.
+    - **Multiple Files**: If the root cause analysis suggests that multiple files need modification for a complete fix, explicitly state this in the recommendation.
     - Use imperative language (ALWAYS, NEVER, MUST).
 
 5. **MANDATORY PAUSE**: You MUST NOT proceed with any fixes, commands, or file changes until the user explicitly approves the remediation plan.

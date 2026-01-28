@@ -12,7 +12,8 @@ Analyze the current conversation to extract key learning patterns, solutions, an
 1. **Rule & Guide Discovery (Consolidated Scope)**: 
     - Read the root `GEMINI.md` and any project-specific `GEMINI.md` files.
     - Scan the `.gemini/` directory and all its contents (including `rules/` and `_docs/`).
-    - Read `conductor/code_styleguides/` for context (READ-ONLY).
+    - Scan the `conductor/` directory, specifically `code_styleguides/` and `commands/`.
+    - Note: Files in `conductor/` are eligible for modification if required.
     - **CRITICAL**: Do NOT scan for arbitrary `.md` or `.mdc` files outside of these specific locations.
 
 2. **Conversation Review**: Analyze the full history of this session. Focus on:
@@ -37,10 +38,10 @@ Analyze the current conversation to extract key learning patterns, solutions, an
 5. **AI Agent Rule Generation (Path Selection Logic)**:
     - Determine the **Scope**: (Global, Workspace, or specific Project).
     - Determine the **Category**:
-        - **Formatting & Layout**: Add to/Create `[scope]/.gemini/_docs/style-guides/[lang]-styleguide-modifications.md`.
-        - **Architecture / Tech Stack / Context / Usage**: Add to `[scope]/GEMINI.md`.
-        - **General Process / Logic / Tooling / Anything Else**: Add to `[scope]/.gemini/rules/`.
-    - **CRITICAL**: Never modify `conductor/code_styleguides/`. Use the `style-guides` modification files for overrides.
+        - **Formatting & Layout**: `conductor/code_styleguides/` or style guide modifications.
+        - **Architecture / Tech Stack / Context / Usage**: `GEMINI.md` or `conductor/`.
+        - **General Process / Logic / Tooling / Anything Else**: `.gemini/rules/` or `conductor/commands/`.
+    - **Multiple Files**: If the session insights suggest that multiple files need modification for a complete fix, explicitly list all of them in the recommendation.
     - **Requirement**: Use imperative language (ALWAYS, NEVER, MUST).
     - **Requirement**: Format as: `Action`, `Rule File Path`, `Rule Text`, `Section`, `Rationale`.
 
