@@ -104,7 +104,7 @@ pub fn run_compile_with_runners(
 
     let build_path = sketch_dir.join("build");
     let library_path = path_utils::get_library_path(&project_root, &settings.board_model);
-    let arduino_cli = path_utils::find_arduino_cli(&settings.env, &project_root);
+    let arduino_cli = path_utils::find_arduino_cli(fs, &settings.env, &project_root);
     
     callback.lock().unwrap()(ProgressUpdate::OutputLine(format!("Using arduino-cli: {:?}", arduino_cli)));
 

@@ -3,6 +3,8 @@
 use std::env;
 use std::path::{Path, PathBuf};
 
+use crate::commands::traits::FileSystem;
+
 /// Find workspace root using WORKSPACE_ROOT environment variable.
 ///>
 /// This is the primary method for resolving relative paths within the 
@@ -19,10 +21,10 @@ pub fn find_workspace_root() -> Result<PathBuf, String> {
 /// Checks the workspace's managed `Arduino/` directory first, falling back 
 /// to the system PATH if necessary.
 ///<
-pub fn find_arduino_cli(env: &str, project_root: &Path) -> PathBuf {
+pub fn find_arduino_cli(fs: &dyn FileSystem, env: &str, project_root: &Path) -> PathBuf {
     if env == "arduino" { //>
         let workspace_path = project_root.join("Arduino").join("arduino-cli.exe");
-        if workspace_path.exists() { //>
+        if fs.exists(&workspace_path) { //>
             return workspace_path;
         } //<
         

@@ -8,7 +8,6 @@
 - [x] Task: Testing Infrastructure
     - [x] Define traits for hardware/command interactions in `src/commands/` to enable mocking.
     - [x] Set up `mockall` or equivalent boilerplate for core dependencies.
-- [ ] Task: _spec - User Manual Verification 'Foundation & Setup' (Protocol in workflow.md)
 
 ## Phase 2: Core Logic & Configuration
 
@@ -19,7 +18,6 @@
 - [x] Task: `app.rs` State Transitions
     - [x] Write unit tests for the `update` function using a wide range of `Message` variants.
     - [x] Verify state transitions for tab switching, profile selection, and error handling.
-- [ ] Task: _spec - User Manual Verification 'Core Logic & Configuration' (Protocol in workflow.md)
 
 ## Phase 3: UI & Widget Components
 
@@ -37,12 +35,12 @@
 
 ## Phase 4: Commands & Integration
 
-- [ ] Task: Command Execution Mocking
-    - [ ] Implement mocks for `arduino-cli` and `idf.py` interactions.
-    - [ ] Write tests for asynchronous command handling and output streaming.
-- [ ] Task: Serial/Hardware Simulation
-    - [ ] Create stub implementations for serial port monitoring.
-    - [ ] Verify that the TUI responds correctly to simulated hardware events (e.g., connection lost).
+- [x] Task: Command Execution Mocking
+    - [x] Implement mocks for `arduino-cli` and `idf.py` interactions.
+    - [x] Write tests for asynchronous command handling and output streaming.
+- [x] Task: Serial/Hardware Simulation
+    - [x] Create stub implementations for serial port monitoring.
+    - [x] Verify that the TUI responds correctly to simulated hardware events (e.g., connection lost).
 - [ ] Task: _spec - User Manual Verification 'Commands & Integration' (Protocol in workflow.md)
 
 ## Phase 5: Final Audit & Hardening
@@ -53,4 +51,3 @@
 - [ ] Task: Documentation & Cleanup
     - [ ] Document the testing strategy and how to run coverage reports in `README.md`.
     - [ ] Clean up any temporary test artifacts or debug logs.
-- [ ] Task: _spec - User Manual Verification 'Final Audit & Hardening' (Protocol in workflow.md)

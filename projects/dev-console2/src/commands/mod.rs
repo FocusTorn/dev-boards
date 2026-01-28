@@ -17,3 +17,6 @@ pub use predictor::{ProgressPredictor};
 pub use history::{HistoryManager};
 pub use serial_v2::{run_serial_monitor, SerialCommand};
 pub use mqtt::{run_mqtt_monitor, MqttCommand};
+
+#[cfg(test)]
+mod tests;

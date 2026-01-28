@@ -1,4 +1,4 @@
-use super::{compile_state, path_utils, process::ProcessHandler, traits::{CommandRunner, RealCommandRunner}};
+use super::{compile_state, path_utils, process::ProcessHandler, traits::{CommandRunner, FileSystem, RealCommandRunner, RealFileSystem}};
 use std::path::{PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
@@ -14,6 +14,7 @@ pub fn run_upload(
 ) {
     run_upload_with_runner(
         &RealCommandRunner,
+        &RealFileSystem,
         settings,
         stats,
         cancel_signal,
@@ -29,6 +30,7 @@ pub fn run_upload(
 ///<
 pub fn run_upload_with_runner(
     runner: &dyn CommandRunner,
+    fs: &dyn FileSystem,
     settings: &Settings,
     stats: crate::commands::history::StageStats,
     cancel_signal: Arc<AtomicBool>,
@@ -48,7 +50,7 @@ pub fn run_upload_with_runner(
         }
     };
 
-    let arduino_cli = path_utils::find_arduino_cli(&settings.env, &project_root);
+    let arduino_cli = path_utils::find_arduino_cli(fs, &settings.env, &project_root);
     
     callback.lock().unwrap()(ProgressUpdate::OutputLine(format!("Using arduino-cli for upload: {:?}", arduino_cli)));
 

@@ -22,7 +22,7 @@ pub struct HistoryManager {
 }
 
 /// Aggregated statistical data for a specific sketch.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct StageStats {
     pub weights: HashMap<CompileStage, f64>,
     pub averages: HashMap<CompileStage, f64>,
