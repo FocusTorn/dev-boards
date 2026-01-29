@@ -37,6 +37,23 @@ pub trait SerialProvider: Send + Sync {
     fn open(&self, port_name: &str, baud_rate: u32) -> Result<Box<dyn SerialPort>, serialport::Error>;
 }
 
+/// Rich metadata for a discovered serial port.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PortInfo {
+    pub port_name: String,
+    pub vid: Option<u16>,
+    pub pid: Option<u16>,
+    pub manufacturer: Option<String>,
+    pub serial_number: Option<String>,
+    pub product: Option<String>,
+}
+
+/// Trait for discovering available serial ports.
+#[cfg_attr(test, automock)]
+pub trait PortScanner: Send + Sync {
+    fn list_ports(&self) -> Result<Vec<PortInfo>, serialport::Error>;
+}
+
 /// Trait for a serial port.
 pub trait SerialPort: io::Read + io::Write + Send {
     fn try_clone(&self) -> Result<Box<dyn SerialPort>, serialport::Error>;
@@ -145,5 +162,37 @@ impl SerialPort for RealSerialPort {
     fn try_clone(&self) -> Result<Box<dyn SerialPort>, serialport::Error> {
         let port = self.port.try_clone()?;
         Ok(Box::new(RealSerialPort { port }))
+    }
+}
+
+/// Real implementation of PortScanner.
+pub struct RealPortScanner;
+impl PortScanner for RealPortScanner {
+    fn list_ports(&self) -> Result<Vec<PortInfo>, serialport::Error> {
+        let ports = serialport::available_ports()?;
+        let mut result = Vec::new();
+
+        for port in ports {
+            let mut info = PortInfo {
+                port_name: port.port_name,
+                vid: None,
+                pid: None,
+                manufacturer: None,
+                serial_number: None,
+                product: None,
+            };
+
+            if let serialport::SerialPortType::UsbPort(usb) = port.port_type {
+                info.vid = Some(usb.vid);
+                info.pid = Some(usb.pid);
+                info.manufacturer = usb.manufacturer;
+                info.serial_number = usb.serial_number;
+                info.product = usb.product;
+            }
+
+            result.push(info);
+        }
+
+        Ok(result)
     }
 }

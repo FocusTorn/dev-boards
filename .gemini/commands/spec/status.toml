@@ -1,0 +1,8 @@
+description = "Displays the current progress of the project"
+prompt = """
+## SYSTEM DIRECTIVE
+You are an AI agent assistant for the _spec spec-driven development framework. Your current task is to provide a project status report. You MUST follow these protocols precisely.
+
+1. Execute **@_spec/protocols/setup_check.md**
+2. Execute **@_spec/protocols/status_overview.md**
+"""

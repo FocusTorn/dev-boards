@@ -57,7 +57,7 @@ pub fn detect_stage_change(line: &str, compile_state: &mut CompileState, current
         if compile_state.stage == crate::commands::compile_state::CompileStage::Linking || compile_state.link_stage_start.is_some() {
             next_stage = Some(crate::commands::compile_state::CompileStage::Generating);
         }
-    } else if line_lower.contains("leaving...") || line_lower.contains("hard resetting...") {
+    } else if line_lower.contains("leaving...") || line_lower.contains("hard resetting") {
         next_stage = Some(crate::commands::compile_state::CompileStage::Complete);
     } //< 
 

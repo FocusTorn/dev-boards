@@ -21,6 +21,56 @@ fn create_exit_status(code: i32) -> std::process::ExitStatus {
     std::process::ExitStatus::from_raw(code << 8)
 }
 
+use super::discovery::*;
+
+#[test]
+fn test_scan_ports_success() {
+    let mut mock_scanner = MockPortScanner::new();
+    
+    let mock_ports = vec![
+        PortInfo {
+            port_name: "COM3".to_string(),
+            vid: Some(0x1234),
+            pid: Some(0x5678),
+            manufacturer: Some("Test Corp".to_string()),
+            serial_number: Some("SN12345".to_string()),
+            product: Some("Test Device".to_string()),
+        },
+        PortInfo {
+            port_name: "COM4".to_string(),
+            vid: None,
+            pid: None,
+            manufacturer: None,
+            serial_number: None,
+            product: None,
+        },
+    ];
+
+    let ports_clone = mock_ports.clone();
+    mock_scanner.expect_list_ports()
+        .return_once(move || Ok(ports_clone));
+
+    let result = scan_ports_with_scanner(&mock_scanner).unwrap();
+    
+    assert_eq!(result.len(), 2);
+    assert_eq!(result[0].port_name, "COM3");
+    assert_eq!(result[0].vid, Some(0x1234));
+    assert_eq!(result[0].manufacturer, Some("Test Corp".to_string()));
+    assert_eq!(result[1].port_name, "COM4");
+    assert!(result[1].vid.is_none());
+}
+
+#[test]
+fn test_scan_ports_failure() {
+    let mut mock_scanner = MockPortScanner::new();
+    
+    mock_scanner.expect_list_ports()
+        .return_once(|| Err(serialport::Error::new(serialport::ErrorKind::Unknown, "Failed to list ports")));
+
+    let result = scan_ports_with_scanner(&mock_scanner);
+    assert!(result.is_err());
+}
+
 #[test]
 fn test_run_compile_success() {
     std::env::set_var("WORKSPACE_ROOT", ".");

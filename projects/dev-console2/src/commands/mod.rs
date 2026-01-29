@@ -5,6 +5,7 @@ pub mod history;
 pub mod serial_v2;
 pub mod mqtt;
 pub mod traits;
+pub mod discovery;
 mod compile_state;
 mod compile_parser;
 mod utils;
@@ -17,6 +18,8 @@ pub use predictor::{ProgressPredictor};
 pub use history::{HistoryManager};
 pub use serial_v2::{run_serial_monitor, SerialCommand};
 pub use mqtt::{run_mqtt_monitor, MqttCommand};
+pub use traits::{PortScanner, PortInfo, RealPortScanner};
+pub use discovery::{scan_ports};
 
 #[cfg(test)]
 mod tests;
