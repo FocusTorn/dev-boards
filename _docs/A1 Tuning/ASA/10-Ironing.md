@@ -4,11 +4,14 @@
 ## Why this matters for ASA
 ASA Irons beautifully because it has a broad melting range. However, in an enclosure, it can "heat soak" and turn into a sticky mess if the ironing flow is too high.
 
-## The "Pro" Ironing Recipe for Overture ASA
+## The "Pro" Ironing Logic
 *   **Ironing Type:** `Topmost surface only`
 *   **Ironing Speed:** `30 - 45 mm/s`
-*   **Ironing Flow:** `8 % - 12 %` (Overture usually likes ~10%)
+*   **Ironing Flow:** `8 % - 15 %` (Requires brand-specific calibration)
 *   **Ironing Spacing:** `0.15 mm`
+
+---
+*For brand-specific values, see [Overture Overrides](Overture/Overrides.md).*
 
 ## Best Practices & Tips
 *   **Ironing Fan Speed:** Set to **20% - 30%** (as discussed in Cooling). Without this, the nozzle will "plow" and leave a yellow/burnt tint on the ASA.

@@ -130,7 +130,7 @@ DEFAULT_TEMP_SMOOTH = 4.0  # number of entries (~25 seconds at 5-sec intervals)
 DEFAULT_RATE_SMOOTH = 10.0  # number of entries (~65 seconds at 5-sec intervals)
 
 # Temperature maintenance settings
-DEFAULT_MAINTAIN_TEMP = None  # °C - Temperature to maintain during pause (None to disable)
+DEFAULT_MAINTAIN_TEMP = 180.0  # °C - Temperature to maintain during pause (None to disable)
 DEFAULT_TEMP_COMMAND_INTERVAL = 30.0  # seconds - Interval between temperature maintenance commands
 
 # Cooling settings
@@ -873,7 +873,9 @@ class HeatSoakMonitor:
         self.printer_status = None  # Store current printer status from MQTT report topic
         self.printer_gcode_state = None  # Extracted gcode_state from printer status
         self.printer_bed_temper = None  # Bed temperature from printer status
+        self.printer_bed_target = None  # Bed target temperature from printer status
         self.printer_nozzle_temper = None  # Nozzle temperature from printer status
+        self.printer_nozzle_target = None  # Nozzle target temperature from printer status
         self._connections_ready = False  # Track when both connections are established
         self.ready_achieved = False  # Track when ready state has been achieved (maintains ready even if rate increases)
         self.rate_exceeded_plateau = False  # Track if rate has ever exceeded plateau threshold
@@ -964,14 +966,22 @@ class HeatSoakMonitor:
             # Extract gcode_state from print.gcode_state (matching the PowerShell command)
             print_status = payload.get("print", {})
             if isinstance(print_status, dict):
-                # Extract bed and nozzle temperatures (always extract, not just when gcode_state exists)
+                # Extract bed and nozzle temperatures (actual and target)
                 bed_temper = print_status.get("bed_temper")
                 if bed_temper is not None:
                     self.printer_bed_temper = bed_temper
                 
+                bed_target = print_status.get("bed_target_temper")
+                if bed_target is not None:
+                    self.printer_bed_target = bed_target
+                
                 nozzle_temper = print_status.get("nozzle_temper")
                 if nozzle_temper is not None:
                     self.printer_nozzle_temper = nozzle_temper
+
+                nozzle_target = print_status.get("nozzle_target_temper")
+                if nozzle_target is not None:
+                    self.printer_nozzle_target = nozzle_target
                 
                 # Extract and update gcode_state if present
                 gcode_state = print_status.get("gcode_state")
@@ -1000,428 +1010,168 @@ class HeatSoakMonitor:
             raw_payload = message.payload.decode()
             payload = json.loads(raw_payload)
             
-            # Handle sensor temperature messages (from sensors/sht21/readings topic)
+            # Handle sensor temperature messages
             self.message_count += 1
             self.last_message_time = time.time()
             
-            # Suppress display until both connections are ready
             if not self._connections_ready:
                 return
             
             temperature = payload.get('temperature')
-            
             if temperature is None:
-                print("⚠️  No temperature in MQTT message")
-                print(f"   Available keys: {list(payload.keys())}")
                 return
             
-            # Add reading to monitor first
+            # Add reading to monitor
             self.monitor.add_reading(temperature)
-            
-            # Apply forced values if reading count matches
-            # count means "starting from reading (count+1)" - so count=0 means reading 1, count=3 means reading 4
-            # But user wants count=3 to mean "starting from reading 3", so use >=
-            # count=0 means apply starting from reading 1 (message_count >= 0, which is always true after first reading)
-            # count=3 means apply starting from reading 3 (message_count >= 3)
-            # Find the most recent matching force instruction for each type (highest count that matches)
-            forced_temp = None
-            forced_rate = None
-            forced_status = None
-            forced_temp_count = -1
-            forced_rate_count = -1
-            forced_status_count = -1
-            
-            for force_type, force_value, force_count in self.force_instructions:
-                # Use >= so count=3 means apply starting from reading 3
-                if self.message_count >= force_count:
-                    if force_type == 'temp':
-                        # Use the most recent matching instruction (highest count)
-                        if force_count >= forced_temp_count:
-                            forced_temp = float(force_value)
-                            forced_temp_count = force_count
-                            self.monitor.current_temp = forced_temp
-                            self.monitor.smoothed_temp = forced_temp
-                    elif force_type == 'rate':
-                        # Use the most recent matching instruction (highest count)
-                        if force_count >= forced_rate_count:
-                            forced_rate = float(force_value)
-                            forced_rate_count = force_count
-                            self.monitor.rate_per_minute = forced_rate
-                    elif force_type == 'status':
-                        # Use the most recent matching instruction (highest count)
-                        if force_count >= forced_status_count:
-                            forced_status = str(force_value).upper()
-                            forced_status_count = force_count
-                            self.printer_gcode_state = forced_status
-            
-            # Display current temperature (use forced value if set, otherwise use actual reading)
-            if forced_temp is not None:
-                current_temp_str = f"{forced_temp:.2f}"
-            else:
-                current_temp_str = f"{temperature:.2f}"
             
             # Get smoothing progress
             progress = self.monitor.get_smoothing_progress()
             
-            # Check heatsoak status (skip if resume already confirmed)
-            if self.resume_confirmed:
-                # Don't check heatsoak conditions after resume is confirmed
-                ready = False
-                info = {
-                    'ready': False,
-                    'temp_ok': False,
-                    'rate_ok': False,
-                    'soak_started': False,
-                    'max_rate_since_soak_start': None,
-                    'smoothed_temp': self.monitor.smoothed_temp,
-                    'rate_per_minute': self.monitor.rate_per_minute,
-                    'current_temp': self.monitor.current_temp,
-                }
-            else:
-                # Check heatsoak status
-                ready, info = self.monitor.check_heat_soak_ready(
-                    self.rate_start_type,
-                    self.rate_threshold_temp,
-                    self.min_temp_for_plateau,
-                    self.rate_change_plateau,
-                    self.target_temp
-                )
+            # Check heatsoak status
+            ready, info = self.monitor.check_heat_soak_ready(
+                self.rate_start_type,
+                self.rate_threshold_temp,
+                self.min_temp_for_plateau,
+                self.rate_change_plateau,
+                self.target_temp
+            )
             
-            # Override info dictionary with forced values (display uses info dict, not monitor directly)
-            if forced_temp is not None:
-                info['smoothed_temp'] = round(forced_temp, 2)
-                info['current_temp'] = round(forced_temp, 2)
-            if forced_rate is not None:
-                info['rate_per_minute'] = forced_rate
+            # Determine if printer is in the "Trap" state (Running but waiting for chamber)
+            current_status = self.printer_gcode_state
+            current_status_upper = str(current_status).upper() if current_status else ""
+            status_is_paused = current_status_upper in ["PAUSED", "PAUSE"]
             
-            # Get current status (forced or actual) - needed for stage tracking
-            current_status = forced_status if forced_status is not None else self.printer_gcode_state
-            status_is_paused = current_status and str(current_status).upper() in ["PAUSED", "PAUSE"]
+            # Trap state: RUNNING state and nozzle near maintain_temp
+            is_trapped = (current_status_upper == "RUNNING" and 
+                         self.printer_nozzle_temper is not None and 
+                         (self.maintain_temp_value - 5) <= self.printer_nozzle_temper <= (self.maintain_temp_value + 5))
             
-            # Override ready state if force_ready flag is set (for testing)
-            # Skip all status checking if resume is already confirmed
-            if self.resume_confirmed:
-                ready = False
-                info['ready'] = False
-                info['chamber_ready'] = False  # Set chamber_ready for display
-                self.ready_achieved = False  # Reset ready_achieved when resume is confirmed
-            elif self.debug_resume and not self.resumed and (time.time() - self.start_time) > 3.0:
-                ready = True
-                info['ready'] = True
-                info['chamber_ready'] = True
-                info['reason'] = 'DEBUG_RESUME (3s timeout)'
-                # Force status to PAUSED to trigger resume logic
-                status_is_paused = True
-                status_value = "PAUSED"
-                self.printer_gcode_state = "PAUSED"
-            elif self.force_ready:
-                ready = True
-                info['ready'] = True
-                info['reason'] = 'FORCED (--ready flag)'
-                # Calculate chamber_ready for display
-                current_temp = info.get('smoothed_temp')
-                current_rate = info.get('rate_per_minute')
-                chamber_ready = False
-                if current_temp is not None:
-                    temp_condition = (current_temp > self.rate_threshold_temp or
-                                    (current_temp > self.min_temp_for_plateau and 
-                                     current_rate is not None and current_rate < self.rate_change_plateau))
-                    if temp_condition:
-                        chamber_ready = True
-                info['chamber_ready'] = chamber_ready
-            else:
-                # Ready state should only be triggered if status is paused AND temperature/rate conditions are met
-                # Always check temperature/rate conditions to determine chamber readiness
-                # Get current temperature and rate (may be forced values)
-                current_temp = info.get('smoothed_temp')
-                current_rate = info.get('rate_per_minute')
-                
-                # Chamber ready if: temp > rate_threshold_temp OR (temp > min_temp_for_plateau AND rate < rate_change_plateau)
-                # Rate is ready if: rate < plateau (between 0 and plateau, or negative/cooling)
-                chamber_ready = False
-                if current_temp is not None:
-                    temp_condition = (current_temp > self.rate_threshold_temp or
-                                    (current_temp > self.min_temp_for_plateau and 
-                                     current_rate is not None and current_rate < self.rate_change_plateau))
-                    
-                    # Once ready is achieved, maintain it as long as temp > min_temp_for_plateau
-                    # This persists even if rate goes back up above the plateau threshold
-                    if temp_condition:
-                        self.ready_achieved = True
-                        chamber_ready = True
-                    elif self.ready_achieved:
-                        # Maintain ready state if temperature is still above minimum (temp > min_temp_for_plateau)
-                        # Ready persists regardless of current rate once it has been achieved
-                        if current_temp > self.min_temp_for_plateau:
-                            chamber_ready = True
-                        else:
-                            self.ready_achieved = False  # Reset if temp drops below minimum
-                
-                # Ready state requires BOTH chamber ready AND printer paused (for resume logic)
-                # But chamber status display shows chamber_ready regardless of printer status
-                if status_is_paused and chamber_ready:
-                    ready = True
-                else:
-                    ready = False
-                    # Only reset ready_achieved when status changes from paused to not paused
-                    if not status_is_paused:
-                        # Don't reset ready_achieved here - keep it so chamber status can show ready
-                        pass
-                
-                info['ready'] = ready
-                info['chamber_ready'] = chamber_ready  # Store for display
+            # Chamber readiness
+            current_temp = info.get('smoothed_temp')
+            current_rate = info.get('rate_per_minute')
+            chamber_ready = False
+            if current_temp is not None:
+                temp_condition = (current_temp > self.rate_threshold_temp or
+                                (current_temp > self.min_temp_for_plateau and 
+                                 current_rate is not None and current_rate < self.rate_change_plateau))
+                if temp_condition:
+                    self.ready_achieved = True
+                    chamber_ready = True
+                elif self.ready_achieved and current_temp > self.min_temp_for_plateau:
+                    chamber_ready = True
             
-            # Track if we've seen PAUSE status (to distinguish RUNNING before/after pause)
-            if status_is_paused:
+            # Ready state requires BOTH chamber ready AND printer in wait state
+            ready = chamber_ready and (status_is_paused or is_trapped)
+            
+            if status_is_paused or is_trapped:
                 self.has_seen_pause = True
             
-            # Update stage based on current state (always runs)
-            current_status_upper = str(current_status).upper() if current_status else ""
-            
+            # Update stage tracking
             if current_status_upper == "FINISH":
-                # Check if bed has cooled below threshold
                 bed_temp = self.printer_bed_temper
-                if bed_temp is not None and bed_temp <= self.cooling_threshold:
-                    self.current_stage = "completed"
-                else:
-                    self.current_stage = "cooling"
+                self.current_stage = "completed" if (bed_temp and bed_temp <= self.cooling_threshold) else "cooling"
             elif self.resume_confirmed and current_status_upper == "RUNNING":
                 self.current_stage = "printing"
-            elif self.resume_confirmed:
-                self.current_stage = "complete"
             elif self.resumed:
-                self.current_stage = "resumed"
+                self.current_stage = "releasing"
             elif ready:
                 self.current_stage = "ready"
+            elif chamber_ready and not (status_is_paused or is_trapped):
+                self.current_stage = "waiting for print"
             else:
-                # Get chamber_ready from info dict
-                chamber_ready = info.get('chamber_ready', False)
-                if chamber_ready and not status_is_paused:
-                    self.current_stage = "waiting for pause"
-                else:
-                    self.current_stage = "soaking"
-            
-            # Display status - always show current temp, show smoothed/rate when available
-            icon = "✅" if ready else "⏳"
-            
-            # Format smoothed temperature display
-            # Show forced value if set, otherwise use progress-based display
-            if forced_temp is not None:
-                smoothed_display = f"{forced_temp:.2f}°"
-            elif progress['temp_ready'] and info.get('smoothed_temp') is not None:
-                smoothed_display = f"{info.get('smoothed_temp', 0):.2f}°"
-            else:
-                smoothed_display = f"[{progress['temp_current']}/{progress['temp_needed']}]"
-            
-            # Format rate display
-            # Show forced value if set, otherwise use progress-based display
-            # Remove ± symbol, wrap negative values in parentheses
-            # Handle -0.0 edge case by normalizing to 0.0
-            if forced_rate is not None:
-                # Normalize -0.0 to 0.0
-                normalized_rate = 0.0 if forced_rate == 0.0 else forced_rate
-                if normalized_rate < 0:
-                    rate_display = f"({abs(normalized_rate):.2f})"
-                else:
-                    rate_display = f"{normalized_rate:.2f}"
-            elif progress['rate_ready'] and info.get('rate_per_minute') is not None:
-                rate_value = info.get('rate_per_minute', 0)
-                # Normalize -0.0 to 0.0
-                normalized_rate = 0.0 if rate_value == 0.0 else rate_value
-                if normalized_rate < 0:
-                    rate_display = f"({abs(normalized_rate):.2f})"
-                else:
-                    rate_display = f"{normalized_rate:.2f}"
-            elif progress['temp_ready']:
-                # Rate smoothing is collecting data
-                rate_display = f"[{progress['rate_current']}/{progress['rate_needed']}]"
-            else:
-                # Rate smoothing hasn't started yet
-                rate_display = "---"
+                self.current_stage = "soaking"
             
             # ANSI color codes
             GREEN = "\033[32m"
             RED = "\033[31m"
-            GOLD = "\033[38;5;179m"  # Gold color (same as outerm highlight)
-            YELLOW = "\033[33m"  # Yellow color for prepping state
+            GOLD = "\033[38;5;179m"
+            YELLOW = "\033[33m"
+            GREY = "\x1B[38;5;240m"
             RESET = "\033[0m"
             
-            # Get current temp and rate (forced or actual) for color coding
-            current_smoothed_temp = forced_temp if forced_temp is not None else info.get('smoothed_temp')
-            current_rate = forced_rate if forced_rate is not None else info.get('rate_per_minute')
+            # Formatting Display line
+            icon = "✅" if ready else "⏳"
             
-            # Determine smoothed temp color based on conditions
-            smoothed_temp_color = RED  # Default to red
-            if current_smoothed_temp is not None:
-                # Gold when min_temp_for_plateau is passed
-                if current_smoothed_temp > self.min_temp_for_plateau:
-                    smoothed_temp_color = GOLD
-                    # Green when either:
-                    # 1. rate_threshold_temp is passed, OR
-                    # 2. rate goes below plateau (rate < plateau, includes negatives) AND min_temp_for_plateau is passed
-                    if (current_smoothed_temp > self.rate_threshold_temp or
-                        (current_rate is not None and current_rate < self.rate_change_plateau and 
-                         current_smoothed_temp > self.min_temp_for_plateau)):
-                        smoothed_temp_color = GREEN
+            # Bed display with target
+            bed_val = f"{self.printer_bed_temper:.1f}°" if self.printer_bed_temper else "---"
+            bed_target = f" {GREY}({int(self.printer_bed_target)}){RESET}" if self.printer_bed_target else ""
+            bed_display = f"{bed_val}{bed_target}"
             
-            # Determine rate color based on state machine:
-            # GOLD: initially (before rate has ever exceeded plateau)
-            # RED: after rate exceeds plateau (rate >= plateau), until it goes below
-            # GREEN: once rate goes below plateau (rate < plateau) after being above it, stays green FOREVER
-            # Note: rate < plateau includes negative rates (cooling) and small positive rates
-            if self.rate_crossed_below_plateau:
-                # Once rate has crossed below plateau after exceeding it, always stay green
-                rate_color = GREEN
-            elif current_rate is not None:
+            # Nozzle display with target
+            nozzle_val = f"{self.printer_nozzle_temper:.1f}°" if self.printer_nozzle_temper else "---"
+            nozzle_target = f" {GREY}({int(self.printer_nozzle_target)}){RESET}" if self.printer_nozzle_target else ""
+            nozzle_display = f"{nozzle_val}{nozzle_target}"
+            
+            # Chamber/Sensor display
+            chamber_display = f"{temperature:.2f}°"
+            
+            # Smoothed display
+            smoothed_val = f"{current_temp:.2f}°" if current_temp else f"[{progress['temp_current']}/{progress['temp_needed']}]"
+            smoothed_color = GREEN if chamber_ready else (GOLD if (current_temp and current_temp > self.min_temp_for_plateau) else RED)
+            smoothed_colored = f"{smoothed_color}{smoothed_val}{RESET}"
+            
+            # Rate display
+            if current_rate is not None:
+                rate_val = f"({abs(current_rate):.2f})" if current_rate < 0 else f"{current_rate:.2f}"
+                rate_color = GREEN if self.rate_crossed_below_plateau else (RED if current_rate >= self.rate_change_plateau else GOLD)
+                if not self.rate_crossed_below_plateau and current_rate < self.rate_change_plateau and self.rate_exceeded_plateau:
+                    self.rate_crossed_below_plateau = True
+                    rate_color = GREEN
                 if current_rate >= self.rate_change_plateau:
-                    # Rate is at or above plateau threshold (positive rate >= plateau)
                     self.rate_exceeded_plateau = True
-                    rate_color = RED
-                else:
-                    # Rate is below plateau threshold (rate < plateau, includes negatives)
-                    if self.rate_exceeded_plateau:
-                        # Rate has crossed below plateau after being above it - stay green forever
-                        self.rate_crossed_below_plateau = True
-                        rate_color = GREEN
-                    else:
-                        # Rate hasn't exceeded plateau yet - stay gold
-                        rate_color = GOLD
+                rate_display = f"{rate_color}{rate_val}{RESET}"
             else:
-                # No rate data yet - default to gold
-                rate_color = GOLD
+                rate_display = "---"
             
-            # Get status value and determine color
-            if forced_status is not None:
-                status_value = forced_status
-            elif self.printer_gcode_state:
-                status_value = self.printer_gcode_state
-            else:
-                status_value = "unknown"
+            # Status display
+            status_color = GREEN if (status_is_paused or (self.has_seen_pause and current_status_upper == "RUNNING")) else YELLOW
+            trap_tag = f" {GOLD}[TRAP]{RESET}" if is_trapped else ""
+            status_display = f"{status_color}{current_status}{RESET}{trap_tag}"
             
-            # Color code based on status value:
-            # - PAUSED/PAUSE: green (desired state for heatsoak)
-            # - RUNNING before PAUSE: yellow (prepping)
-            # - RUNNING after PAUSE: green (printing)
-            # - FINISHED: yellow (cooling)
-            # - Other: red
-            status_value_upper = str(status_value).upper()
-            if status_value_upper in ["PAUSED", "PAUSE"]:
-                status_color = GREEN
-            elif status_value_upper == "RUNNING":
-                if self.has_seen_pause:
-                    # RUNNING after pause (printing) - green
-                    status_color = GREEN
-                else:
-                    # RUNNING before pause (prepping) - yellow
-                    status_color = YELLOW
-            elif status_value_upper == "FINISHED":
-                status_color = YELLOW
-            else:
-                status_color = RED
-            
-            # Format bed and nozzle temperatures for display (match smoothed format: Label(°C): value°)
-            bed_display = f"{self.printer_bed_temper:.1f}°" if self.printer_bed_temper is not None else "---"
-            nozzle_display = f"{self.printer_nozzle_temper:.1f}°" if self.printer_nozzle_temper is not None else "---"
-            chamber_display = f"{current_temp_str}°"
-            
-            # Apply color to smoothed temp value (like the flag was before)
-            if forced_temp is not None:
-                smoothed_colored = f"{smoothed_temp_color}{smoothed_display}{RESET}"
-            elif progress['temp_ready'] and info.get('smoothed_temp') is not None:
-                smoothed_colored = f"{smoothed_temp_color}{smoothed_display}{RESET}"
-            else:
-                smoothed_colored = smoothed_display
-            
-            # Apply color to rate value (like the flag was before)
-            if forced_rate is not None:
-                rate_colored = f"{rate_color}{rate_display}{RESET}"
-            elif progress['rate_ready'] and info.get('rate_per_minute') is not None:
-                rate_colored = f"{rate_color}{rate_display}{RESET}"
-            else:
-                rate_colored = rate_display
-            
-            # Apply color to status value (like the flag was before)
-            status_colored = f"{status_color}{status_value}{RESET}"
-            
-            # Display status summary line - hide chamber status after resume_confirmed
-            chamber_status_part = ""
-            if not self.resume_confirmed:
-                chamber_ready = info.get('chamber_ready', False)
-                chamber_status = "Ready" if chamber_ready else "Not Ready"
-                chamber_status_color = GREEN if chamber_ready else RED
-                chamber_status_colored = f"{chamber_status_color}{chamber_status}{RESET}"
-                chamber_status_part = f"Chamber: {chamber_status_colored} "
-            
-            # Format stage for display
-            stage_display = f"Stage: {self.current_stage}"
-            
-            # Write display line to both terminal and log file
+            # Print display line
             display_line = (f"{icon} B: {bed_display} | N: {nozzle_display} | C: {chamber_display} | "
-                          f"S: {smoothed_colored} | R: {rate_colored} | "
-                          f"{chamber_status_part}Printer: {status_colored} | {stage_display}")
+                          f"S: {smoothed_colored} | R: {rate_display} | "
+                          f"Printer: {status_display} | Stage: {self.current_stage}")
             self._write_to_terminal_and_log(display_line)
             
-            # Maintain nozzle temperature at 180°C during pause (M400 U1 reduces it to 90°C)
-            # Send M104 command periodically while printer is paused
-            # CRITICAL: Stop maintaining temp when ready to resume or after resume is sent
-            # M104 commands can interfere with resume and prevent the print from actually resuming
-            current_status = forced_status if forced_status is not None else self.printer_gcode_state
-            is_paused = current_status and str(current_status).upper() in ["PAUSED", "PAUSE"]
+            # 1. Maintain nozzle temp if paused
+            if status_is_paused and self.maintain_temp_enabled and not self.resumed and not ready:
+                now = time.time()
+                if self.last_temp_command_time is None or now - self.last_temp_command_time >= self.temp_command_interval:
+                    if self.printer.send_gcode(f"M104 S{int(self.maintain_temp_value)}"):
+                        self.last_temp_command_time = now
             
-            # Only maintain temp if:
-            # 1. Printer is paused
-            # 2. Temperature maintenance is enabled
-            # 3. Resume has NOT been sent (resumed = False)
-            # 4. Resume has NOT been confirmed (resume_confirmed = False)
-            # 5. NOT ready to resume (ready = False) - stop maintaining before resume
-            if (is_paused and self.maintain_temp_enabled and 
-                not self.resumed and not self.resume_confirmed and not ready):
-                # Check if it's time to send temperature command
-                current_time = time.time()
-                if (self.last_temp_command_time is None or 
-                    current_time - self.last_temp_command_time >= self.temp_command_interval):
-                    if self.printer.send_gcode(f"M104 S{int(self.maintain_temp_value)}", check_status=False):
-                        self.last_temp_command_time = current_time
-                        if self.verbose:
-                            print(f"🌡️  Maintaining nozzle at {int(self.maintain_temp_value)}°C during pause")
-            elif self.resumed or self.resume_confirmed:
-                # Ensure temperature maintenance is completely stopped after resume
-                self.last_temp_command_time = None
-            
-            # Resume printer if ready and not already resumed
-            # Skip status check in resume() since we already verified status is PAUSED before marking ready
+            # 2. Release if ready
             if ready and not self.resumed and not self.resume_confirmed:
-                # CRITICAL: Stop temperature maintenance BEFORE sending resume
-                # M104 commands sent too close to resume can interfere and prevent resume from working
-                self.last_temp_command_time = None
-                self.maintain_temp_enabled = False  # Temporarily disable to prevent any M104 commands
-                
-                print("\n🔥 HEATSOAK READY! Resuming printer...")
-                try:
-                    resume_success = self.printer.resume(check_status=False)
-                    if resume_success:
+                self.maintain_temp_enabled = False
+                if is_trapped:
+                    release_temp = int(self.maintain_temp_value + 1)
+                    print(f"\n🔥 CHAMBER READY! Tripping Temperature Trap (M104 S{release_temp})...")
+                    if self.printer.send_gcode(f"M104 S{release_temp}"):
                         self.resumed = True
-                        self.resume_sent_time = time.time()  # Track when resume was sent
-                        self.current_stage = "resumed"  # Update stage to resumed
-                        # Temperature maintenance already stopped above
-                        print("✅ Printer resume command sent successfully")
-                        print("   Waiting for printer status to change to RUNNING...")
-                        print()
-                    else:
-                        print("❌ Failed to resume printer (resume() returned False). Please resume manually.")
-                        print()
-                        # Re-enable temperature maintenance if resume failed
-                        self.maintain_temp_enabled = True
-                except Exception as resume_err:
-                    print(f"❌ Exception during printer.resume(): {resume_err}")
-                    import traceback
-                    traceback.print_exc()
-                    print("   Please resume manually.")
-                    print()
-                    # Re-enable temperature maintenance if resume failed
-                    self.maintain_temp_enabled = True
+                        self.resume_sent_time = time.time()
+                else:
+                    print("\n🔥 HEATSOAK READY! Resuming printer...")
+                    if self.printer.resume(check_status=False):
+                        self.resumed = True
+                        self.resume_sent_time = time.time()
             
-            # Check if status is RUNNING after resume was sent (also check in sensor message handler)
+            # 3. Confirm resume
+            if self.resumed and not self.resume_confirmed and current_status_upper == "RUNNING":
+                # If we were trapped, we need to make sure we've actually moved past the trap
+                # But typically the state change is enough
+                self.resume_confirmed = True
+                print(f"\n✅ Printer confirmed resumed (status: {current_status})\n")
+                if not self.popup_handled:
+                    time.sleep(1.0)
+                    if WIN32_AVAILABLE:
+                        self._handle_orca_popup()
+            
+        except Exception as e:
+            print(f"❌ Error processing MQTT message: {e}")
+            import traceback
+            traceback.print_exc()
+                            # Check if status is RUNNING after resume was sent (also check in sensor message handler)
             # Get current status (forced or actual)
             current_status = forced_status if forced_status is not None else self.printer_gcode_state
             if (self.resumed and not self.resume_confirmed and 
