@@ -9,9 +9,13 @@
 5. [Loading Overture ASA into AMS Lite](#loading-overture-asa-into-ams-lite)
 6. [Creating a User Filament Profile in OrcaSlicer](#creating-a-user-filament-profile-in-orcaslicer)
 7. [OrcaSlicer Calibration Tests Overview](#orcaslicer-calibration-tests-overview)
-8. [Temperature Calibration](#temperature-calibration)
-9. [Flow Rate Calibration](#flow-rate-calibration)
+
+
+8.  [Temperature Calibration](#temperature-calibration)
+9.  [Flow Rate Calibration](#flow-rate-calibration)
+
 10. [Understanding Flow Calibration (Deep Dive)](#understanding-flow-calibration-deep-dive)
+
 11. [Max Flow Rate (Volumetric Speed) Calibration](#max-flow-rate-volumetric-speed-calibration)
 12. [Pressure Advance (PA) Calibration](#pressure-advance-pa-calibration)
 13. [Input Shaping Calibration](#input-shaping-calibration)
@@ -98,7 +102,7 @@ OrcaSlicer is an advanced, open-source slicer based on Bambu Studio but with enh
 #### Step 1: Download OrcaSlicer
 
 1. **Visit the Official Website**: Go to [orcaslicer.com](https://orcaslicer.com) or the [GitHub repository](https://github.com/SoftFever/OrcaSlicer)
-2. **Select Your Operating System**: 
+2. **Select Your Operating System**:
    - Windows: Download the `.exe` installer
    - macOS: Download the `.dmg` file
    - Linux: Download the AppImage or use package manager
@@ -127,7 +131,7 @@ OrcaSlicer is an advanced, open-source slicer based on Bambu Studio but with enh
 
 1. **Launch OrcaSlicer**: Open the application
 2. **Select Language**: Choose your preferred language
-3. **Add Printer**: 
+3. **Add Printer**:
    - Click "Add Printer" or go to Printer Settings
    - Select "Bambu Lab" → "Bambu Lab A1"
    - Verify build volume: 256 × 256 × 256 mm
@@ -218,7 +222,7 @@ However, since it's not a Bambu Lab filament, it requires manual setup.
 
 1. **Check the Winding Direction**: Look at the AMS Lite unit - there should be a diagram or arrow indicating which direction the filament should unwind.
 
-2. **Mount the Spool**: 
+2. **Mount the Spool**:
    - Hold the spool so the filament unwinds in the correct direction
    - Push the spool onto the AMS Lite's rotary holder
    - Push firmly until you hear/feel it **click** into place
@@ -416,7 +420,7 @@ A temperature tower is a test print with different temperatures at different hei
 **Alternative: Manual Temperature Tower**
 1. **Download from Thingiverse or Printables**: Search for "ASA temperature tower"
 2. **Import into OrcaSlicer**: Load the STL file
-3. **Configure Temperature Changes**: 
+3. **Configure Temperature Changes**:
    - Use "Change at Z" or "Change at Layer" features in Print Settings
    - Set temperatures: 240°C, 245°C, 250°C, 255°C, 260°C (one per section)
 
@@ -455,7 +459,7 @@ If you don't want to print a temperature tower, you can test different temperatu
 
 1. **Start at 250°C**: Print a small test object (calibration cube, benchy, etc.)
 2. **Evaluate**: Check for stringing, layer adhesion, surface quality
-3. **Adjust**: 
+3. **Adjust**:
    - Too much stringing? Lower by 5°C
    - Poor adhesion? Raise by 5°C
 4. **Repeat**: Continue adjusting until you find the sweet spot
@@ -499,12 +503,12 @@ Flow rate is a percentage that multiplies the amount of filament extruded:
 ### Why Calibrate Flow Rate?
 
 **Incorrect Flow Rate Causes:**
-- **Over-extrusion (Flow too high)**: 
+- **Over-extrusion (Flow too high)**:
   - Walls are too thick
   - Blobs and zits on surface
   - Poor dimensional accuracy
   - Nozzle drags through excess material
-  
+
 - **Under-extrusion (Flow too low)**:
   - Walls are too thin
   - Gaps between perimeters
@@ -610,7 +614,7 @@ If you don't have calipers, you can use visual inspection (less accurate but bet
    - Rough surface texture
    - Nozzle drag marks
    - Dimensions larger than expected
-   
+
 3. **Look for Signs of Under-extrusion**:
    - Gaps between perimeters
    - Rough, inconsistent surface
@@ -2278,7 +2282,7 @@ Ironing smooths the top surface of prints by making a final pass with the hot no
 
 ## Conclusion
 
-Congratulations! You now have a comprehensive understanding of how to tune your Bambu Lab A1 with AMS Lite for Overture ASA filament. 
+Congratulations! You now have a comprehensive understanding of how to tune your Bambu Lab A1 with AMS Lite for Overture ASA filament.
 
 **Key Takeaways:**
 1. **Loading**: Cut filament at 45° angle, ensure spool compatibility
@@ -2342,7 +2346,7 @@ Retraction: 0.8mm @ 40 mm/s
 
 ---
 
-*Document Version: 1.0*  
-*Last Updated: 2025*  
-*For: Bambu Lab A1 with AMS Lite*  
+*Document Version: 1.0*
+*Last Updated: 2025*
+*For: Bambu Lab A1 with AMS Lite*
 *Filament: Overture ASA*

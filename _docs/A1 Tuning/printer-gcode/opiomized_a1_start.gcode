@@ -33,6 +33,13 @@
 
 M1002 set_filament_type:{filament_type[initial_no_support_extruder]}
 
+
+
+M400 U1 
+M190 100
+
+
+
 M104 S140 ; (No Wait) Nozzle to 140°
 
 M600
@@ -789,11 +796,6 @@ G90                 ; Use absolute positioning
 M83                 ; Set relative extrusion mode
 
 M109 S{nozzle_temperature_initial_layer[initial_extruder]} ; (Wait) Nozzle at initial layer temp
-
-; Reset extruder position and handle any ooze after heatsoak pause
-; G92 E0              ; Reset extruder position (important after pause)
-; G1 E-1 F300         ; Small retraction to handle any ooze before calibration test
-
 G0 X128 E8 F{outer_wall_volumetric_speed/(24/20)*60}
 G0 X133 E.3742 F{outer_wall_volumetric_speed/(0.3*0.5)/4*60}
 G0 X138 E.3742 F{outer_wall_volumetric_speed/(0.3*0.5)*60}

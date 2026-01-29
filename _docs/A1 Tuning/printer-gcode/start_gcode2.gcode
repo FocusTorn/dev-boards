@@ -3,7 +3,7 @@
 ;│               Machine: A1                │
 ;└──────────────────────────────────────────┘
 
-M1002 set_filament_type:{filament_type[initial_no_support_extruder]}
+M1002 set_filament_type:{filament_type[initial_no_support_extruder]} 
 
 M104 S140 ; No wait nozzle temp
 

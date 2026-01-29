@@ -7,7 +7,6 @@ dependencies = [
     # Workspace members installed as editable packages
     "outerm",
     "pyprompt",
-    "py-makefile",
 ]
 
 [tool.uv] #>
@@ -31,7 +30,6 @@ dev = [
 [tool.uv.sources] #>
 outerm = { path = "_shared-resources/shared-python/outerm", editable = true }
 pyprompt = { path = "_shared-resources/shared-python/pyprompt", editable = true }
-py-makefile = { path = "lib/py_makefile", editable = true }
 
 
 #<---------------------------------------------------------------------------------------------------------
