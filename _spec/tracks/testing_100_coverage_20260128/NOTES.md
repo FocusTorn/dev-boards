@@ -30,3 +30,17 @@
 ### Blockers / Issues
 - Encountered intermittent file corruption during `write_file` calls (LLM hallucinations/syntax leakage). Resolved by switching to PowerShell `Set-Content -Encoding utf8` for large file writes.
 - `ratatui::Buffer` does not implement `ToString` or `Display`, requiring a custom `buffer_content` helper in every widget test module to verify visual state.
+
+
+
+## Context
+Resumed work from `testing_100_coverage_20260128` with a focus on granular task execution and enforcing GitBash/Unix standards to prevent file corruption.
+
+## Open Issues
+- `Generating` stage detection failing in `compile_parser.rs`.
+- `smooth_scrollbar.rs` has significant coverage gaps (~45%).
+- `HistoryManager` needs robust error recovery tests.
+
+
+
+
