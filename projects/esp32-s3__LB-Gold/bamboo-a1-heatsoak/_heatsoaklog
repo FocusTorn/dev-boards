@@ -1,787 +1,115 @@
-⏳ B: --- | N: --- | C: 23.57° | S: [1/5] | R: --- | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 35.0° | N: 51.8° | C: 23.57° | S: [2/5] | R: --- | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 35.2° | N: 62.8° | C: 23.56° | S: [3/5] | R: --- | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 37.4° | N: 104.1° | C: 23.54° | S: [4/5] | R: --- | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 38.2° | N: 108.1° | C: 23.54° | S: 23.56° | R: [1/11] | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 41.2° | N: 105.8° | C: 23.53° | S: 23.55° | R: [2/11] | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 42.1° | N: 104.7° | C: 23.53° | S: 23.54° | R: [3/11] | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 45.2° | N: 110.5° | C: 23.56° | S: 23.54° | R: [4/11] | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 47.4° | N: 128.8° | C: 23.56° | S: 23.54° | R: [5/11] | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 48.7° | N: 140.6° | C: 23.59° | S: 23.55° | R: [6/11] | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 51.3° | N: 162.4° | C: 23.62° | S: 23.57° | R: [7/11] | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 53.9° | N: 181.5° | C: 23.66° | S: 23.60° | R: [8/11] | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 55.2° | N: 190.2° | C: 23.68° | S: 23.62° | R: [9/11] | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 57.3° | N: 203.5° | C: 23.70° | S: 23.65° | R: [10/11] | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 60.2° | N: 220.4° | C: 23.76° | S: 23.68° | R: 0.16 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 61.8° | N: 229.2° | C: 23.79° | S: 23.72° | R: 0.21 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 63.8° | N: 239.6° | C: 23.85° | S: 23.76° | R: 0.27 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 65.4° | N: 247.3° | C: 23.96° | S: 23.81° | R: 0.32 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 67.4° | N: 256.4° | C: 24.02° | S: 23.88° | R: 0.39 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 69.3° | N: 263.9° | C: 24.08° | S: 23.94° | R: 0.45 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 71.6° | N: 267.4° | C: 24.15° | S: 24.01° | R: 0.51 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 73.5° | N: 267.2° | C: 24.16° | S: 24.07° | R: 0.57 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 75.0° | N: 267.7° | C: 24.23° | S: 24.13° | R: 0.63 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 76.8° | N: 265.1° | C: 24.29° | S: 24.18° | R: 0.67 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 78.2° | N: 260.7° | C: 24.41° | S: 24.25° | R: 0.70 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 80.0° | N: 259.7° | C: 24.48° | S: 24.31° | R: 0.73 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 82.5° | N: 259.9° | C: 24.59° | S: 24.40° | R: 0.76 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 83.5° | N: 259.9° | C: 24.71° | S: 24.50° | R: 0.79 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 84.9° | N: 260.2° | C: 24.79° | S: 24.60° | R: 0.83 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 87.6° | N: 260.2° | C: 24.91° | S: 24.70° | R: 0.88 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 89.0° | N: 259.9° | C: 25.03° | S: 24.81° | R: 0.94 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 90.6° | N: 259.8° | C: 25.15° | S: 24.92° | R: 1.02 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 92.0° | N: 259.4° | C: 25.24° | S: 25.03° | R: 1.10 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 93.3° | N: 259.2° | C: 25.35° | S: 25.14° | R: 1.17 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 94.9° | N: 259.3° | C: 25.45° | S: 25.24° | R: 1.22 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 97.2° | N: 259.7° | C: 25.58° | S: 25.35° | R: 1.26 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 97.7° | N: 259.8° | C: 25.68° | S: 25.46° | R: 1.28 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 99.2° | N: 260.0° | C: 25.86° | S: 25.58° | R: 1.30 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 99.7° | N: 260.1° | C: 25.97° | S: 25.71° | R: 1.32 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 99.7° | N: 260.1° | C: 26.02° | S: 25.82° | R: 1.34 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 99.6° | N: 260.1° | C: 26.15° | S: 25.93° | R: 1.35 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 99.3° | N: 260.2° | C: 26.24° | S: 26.05° | R: 1.36 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 99.0° | N: 260.3° | C: 26.33° | S: 26.14° | R: 1.36 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 98.7° | N: 260.9° | C: 26.47° | S: 26.24° | R: 1.35 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 98.4° | N: 253.8° | C: 26.56° | S: 26.35° | R: 1.34 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 98.4° | N: 250.7° | C: 26.67° | S: 26.45° | R: 1.32 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 98.4° | N: 239.1° | C: 26.80° | S: 26.57° | R: 1.30 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 98.5° | N: 232.9° | C: 26.94° | S: 26.69° | R: 1.29 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 98.6° | N: 225.4° | C: 27.07° | S: 26.81° | R: 1.29 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 98.8° | N: 218.5° | C: 27.24° | S: 26.94° | R: 1.32 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 98.9° | N: 209.4° | C: 27.39° | S: 27.09° | R: 1.36 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 98.9° | N: 206.9° | C: 27.49° | S: 27.22° | R: 1.41 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 99.1° | N: 198.5° | C: 27.64° | S: 27.36° | R: 1.47 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 99.1° | N: 192.9° | C: 27.75° | S: 27.50° | R: 1.52 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 99.1° | N: 189.6° | C: 27.84° | S: 27.62° | R: 1.56 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 99.1° | N: 183.2° | C: 27.88° | S: 27.72° | R: 1.57 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 99.1° | N: 177.3° | C: 28.00° | S: 27.82° | R: 1.55 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 99.1° | N: 174.4° | C: 28.15° | S: 27.93° | R: 1.52 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 99.1° | N: 170.1° | C: 28.41° | S: 28.06° | R: 1.49 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 98.7° | N: 176.7° | C: 28.39° | S: 28.17° | R: 1.44 | Chamber: Not Ready Printer: unknown | Stage: soaking
-⏳ B: 98.5° | N: 188.7° | C: 28.45° | S: 28.28° | R: 1.40 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 98.4° | N: 194.9° | C: 28.54° | S: 28.39° | R: 1.37 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 98.4° | N: 215.1° | C: 28.63° | S: 28.48° | R: 1.33 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 98.6° | N: 224.9° | C: 28.76° | S: 28.55° | R: 1.29 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 98.8° | N: 228.0° | C: 28.86° | S: 28.65° | R: 1.26 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.0° | N: 227.8° | C: 28.99° | S: 28.76° | R: 1.25 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.3° | N: 216.3° | C: 29.11° | S: 28.87° | R: 1.23 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.4° | N: 214.6° | C: 29.22° | S: 28.99° | R: 1.22 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.6° | N: 201.8° | C: 29.35° | S: 29.11° | R: 1.22 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.7° | N: 196.1° | C: 29.49° | S: 29.23° | R: 1.24 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.7° | N: 188.1° | C: 29.58° | S: 29.35° | R: 1.27 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.7° | N: 183.2° | C: 29.71° | S: 29.47° | R: 1.31 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.7° | N: 175.2° | C: 29.81° | S: 29.59° | R: 1.36 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.7° | N: 173.1° | C: 29.93° | S: 29.70° | R: 1.40 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.6° | N: 165.1° | C: 30.01° | S: 29.81° | R: 1.41 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.6° | N: 161.2° | C: 30.10° | S: 29.91° | R: 1.40 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.6° | N: 159.4° | C: 30.23° | S: 30.02° | R: 1.39 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.6° | N: 153.3° | C: 30.34° | S: 30.12° | R: 1.36 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.6° | N: 149.2° | C: 30.41° | S: 30.22° | R: 1.33 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.6° | N: 145.2° | C: 30.51° | S: 30.32° | R: 1.30 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.6° | N: 142.2° | C: 30.63° | S: 30.42° | R: 1.28 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.7° | N: 139.9° | C: 30.65° | S: 30.51° | R: 1.24 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.7° | N: 139.9° | C: 30.67° | S: 30.57° | R: 1.20 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.7° | N: 139.9° | C: 30.66° | S: 30.62° | R: 1.14 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.7° | N: 139.9° | C: 30.66° | S: 30.65° | R: 1.06 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.6° | N: 139.9° | C: 30.64° | S: 30.66° | R: 0.94 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.6° | N: 139.9° | C: 30.64° | S: 30.65° | R: 0.81 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.6° | N: 139.9° | C: 30.61° | S: 30.64° | R: 0.65 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.6° | N: 140.0° | C: 30.57° | S: 30.62° | R: 0.48 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.7° | N: 140.0° | C: 30.51° | S: 30.59° | R: 0.30 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.7° | N: 140.0° | C: 30.50° | S: 30.57° | R: 0.13 | Chamber: Not Ready Printer: RUNNING | Stage: soaking
-⏳ B: 99.7° | N: 139.9° | C: 30.52° | S: 30.54° | R: (0.00) | Chamber: Ready Printer: RUNNING | Stage: waiting for pause
-⏳ B: 99.8° | N: 147.1° | C: 30.52° | S: 30.53° | R: (0.11) | Chamber: Ready Printer: RUNNING | Stage: waiting for pause
-⏳ B: 99.8° | N: 150.2° | C: 30.50° | S: 30.51° | R: (0.18) | Chamber: Ready Printer: RUNNING | Stage: waiting for pause
-✅ B: 99.8° | N: 175.7° | C: 30.46° | S: 30.50° | R: (0.22) | Chamber: Ready Printer: PAUSE | Stage: ready
-⏳ B: 99.9° | N: 177.7° | C: 30.42° | S: 30.48° | R: (0.23) | Chamber: Ready Printer: RUNNING | Stage: resumed
-⏳ B: 99.8° | N: 176.8° | C: 30.46° | S: 30.47° | R: (0.23) | Printer: RUNNING | Stage: printing
-⏳ B: 99.8° | N: 178.8° | C: 30.46° | S: 30.46° | R: (0.22) | Printer: RUNNING | Stage: printing
-⏳ B: 99.8° | N: 179.6° | C: 30.45° | S: 30.45° | R: (0.20) | Printer: RUNNING | Stage: printing
-⏳ B: 99.8° | N: 180.2° | C: 30.46° | S: 30.45° | R: (0.17) | Printer: RUNNING | Stage: printing
-⏳ B: 99.8° | N: 196.6° | C: 30.46° | S: 30.45° | R: (0.14) | Printer: RUNNING | Stage: printing
-⏳ B: 99.8° | N: 208.5° | C: 30.45° | S: 30.45° | R: (0.11) | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 222.6° | C: 30.48° | S: 30.46° | R: (0.09) | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 232.9° | C: 30.46° | S: 30.46° | R: (0.06) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 248.8° | C: 30.46° | S: 30.46° | R: (0.04) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 253.9° | C: 30.42° | S: 30.45° | R: (0.02) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 258.4° | C: 30.41° | S: 30.45° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 258.9° | C: 30.41° | S: 30.43° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.2° | C: 30.42° | S: 30.43° | R: (0.02) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.5° | C: 30.38° | S: 30.41° | R: (0.04) | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.4° | C: 30.36° | S: 30.40° | R: (0.07) | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.4° | C: 30.33° | S: 30.38° | R: (0.09) | Printer: RUNNING | Stage: printing
-⏳ B: 99.8° | N: 260.4° | C: 30.32° | S: 30.36° | R: (0.12) | Printer: RUNNING | Stage: printing
-⏳ B: 99.7° | N: 260.4° | C: 30.31° | S: 30.34° | R: (0.14) | Printer: RUNNING | Stage: printing
-⏳ B: 99.7° | N: 260.4° | C: 30.32° | S: 30.33° | R: (0.16) | Printer: RUNNING | Stage: printing
-⏳ B: 99.6° | N: 260.5° | C: 30.35° | S: 30.32° | R: (0.17) | Printer: RUNNING | Stage: printing
-⏳ B: 99.6° | N: 260.5° | C: 30.35° | S: 30.33° | R: (0.17) | Printer: RUNNING | Stage: printing
-⏳ B: 99.7° | N: 260.4° | C: 30.34° | S: 30.33° | R: (0.15) | Printer: RUNNING | Stage: printing
-⏳ B: 99.7° | N: 260.4° | C: 30.33° | S: 30.34° | R: (0.12) | Printer: RUNNING | Stage: printing
-⏳ B: 99.8° | N: 260.3° | C: 30.32° | S: 30.34° | R: (0.09) | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.4° | C: 30.32° | S: 30.33° | R: (0.07) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.3° | C: 30.31° | S: 30.32° | R: (0.04) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 30.27° | S: 30.31° | R: (0.03) | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.3° | C: 30.25° | S: 30.29° | R: (0.03) | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.2° | C: 30.20° | S: 30.27° | R: (0.05) | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.2° | C: 30.17° | S: 30.24° | R: (0.09) | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.2° | C: 30.11° | S: 30.20° | R: (0.14) | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.2° | C: 30.09° | S: 30.16° | R: (0.20) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 30.08° | S: 30.13° | R: (0.25) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 30.04° | S: 30.10° | R: (0.30) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 30.01° | S: 30.07° | R: (0.34) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 29.98° | S: 30.04° | R: (0.36) | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.1° | C: 29.97° | S: 30.02° | R: (0.37) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 29.95° | S: 29.99° | R: (0.38) | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 29.92° | S: 29.97° | R: (0.37) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 29.92° | S: 29.95° | R: (0.35) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 29.90° | S: 29.93° | R: (0.32) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 29.92° | S: 29.92° | R: (0.29) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 29.89° | S: 29.91° | R: (0.27) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 29.88° | S: 29.90° | R: (0.24) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 29.86° | S: 29.89° | R: (0.19) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 29.90° | S: 29.89° | R: (0.17) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 29.92° | S: 29.89° | R: (0.14) | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.6° | C: 29.94° | S: 29.90° | R: (0.11) | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.6° | C: 30.00° | S: 29.92° | R: (0.07) | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.6° | C: 30.04° | S: 29.96° | R: (0.02) | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.7° | C: 30.03° | S: 29.98° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.8° | C: 30.03° | S: 30.01° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 30.01° | S: 30.02° | R: 0.16 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 30.00° | S: 30.02° | R: 0.20 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 259.9° | C: 30.02° | S: 30.01° | R: 0.22 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 259.8° | C: 30.03° | S: 30.01° | R: 0.19 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.0° | C: 30.03° | S: 30.01° | R: 0.17 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 259.9° | C: 30.06° | S: 30.03° | R: 0.14 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.4° | C: 30.10° | S: 30.05° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 30.12° | S: 30.07° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 30.16° | S: 30.09° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.8° | C: 30.17° | S: 30.12° | R: 0.12 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 30.16° | S: 30.14° | R: 0.15 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 30.16° | S: 30.15° | R: 0.18 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.0° | C: 30.15° | S: 30.16° | R: 0.20 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.0° | C: 30.17° | S: 30.16° | R: 0.21 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 259.9° | C: 30.18° | S: 30.16° | R: 0.20 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 259.8° | C: 30.21° | S: 30.17° | R: 0.17 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 259.9° | C: 30.27° | S: 30.19° | R: 0.16 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 259.9° | C: 30.33° | S: 30.23° | R: 0.15 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 30.35° | S: 30.27° | R: 0.17 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 30.40° | S: 30.31° | R: 0.20 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 30.42° | S: 30.36° | R: 0.24 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 30.42° | S: 30.39° | R: 0.29 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 30.42° | S: 30.41° | R: 0.34 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 30.45° | S: 30.42° | R: 0.37 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 30.47° | S: 30.44° | R: 0.37 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.7° | C: 30.52° | S: 30.46° | R: 0.36 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 30.60° | S: 30.49° | R: 0.34 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 30.68° | S: 30.54° | R: 0.34 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 30.76° | S: 30.60° | R: 0.35 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 30.84° | S: 30.68° | R: 0.38 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.8° | C: 30.91° | S: 30.76° | R: 0.44 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.8° | C: 30.96° | S: 30.83° | R: 0.53 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.2° | C: 31.00° | S: 30.89° | R: 0.61 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 31.02° | S: 30.95° | R: 0.68 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 31.07° | S: 30.99° | R: 0.73 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 31.10° | S: 31.03° | R: 0.74 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 31.11° | S: 31.06° | R: 0.72 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.2° | C: 31.13° | S: 31.09° | R: 0.68 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.1° | C: 31.21° | S: 31.12° | R: 0.61 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.4° | C: 31.30° | S: 31.17° | R: 0.56 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.4° | C: 31.36° | S: 31.22° | R: 0.52 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 31.46° | S: 31.29° | R: 0.50 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 31.53° | S: 31.37° | R: 0.52 | Printer: RUNNING | Stage: printing
-⏳ B: 99.8° | N: 259.9° | C: 31.60° | S: 31.45° | R: 0.57 | Printer: RUNNING | Stage: printing
-⏳ B: 99.8° | N: 259.9° | C: 31.65° | S: 31.52° | R: 0.63 | Printer: RUNNING | Stage: printing
-⏳ B: 99.8° | N: 259.9° | C: 31.68° | S: 31.58° | R: 0.69 | Printer: RUNNING | Stage: printing
-⏳ B: 99.8° | N: 259.9° | C: 31.74° | S: 31.64° | R: 0.74 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 31.76° | S: 31.69° | R: 0.77 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 31.80° | S: 31.73° | R: 0.77 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.1° | C: 31.84° | S: 31.76° | R: 0.74 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.1° | C: 31.85° | S: 31.80° | R: 0.70 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 31.92° | S: 31.83° | R: 0.64 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 31.95° | S: 31.87° | R: 0.58 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.8° | C: 31.99° | S: 31.91° | R: 0.53 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.8° | C: 32.00° | S: 31.94° | R: 0.48 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.1° | C: 32.05° | S: 31.98° | R: 0.46 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 32.09° | S: 32.02° | R: 0.44 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 32.11° | S: 32.05° | R: 0.43 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 32.14° | S: 32.08° | R: 0.43 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 32.20° | S: 32.12° | R: 0.42 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 32.23° | S: 32.15° | R: 0.42 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 32.25° | S: 32.19° | R: 0.42 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 32.27° | S: 32.22° | R: 0.42 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 32.30° | S: 32.25° | R: 0.41 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 32.35° | S: 32.28° | R: 0.41 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 32.41° | S: 32.32° | R: 0.40 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 32.40° | S: 32.35° | R: 0.40 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 32.41° | S: 32.37° | R: 0.39 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 32.40° | S: 32.39° | R: 0.38 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.8° | C: 32.43° | S: 32.41° | R: 0.36 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 32.49° | S: 32.43° | R: 0.34 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 32.55° | S: 32.46° | R: 0.32 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 32.52° | S: 32.48° | R: 0.30 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 32.53° | S: 32.50° | R: 0.29 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 32.53° | S: 32.52° | R: 0.28 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 32.57° | S: 32.54° | R: 0.26 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 32.60° | S: 32.55° | R: 0.25 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 32.63° | S: 32.57° | R: 0.24 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 32.61° | S: 32.59° | R: 0.24 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.1° | C: 32.59° | S: 32.60° | R: 0.23 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 32.68° | S: 32.62° | R: 0.23 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 32.69° | S: 32.64° | R: 0.21 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 32.72° | S: 32.66° | R: 0.21 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 32.71° | S: 32.68° | R: 0.21 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 32.71° | S: 32.70° | R: 0.21 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 32.75° | S: 32.72° | R: 0.22 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 32.76° | S: 32.73° | R: 0.22 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 32.77° | S: 32.74° | R: 0.21 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 32.78° | S: 32.76° | R: 0.21 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 32.79° | S: 32.77° | R: 0.20 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 32.82° | S: 32.79° | R: 0.20 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 32.79° | S: 32.79° | R: 0.19 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 32.81° | S: 32.80° | R: 0.17 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 32.83° | S: 32.81° | R: 0.15 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 32.81° | S: 32.81° | R: 0.14 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 32.81° | S: 32.81° | R: 0.12 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 32.82° | S: 32.81° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 32.83° | S: 32.82° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 32.82° | S: 32.81° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 32.86° | S: 32.82° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 32.85° | S: 32.83° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 32.84° | S: 32.84° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 32.84° | S: 32.84° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.8° | C: 32.85° | S: 32.85° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 32.89° | S: 32.85° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 32.90° | S: 32.86° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 32.90° | S: 32.88° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 32.89° | S: 32.89° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 32.90° | S: 32.90° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 32.94° | S: 32.91° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 32.94° | S: 32.92° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 32.96° | S: 32.93° | R: 0.12 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 32.93° | S: 32.94° | R: 0.12 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 32.97° | S: 32.95° | R: 0.12 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 32.99° | S: 32.96° | R: 0.12 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 32.97° | S: 32.96° | R: 0.12 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.00° | S: 32.97° | R: 0.12 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.00° | S: 32.98° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.00° | S: 32.99° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.01° | S: 32.99° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 33.03° | S: 33.01° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.07° | S: 33.02° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.07° | S: 33.04° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.05° | S: 33.05° | R: 0.12 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.05° | S: 33.06° | R: 0.12 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.06° | S: 33.06° | R: 0.13 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.11° | S: 33.07° | R: 0.12 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.12° | S: 33.08° | R: 0.12 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.12° | S: 33.09° | R: 0.12 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.07° | S: 33.09° | R: 0.12 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.11° | S: 33.10° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.12° | S: 33.11° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.17° | S: 33.12° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.16° | S: 33.12° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.15° | S: 33.14° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.13° | S: 33.14° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.14° | S: 33.15° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.13° | S: 33.14° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.15° | S: 33.14° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.15° | S: 33.14° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.13° | S: 33.14° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.14° | S: 33.14° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.15° | S: 33.14° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.14° | S: 33.14° | R: 0.00 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.16° | S: 33.14° | R: (0.00) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.14° | S: 33.14° | R: (0.00) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.13° | S: 33.14° | R: 0.00 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.13° | S: 33.14° | R: 0.00 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.14° | S: 33.14° | R: 0.00 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.17° | S: 33.14° | R: 0.00 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.15° | S: 33.14° | R: 0.00 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.17° | S: 33.15° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.19° | S: 33.16° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.20° | S: 33.18° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.22° | S: 33.19° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.22° | S: 33.20° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.21° | S: 33.21° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.21° | S: 33.21° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.19° | S: 33.21° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.25° | S: 33.22° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.26° | S: 33.22° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.22° | S: 33.23° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.22° | S: 33.23° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.21° | S: 33.23° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.20° | S: 33.22° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.19° | S: 33.21° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.19° | S: 33.20° | R: 0.00 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.21° | S: 33.20° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.22° | S: 33.20° | R: (0.02) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.22° | S: 33.21° | R: (0.03) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.21° | S: 33.21° | R: (0.03) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.22° | S: 33.22° | R: (0.02) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.25° | S: 33.23° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.25° | S: 33.23° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.25° | S: 33.23° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.26° | S: 33.24° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.26° | S: 33.25° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.25° | S: 33.25° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.25° | S: 33.25° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.27° | S: 33.25° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.26° | S: 33.25° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.0° | C: 33.27° | S: 33.26° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.27° | S: 33.26° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.28° | S: 33.27° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.29° | S: 33.27° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.28° | S: 33.28° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.28° | S: 33.28° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.25° | S: 33.27° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.26° | S: 33.27° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.27° | S: 33.26° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.23° | S: 33.26° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.27° | S: 33.25° | R: (0.00) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.27° | S: 33.26° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.5° | C: 33.29° | S: 33.26° | R: (0.02) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.30° | S: 33.27° | R: (0.02) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.29° | S: 33.28° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.29° | S: 33.29° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.29° | S: 33.29° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.33° | S: 33.30° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.33° | S: 33.31° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.33° | S: 33.31° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.32° | S: 33.32° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.32° | S: 33.33° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.34° | S: 33.33° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.35° | S: 33.33° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.34° | S: 33.34° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.32° | S: 33.34° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.31° | S: 33.33° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.33° | S: 33.33° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.34° | S: 33.33° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.36° | S: 33.33° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.37° | S: 33.34° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.35° | S: 33.35° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.38° | S: 33.36° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.37° | S: 33.37° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.38° | S: 33.37° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.41° | S: 33.38° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.42° | S: 33.39° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.40° | S: 33.40° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.41° | S: 33.40° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.37° | S: 33.40° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.38° | S: 33.40° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.40° | S: 33.39° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.40° | S: 33.39° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.41° | S: 33.39° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.38° | S: 33.39° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.38° | S: 33.39° | R: 0.00 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.36° | S: 33.39° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.41° | S: 33.39° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.41° | S: 33.39° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.43° | S: 33.40° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.44° | S: 33.41° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.42° | S: 33.42° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.43° | S: 33.42° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.42° | S: 33.43° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.42° | S: 33.42° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.42° | S: 33.42° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.42° | S: 33.42° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.40° | S: 33.41° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.40° | S: 33.41° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.41° | S: 33.41° | R: 0.00 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.43° | S: 33.41° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.46° | S: 33.42° | R: (0.02) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.46° | S: 33.43° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.3° | C: 33.45° | S: 33.44° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.46° | S: 33.45° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.8° | C: 33.44° | S: 33.45° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.46° | S: 33.45° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.45° | S: 33.45° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.48° | S: 33.46° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.47° | S: 33.46° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.47° | S: 33.47° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.50° | S: 33.47° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.51° | S: 33.49° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.52° | S: 33.50° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.51° | S: 33.50° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.51° | S: 33.51° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.50° | S: 33.51° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.51° | S: 33.51° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.51° | S: 33.51° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.53° | S: 33.52° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.53° | S: 33.52° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.56° | S: 33.53° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.58° | S: 33.54° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.59° | S: 33.56° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.56° | S: 33.56° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.56° | S: 33.57° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.59° | S: 33.57° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.61° | S: 33.58° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.59° | S: 33.58° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.59° | S: 33.59° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.61° | S: 33.60° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.63° | S: 33.61° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.65° | S: 33.61° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.65° | S: 33.63° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.64° | S: 33.64° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.65° | S: 33.65° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.61° | S: 33.64° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.64° | S: 33.64° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.66° | S: 33.64° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.67° | S: 33.65° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.67° | S: 33.65° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.66° | S: 33.66° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.65° | S: 33.67° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.63° | S: 33.66° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.67° | S: 33.66° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.68° | S: 33.66° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.68° | S: 33.67° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.67° | S: 33.67° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.68° | S: 33.68° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.67° | S: 33.68° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.68° | S: 33.68° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.67° | S: 33.68° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.71° | S: 33.68° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.70° | S: 33.69° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.2° | C: 33.73° | S: 33.70° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.2° | C: 33.68° | S: 33.70° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 99.8° | N: 259.9° | C: 33.67° | S: 33.70° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.8° | C: 33.65° | S: 33.69° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.62° | S: 33.67° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.61° | S: 33.65° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 259.7° | C: 33.60° | S: 33.63° | R: (0.04) | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.1° | C: 33.57° | S: 33.61° | R: (0.08) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.59° | S: 33.60° | R: (0.12) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.58° | S: 33.59° | R: (0.14) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.58° | S: 33.58° | R: (0.17) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.63° | S: 33.59° | R: (0.16) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.61° | S: 33.60° | R: (0.14) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.61° | S: 33.60° | R: (0.11) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.61° | S: 33.61° | R: (0.07) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.63° | S: 33.62° | R: (0.03) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.6° | C: 33.70° | S: 33.63° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 33.72° | S: 33.65° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 33.73° | S: 33.68° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.8° | C: 33.72° | S: 33.70° | R: 0.13 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.73° | S: 33.72° | R: 0.16 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.72° | S: 33.72° | R: 0.17 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.72° | S: 33.72° | R: 0.18 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 259.8° | C: 33.73° | S: 33.72° | R: 0.17 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 259.8° | C: 33.73° | S: 33.72° | R: 0.16 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.0° | C: 33.73° | S: 33.72° | R: 0.13 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 259.9° | C: 33.71° | S: 33.72° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 259.9° | C: 33.73° | S: 33.72° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.68° | S: 33.71° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.72° | S: 33.71° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.68° | S: 33.70° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.66° | S: 33.70° | R: (0.03) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.66° | S: 33.68° | R: (0.04) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.68° | S: 33.68° | R: (0.05) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.68° | S: 33.68° | R: (0.06) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.68° | S: 33.68° | R: (0.07) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.68° | S: 33.68° | R: (0.06) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.67° | S: 33.68° | R: (0.06) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.67° | S: 33.68° | R: (0.04) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.66° | S: 33.68° | R: (0.04) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.67° | S: 33.67° | R: (0.03) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.68° | S: 33.67° | R: (0.02) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.68° | S: 33.68° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.70° | S: 33.68° | R: (0.00) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.65° | S: 33.68° | R: (0.00) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.65° | S: 33.67° | R: (0.00) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.66° | S: 33.67° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 259.9° | C: 33.63° | S: 33.66° | R: (0.02) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.66° | S: 33.65° | R: (0.02) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.64° | S: 33.65° | R: (0.03) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.63° | S: 33.65° | R: (0.04) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.61° | S: 33.64° | R: (0.05) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.59° | S: 33.63° | R: (0.06) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.57° | S: 33.61° | R: (0.08) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.56° | S: 33.59° | R: (0.10) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.56° | S: 33.58° | R: (0.11) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.3° | C: 33.58° | S: 33.57° | R: (0.12) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.55° | S: 33.56° | R: (0.13) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.56° | S: 33.56° | R: (0.13) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.7° | C: 33.55° | S: 33.56° | R: (0.13) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.51° | S: 33.55° | R: (0.12) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.51° | S: 33.53° | R: (0.12) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.50° | S: 33.53° | R: (0.11) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.52° | S: 33.52° | R: (0.09) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.3° | C: 33.49° | S: 33.51° | R: (0.09) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.50° | S: 33.51° | R: (0.09) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.50° | S: 33.50° | R: (0.09) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.46° | S: 33.50° | R: (0.09) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.45° | S: 33.48° | R: (0.09) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.44° | S: 33.47° | R: (0.09) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.45° | S: 33.46° | R: (0.10) | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.1° | C: 33.45° | S: 33.45° | R: (0.10) | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.2° | C: 33.44° | S: 33.44° | R: (0.10) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.43° | S: 33.44° | R: (0.10) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.7° | C: 33.45° | S: 33.44° | R: (0.10) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.7° | C: 33.44° | S: 33.44° | R: (0.09) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.43° | S: 33.44° | R: (0.08) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.44° | S: 33.44° | R: (0.07) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.45° | S: 33.44° | R: (0.05) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.45° | S: 33.44° | R: (0.03) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.45° | S: 33.44° | R: (0.02) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.45° | S: 33.45° | R: (0.00) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.45° | S: 33.45° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.7° | C: 33.44° | S: 33.45° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.43° | S: 33.44° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.44° | S: 33.44° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.47° | S: 33.44° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.47° | S: 33.45° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.49° | S: 33.46° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.50° | S: 33.47° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.50° | S: 33.49° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.48° | S: 33.49° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.49° | S: 33.49° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.48° | S: 33.49° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.51° | S: 33.49° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.53° | S: 33.50° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.60° | S: 33.52° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.60° | S: 33.55° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.62° | S: 33.57° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.8° | C: 33.65° | S: 33.60° | R: 0.13 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.66° | S: 33.63° | R: 0.17 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.68° | S: 33.64° | R: 0.20 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.73° | S: 33.67° | R: 0.23 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.72° | S: 33.69° | R: 0.26 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 33.73° | S: 33.70° | R: 0.27 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 33.73° | S: 33.72° | R: 0.27 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.78° | S: 33.74° | R: 0.26 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.80° | S: 33.75° | R: 0.24 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.87° | S: 33.78° | R: 0.23 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.83° | S: 33.80° | R: 0.23 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.86° | S: 33.83° | R: 0.23 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.8° | C: 33.88° | S: 33.85° | R: 0.24 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 33.89° | S: 33.86° | R: 0.24 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.89° | S: 33.87° | R: 0.24 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 33.92° | S: 33.89° | R: 0.23 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 33.91° | S: 33.90° | R: 0.23 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.1° | C: 33.93° | S: 33.91° | R: 0.21 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 33.92° | S: 33.91° | R: 0.19 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 33.94° | S: 33.93° | R: 0.17 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 33.96° | S: 33.93° | R: 0.15 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 33.99° | S: 33.95° | R: 0.14 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 33.99° | S: 33.96° | R: 0.13 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 33.99° | S: 33.97° | R: 0.13 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 34.01° | S: 33.99° | R: 0.13 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.02° | S: 34.00° | R: 0.13 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.03° | S: 34.00° | R: 0.13 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 34.01° | S: 34.01° | R: 0.13 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.00° | S: 34.01° | R: 0.12 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.01° | S: 34.01° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 34.04° | S: 34.02° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.06° | S: 34.02° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.06° | S: 34.03° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 34.08° | S: 34.05° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.07° | S: 34.06° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.1° | C: 34.04° | S: 34.06° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 34.06° | S: 34.06° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.08° | S: 34.07° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.10° | S: 34.07° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 34.07° | S: 34.07° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.07° | S: 34.08° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.10° | S: 34.09° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 34.14° | S: 34.10° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.15° | S: 34.11° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.15° | S: 34.12° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.1° | C: 34.12° | S: 34.13° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.1° | C: 34.12° | S: 34.14° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 34.16° | S: 34.14° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.18° | S: 34.15° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.21° | S: 34.16° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.18° | S: 34.17° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 34.17° | S: 34.18° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.19° | S: 34.18° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.18° | S: 34.18° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.22° | S: 34.19° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.25° | S: 34.20° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.23° | S: 34.21° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.2° | C: 34.23° | S: 34.22° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 34.23° | S: 34.23° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 34.23° | S: 34.24° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.23° | S: 34.23° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.23° | S: 34.23° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.21° | S: 34.23° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 34.19° | S: 34.22° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.17° | S: 34.21° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.19° | S: 34.20° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.23° | S: 34.20° | R: (0.03) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.24° | S: 34.20° | R: (0.05) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.22° | S: 34.21° | R: (0.05) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 34.21° | S: 34.22° | R: (0.04) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.19° | S: 34.22° | R: (0.02) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.20° | S: 34.21° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 34.22° | S: 34.21° | R: (0.00) | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 34.24° | S: 34.21° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.20° | S: 34.21° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 34.18° | S: 34.21° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.20° | S: 34.21° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.20° | S: 34.20° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.25° | S: 34.21° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.24° | S: 34.21° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.22° | S: 34.22° | R: 0.00 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.22° | S: 34.23° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.23° | S: 34.23° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.24° | S: 34.23° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.26° | S: 34.24° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.24° | S: 34.24° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.22° | S: 34.24° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.23° | S: 34.24° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.24° | S: 34.24° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.29° | S: 34.24° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.30° | S: 34.26° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.26° | S: 34.26° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.26° | S: 34.27° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.29° | S: 34.28° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 34.27° | S: 34.28° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 34.29° | S: 34.27° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.27° | S: 34.28° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.27° | S: 34.28° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.29° | S: 34.28° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.32° | S: 34.29° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.32° | S: 34.29° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.30° | S: 34.30° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.29° | S: 34.30° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.27° | S: 34.30° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.25° | S: 34.29° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.27° | S: 34.28° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.27° | S: 34.27° | R: 0.00 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.29° | S: 34.27° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.29° | S: 34.27° | R: (0.02) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 34.30° | S: 34.28° | R: (0.03) | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 34.30° | S: 34.29° | R: (0.03) | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 34.31° | S: 34.29° | R: (0.02) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.30° | S: 34.30° | R: (0.00) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.30° | S: 34.30° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.30° | S: 34.30° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.30° | S: 34.30° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.32° | S: 34.30° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.30° | S: 34.30° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.31° | S: 34.30° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.32° | S: 34.31° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.31° | S: 34.31° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.32° | S: 34.31° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.34° | S: 34.32° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.36° | S: 34.33° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.38° | S: 34.34° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.38° | S: 34.36° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.34° | S: 34.36° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.33° | S: 34.36° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.36° | S: 34.36° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.36° | S: 34.35° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.35° | S: 34.35° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.33° | S: 34.35° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.36° | S: 34.35° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.37° | S: 34.35° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.39° | S: 34.36° | R: 0.00 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.40° | S: 34.37° | R: 0.00 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.40° | S: 34.39° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.40° | S: 34.39° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.42° | S: 34.41° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 34.42° | S: 34.41° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.41° | S: 34.41° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.40° | S: 34.41° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.40° | S: 34.41° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.40° | S: 34.41° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 34.44° | S: 34.41° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.45° | S: 34.42° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.41° | S: 34.42° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.4° | C: 34.44° | S: 34.43° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.48° | S: 34.44° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.47° | S: 34.45° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.47° | S: 34.45° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 34.49° | S: 34.47° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.48° | S: 34.48° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.50° | S: 34.48° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.50° | S: 34.49° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.51° | S: 34.50° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 34.53° | S: 34.50° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 34.55° | S: 34.52° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.54° | S: 34.53° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.56° | S: 34.54° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.54° | S: 34.55° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.52° | S: 34.54° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.54° | S: 34.54° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.54° | S: 34.54° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.54° | S: 34.54° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.56° | S: 34.54° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.54° | S: 34.55° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.57° | S: 34.55° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 34.59° | S: 34.56° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.2° | C: 34.56° | S: 34.57° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.3° | C: 34.54° | S: 34.56° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.3° | C: 34.53° | S: 34.56° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.3° | C: 34.54° | S: 34.55° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.4° | C: 34.50° | S: 34.54° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.3° | C: 34.46° | S: 34.51° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 259.6° | C: 34.44° | S: 34.49° | R: (0.05) | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 259.7° | C: 34.40° | S: 34.47° | R: (0.09) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.44° | S: 34.45° | R: (0.14) | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 34.42° | S: 34.43° | R: (0.17) | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.7° | C: 34.41° | S: 34.42° | R: (0.20) | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.8° | C: 34.40° | S: 34.42° | R: (0.20) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.38° | S: 34.41° | R: (0.20) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.37° | S: 34.40° | R: (0.19) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.39° | S: 34.39° | R: (0.17) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 34.39° | S: 34.39° | R: (0.14) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 34.39° | S: 34.39° | R: (0.12) | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 259.7° | C: 34.39° | S: 34.39° | R: (0.09) | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.0° | C: 34.42° | S: 34.40° | R: (0.06) | Printer: RUNNING | Stage: printing
-⏳ B: 100.1° | N: 260.0° | C: 34.40° | S: 34.40° | R: (0.04) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.38° | S: 34.40° | R: (0.03) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.38° | S: 34.40° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.39° | S: 34.40° | R: (0.00) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 34.39° | S: 34.39° | R: 0.00 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 34.40° | S: 34.39° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.42° | S: 34.40° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.40° | S: 34.40° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.37° | S: 34.40° | R: 0.00 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.32° | S: 34.38° | R: (0.01) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.35° | S: 34.37° | R: (0.02) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.36° | S: 34.36° | R: (0.03) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.38° | S: 34.36° | R: (0.04) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.38° | S: 34.36° | R: (0.05) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.37° | S: 34.37° | R: (0.05) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.36° | S: 34.37° | R: (0.05) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.35° | S: 34.37° | R: (0.05) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.38° | S: 34.37° | R: (0.04) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.8° | C: 34.40° | S: 34.37° | R: (0.02) | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.40° | S: 34.38° | R: 0.01 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.45° | S: 34.40° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.45° | S: 34.42° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.45° | S: 34.43° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.46° | S: 34.44° | R: 0.09 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.48° | S: 34.45° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.51° | S: 34.47° | R: 0.13 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.52° | S: 34.48° | R: 0.15 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.52° | S: 34.50° | R: 0.16 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.51° | S: 34.51° | R: 0.17 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.48° | S: 34.51° | R: 0.16 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.50° | S: 34.51° | R: 0.14 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.52° | S: 34.51° | R: 0.12 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.52° | S: 34.51° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.50° | S: 34.50° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.1° | C: 34.50° | S: 34.51° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 34.55° | S: 34.52° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.55° | S: 34.53° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.55° | S: 34.53° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.56° | S: 34.54° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.54° | S: 34.55° | R: 0.06 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.59° | S: 34.56° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.60° | S: 34.57° | R: 0.08 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.64° | S: 34.59° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.62° | S: 34.60° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.57° | S: 34.60° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.56° | S: 34.60° | R: 0.11 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 34.56° | S: 34.59° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 34.59° | S: 34.58° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.60° | S: 34.58° | R: 0.05 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.62° | S: 34.59° | R: 0.03 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.63° | S: 34.60° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.1° | C: 34.63° | S: 34.61° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 260.0° | C: 34.64° | S: 34.62° | R: 0.02 | Printer: RUNNING | Stage: printing
-⏳ B: 99.9° | N: 259.9° | C: 34.68° | S: 34.64° | R: 0.04 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.70° | S: 34.66° | R: 0.07 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 259.9° | C: 34.69° | S: 34.67° | R: 0.10 | Printer: RUNNING | Stage: printing
-⏳ B: 100.0° | N: 260.0° | C: 34.69° | S: 34.68° | R: 0.13 | Printer: RUNNING | Stage: printing
+⏳ B: 36.8° | N: 107.2° (260) | C: 21.28° | S: [1/5] | R: --- | Printer: None | Stage: soaking
+⏳ B: 39.5° | N: 127.7° (260) | C: 21.31° | S: [2/5] | R: --- | Printer: None | Stage: soaking
+⏳ B: 41.2° | N: 143.3° (260) | C: 21.35° | S: [3/5] | R: --- | Printer: None | Stage: soaking
+⏳ B: 43.4° | N: 161.4° (260) | C: 21.37° | S: [4/5] | R: --- | Printer: None | Stage: soaking
+⏳ B: 45.6° | N: 177.6° (260) | C: 21.42° | S: 21.34° | R: --- | Printer: None | Stage: soaking
+⏳ B: 47.3° | N: 189.4° (260) | C: 21.48° | S: 21.39° | R: --- | Printer: None | Stage: soaking
+⏳ B: 49.4° | N: 202.8° (260) | C: 21.53° | S: 21.43° | R: --- | Printer: None | Stage: soaking
+⏳ B: 51.1° | N: 212.8° (260) | C: 21.58° | S: 21.48° | R: --- | Printer: None | Stage: soaking
+⏳ B: 53.2° | N: 224.3° (260) | C: 21.65° | S: 21.53° | R: --- | Printer: None | Stage: soaking
+⏳ B: 55.6° | N: 236.9° (260) | C: 21.72° | S: 21.59° | R: --- | Printer: None | Stage: soaking
+⏳ B: 58.0° | N: 248.3° (260) | C: 21.79° | S: 21.65° | R: --- | Printer: None | Stage: soaking
+⏳ B: 59.2° | N: 252.8° (260) | C: 21.87° | S: 21.72° | R: --- | Printer: None | Stage: soaking
+⏳ B: 61.5° | N: 254.5° (250) | C: 21.94° | S: 21.79° | R: --- | Printer: None | Stage: soaking
+⏳ B: 63.0° | N: 250.0° (250) | C: 22.03° | S: 21.87° | R: --- | Printer: None | Stage: soaking
+⏳ B: 64.9° | N: 248.0° (250) | C: 22.09° | S: 21.94° | R: 0.72 | Printer: None | Stage: soaking
+⏳ B: 67.1° | N: 248.1° (250) | C: 22.20° | S: 22.02° | R: 0.77 | Printer: None | Stage: soaking
+⏳ B: 68.2° | N: 248.5° (250) | C: 22.26° | S: 22.10° | R: 0.82 | Printer: None | Stage: soaking
+⏳ B: 70.8° | N: 248.6° (250) | C: 22.35° | S: 22.19° | R: 0.86 | Printer: None | Stage: soaking
+⏳ B: 72.2° | N: 248.8° (270) | C: 22.43° | S: 22.27° | R: 0.89 | Printer: None | Stage: soaking
+⏳ B: 73.9° | N: 252.8° (270) | C: 22.54° | S: 22.36° | R: 0.92 | Printer: None | Stage: soaking
+⏳ B: 75.3° | N: 260.0° (270) | C: 22.67° | S: 22.45° | R: 0.95 | Printer: None | Stage: soaking
+⏳ B: 78.1° | N: 268.1° (270) | C: 22.77° | S: 22.55° | R: 0.99 | Printer: None | Stage: soaking
+⏳ B: 78.4° | N: 268.2° (270) | C: 22.90° | S: 22.66° | R: 1.03 | Printer: None | Stage: soaking
+⏳ B: 81.1° | N: 267.8° (260) | C: 22.99° | S: 22.77° | R: 1.07 | Printer: None | Stage: soaking
+⏳ B: 82.4° | N: 266.9° (260) | C: 23.10° | S: 22.88° | R: 1.12 | Printer: None | Stage: soaking
+⏳ B: 83.4° | N: 262.9° (260) | C: 23.21° | S: 22.99° | R: 1.17 | Printer: None | Stage: soaking
+⏳ B: 85.4° | N: 259.6° (260) | C: 23.38° | S: 23.11° | R: 1.22 | Printer: None | Stage: soaking
+⏳ B: 87.0° | N: 259.6° (260) | C: 23.47° | S: 23.23° | R: 1.26 | Printer: None | Stage: soaking
+⏳ B: 88.6° | N: 259.6° (260) | C: 23.62° | S: 23.36° | R: 1.31 | Printer: None | Stage: soaking
+⏳ B: 90.2° | N: 259.8° (260) | C: 23.74° | S: 23.49° | R: 1.35 | Printer: None | Stage: soaking
+⏳ B: 92.0° | N: 260.0° (260) | C: 23.87° | S: 23.62° | R: 1.39 | Printer: None | Stage: soaking
+⏳ B: 92.9° | N: 259.9° (260) | C: 23.99° | S: 23.74° | R: 1.43 | Printer: None | Stage: soaking
+⏳ B: 95.0° | N: 259.7° (260) | C: 24.10° | S: 23.86° | R: 1.45 | Printer: None | Stage: soaking
+⏳ B: 95.6° | N: 259.7° (260) | C: 24.25° | S: 23.99° | R: 1.47 | Printer: None | Stage: soaking
+⏳ B: 97.6° | N: 258.9° (260) | C: 24.34° | S: 24.11° | R: 1.49 | Printer: None | Stage: soaking
+⏳ B: 98.4° | N: 259.0° (260) | C: 24.50° | S: 24.24° | R: 1.50 | Printer: None | Stage: soaking
+⏳ B: 98.9° | N: 259.2° (260) | C: 24.64° | S: 24.37° | R: 1.50 | Printer: None | Stage: soaking
+⏳ B: 99.4° | N: 259.6° (260) | C: 24.80° | S: 24.51° | R: 1.52 | Printer: None | Stage: soaking
+⏳ B: 99.4° | N: 259.8° (260) | C: 24.94° | S: 24.65° | R: 1.53 | Printer: None | Stage: soaking
+⏳ B: 99.3° | N: 259.8° (260) | C: 25.09° | S: 24.80° | R: 1.55 | Printer: None | Stage: soaking
+⏳ B: 99.0° | N: 259.9° (260) | C: 25.19° | S: 24.94° | R: 1.57 | Printer: None | Stage: soaking
+⏳ B: 98.7° | N: 260.1° (260) | C: 25.30° | S: 25.07° | R: 1.60 | Printer: None | Stage: soaking
+⏳ B: 98.5° | N: 260.1° (260) | C: 25.42° | S: 25.19° | R: 1.61 | Printer: None | Stage: soaking
+⏳ B: 98.4° | N: 260.2° (260) | C: 25.54° | S: 25.31° | R: 1.62 | Printer: None | Stage: soaking
+⏳ B: 98.4° | N: 260.7° (170) | C: 25.64° | S: 25.42° | R: 1.60 | Printer: None | Stage: soaking
+⏳ B: 98.4° | N: 258.2° (170) | C: 25.79° | S: 25.54° | R: 1.58 | Printer: None | Stage: soaking
+⏳ B: 98.5° | N: 252.4° (170) | C: 25.92° | S: 25.66° | R: 1.54 | Printer: None | Stage: soaking
+⏳ B: 98.6° | N: 244.1° (170) | C: 26.11° | S: 25.80° | R: 1.52 | Printer: None | Stage: soaking
+⏳ B: 98.7° | N: 237.5° (170) | C: 26.30° | S: 25.95° | R: 1.51 | Printer: None | Stage: soaking
+⏳ B: 98.8° | N: 228.3° (170) | C: 26.45° | S: 26.11° | R: 1.53 | Printer: None | Stage: soaking
+⏳ B: 98.9° | N: 222.4° (170) | C: 26.60° | S: 26.27° | R: 1.57 | Printer: None | Stage: soaking
+⏳ B: 99.0° (100) | N: 212.9° (170) | C: 26.69° | S: 26.43° | R: 1.62 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.0° (100) | N: 210.3° (170) | C: 26.78° | S: 26.56° | R: 1.67 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.1° (100) | N: 201.5° (170) | C: 26.89° | S: 26.68° | R: 1.70 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.1° (100) | N: 195.7° (170) | C: 27.08° | S: 26.81° | R: 1.72 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.1° (100) | N: 191.1° (170) | C: 27.16° | S: 26.92° | R: 1.71 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.1° (100) | N: 185.7° (170) | C: 27.25° | S: 27.03° | R: 1.67 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.1° (100) | N: 178.4° (170) | C: 27.38° | S: 27.15° | R: 1.61 | Printer: RUNNING [TRAP] | Stage: soaking
+⏳ B: 99.1° (100) | N: 176.4° (170) | C: 27.50° | S: 27.27° | R: 1.55 | Printer: RUNNING [TRAP] | Stage: soaking
+⏳ B: 99.1° (100) | N: 170.1° (170) | C: 27.73° | S: 27.40° | R: 1.50 | Printer: RUNNING | Stage: soaking
+⏳ B: 98.8° (100) | N: 171.0° (230) | C: 27.74° | S: 27.52° | R: 1.47 | Printer: RUNNING | Stage: soaking
+⏳ B: 98.5° (100) | N: 180.4° (230) | C: 27.75° | S: 27.62° | R: 1.43 | Printer: RUNNING [TRAP] | Stage: soaking
+⏳ B: 98.3° (100) | N: 195.9° (230) | C: 27.87° | S: 27.72° | R: 1.41 | Printer: RUNNING | Stage: soaking
+⏳ B: 98.3° (100) | N: 207.8° (230) | C: 27.98° | S: 27.82° | R: 1.38 | Printer: RUNNING | Stage: soaking
+⏳ B: 98.4° (100) | N: 220.5° (230) | C: 28.05° | S: 27.88° | R: 1.33 | Printer: RUNNING | Stage: soaking
+⏳ B: 98.8° (100) | N: 227.8° (230) | C: 28.17° | S: 27.97° | R: 1.28 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.0° (100) | N: 228.3° (140) | C: 28.31° | S: 28.08° | R: 1.24 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.2° (100) | N: 225.5° (140) | C: 28.42° | S: 28.19° | R: 1.20 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.5° (100) | N: 214.2° (140) | C: 28.53° | S: 28.30° | R: 1.17 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.6° (100) | N: 209.1° (140) | C: 28.61° | S: 28.41° | R: 1.17 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.7° (100) | N: 199.7° (140) | C: 28.72° | S: 28.52° | R: 1.18 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.8° (100) | N: 192.6° (140) | C: 28.83° | S: 28.62° | R: 1.20 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.8° (100) | N: 187.3° (140) | C: 28.94° | S: 28.73° | R: 1.23 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.8° (100) | N: 181.2° (140) | C: 29.06° | S: 28.83° | R: 1.26 | Printer: RUNNING [TRAP] | Stage: soaking
+⏳ B: 99.8° (100) | N: 176.5° (140) | C: 29.16° | S: 28.94° | R: 1.29 | Printer: RUNNING [TRAP] | Stage: soaking
+⏳ B: 99.7° (100) | N: 171.1° (140) | C: 29.24° | S: 29.05° | R: 1.29 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.7° (100) | N: 163.9° (140) | C: 29.31° | S: 29.14° | R: 1.28 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.7° (100) | N: 161.0° (140) | C: 29.42° | S: 29.24° | R: 1.27 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.6° (100) | N: 155.5° (140) | C: 29.51° | S: 29.33° | R: 1.25 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.6° (100) | N: 151.2° (140) | C: 29.60° | S: 29.42° | R: 1.22 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.7° (100) | N: 147.1° (140) | C: 29.66° | S: 29.50° | R: 1.19 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.7° (100) | N: 143.0° (140) | C: 29.76° | S: 29.59° | R: 1.16 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.7° (100) | N: 140.0° (140) | C: 29.86° | S: 29.68° | R: 1.13 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.7° (100) | N: 139.7° (180) | C: 29.91° | S: 29.76° | R: 1.10 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.6° (100) | N: 150.8° (181) | C: 29.97° | S: 29.83° | R: 1.06 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.4° (100) | N: 164.2° (181) | C: 30.00° | S: 29.90° | R: 1.03 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.2° (100) | N: 172.8° (181) | C: 30.00° | S: 29.95° | R: 0.98 | Printer: RUNNING | Stage: soaking
+⏳ B: 98.7° (100) | N: 184.7° (140) | C: 30.01° | S: 29.98° | R: 0.92 | Printer: RUNNING [TRAP] | Stage: soaking
+⏳ B: 98.5° (100) | N: 185.3° (140) | C: 30.02° | S: 30.00° | R: 0.84 | Printer: RUNNING | Stage: soaking
+⏳ B: 98.5° (100) | N: 180.7° (140) | C: 30.02° | S: 30.01° | R: 0.74 | Printer: RUNNING [TRAP] | Stage: soaking
+⏳ B: 98.8° (100) | N: 174.1° (140) | C: 30.02° | S: 30.01° | R: 0.62 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.3° (100) | N: 165.3° (140) | C: 30.03° | S: 30.02° | R: 0.50 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.6° (100) | N: 161.9° (140) | C: 30.06° | S: 30.03° | R: 0.39 | Printer: RUNNING | Stage: soaking
+⏳ B: 99.9° (100) | N: 155.6° (140) | C: 30.03° | S: 30.03° | R: 0.29 | Printer: RUNNING | Stage: soaking
+⏳ B: 100.1° (100) | N: 150.8° (140) | C: 30.02° | S: 30.03° | R: 0.20 | Printer: RUNNING | Stage: soaking
+⏳ B: 100.2° (100) | N: 146.3° (140) | C: 30.00° | S: 30.03° | R: 0.13 | Printer: RUNNING | Stage: soaking
+⏳ B: 100.1° (100) | N: 142.2° (140) | C: 29.95° | S: 30.01° | R: 0.07 | Printer: RUNNING | Stage: waiting for print
+⏳ B: 100.1° (100) | N: 140.3° (140) | C: 29.90° | S: 29.98° | R: 0.02 | Printer: RUNNING | Stage: waiting for print
+⏳ B: 99.9° (100) | N: 140.0° (140) | C: 29.83° | S: 29.94° | R: (0.04) | Printer: RUNNING | Stage: waiting for print
+⏳ B: 99.8° (100) | N: 139.9° (140) | C: 29.81° | S: 29.90° | R: (0.11) | Printer: RUNNING | Stage: waiting for print
+⏳ B: 99.8° (100) | N: 139.9° (140) | C: 29.75° | S: 29.85° | R: (0.18) | Printer: RUNNING | Stage: waiting for print
+⏳ B: 99.8° (100) | N: 139.9° (140) | C: 29.71° | S: 29.80° | R: (0.26) | Printer: RUNNING | Stage: waiting for print
+⏳ B: 99.8° (100) | N: 141.1° (260) | C: 29.70° | S: 29.76° | R: (0.34) | Printer: RUNNING | Stage: waiting for print
+⏳ B: 99.8° (100) | N: 154.5° (260) | C: 29.64° | S: 29.72° | R: (0.40) | Printer: RUNNING | Stage: waiting for print
+⏳ B: 99.8° (100) | N: 169.1° (260) | C: 29.59° | S: 29.68° | R: (0.46) | Printer: RUNNING | Stage: waiting for print
+⏳ B: 99.9° (100) | N: 186.8° (260) | C: 29.53° | S: 29.63° | R: (0.49) | Printer: RUNNING | Stage: waiting for print
+⏳ B: 99.9° (100) | N: 199.7° (260) | C: 29.48° | S: 29.59° | R: (0.52) | Printer: RUNNING | Stage: waiting for print
+⏳ B: 100.0° (100) | N: 216.9° (260) | C: 29.46° | S: 29.54° | R: (0.53) | Printer: RUNNING | Stage: waiting for print
+⏳ B: 100.0° (100) | N: 232.3° (260) | C: 29.41° | S: 29.49° | R: (0.53) | Printer: RUNNING | Stage: waiting for print
+⏳ B: 100.1° (100) | N: 239.3° (260) | C: 29.35° | S: 29.45° | R: (0.53) | Printer: RUNNING | Stage: waiting for print
+⏳ B: 100.1° (100) | N: 253.2° (260) | C: 29.32° | S: 29.40° | R: (0.53) | Printer: RUNNING | Stage: waiting for print
+⏳ B: 100.1° (100) | N: 257.1° (260) | C: 29.29° | S: 29.36° | R: (0.53) | Printer: RUNNING | Stage: waiting for print
+⏳ B: 100.1° (100) | N: 258.7° (260) | C: 29.26° | S: 29.32° | R: (0.53) | Printer: RUNNING | Stage: waiting for print
+⏳ B: 100.1° (100) | N: 259.3° (260) | C: 29.26° | S: 29.29° | R: (0.52) | Printer: RUNNING | Stage: waiting for print
+⏳ B: 100.1° (100) | N: 259.5° (260) | C: 29.32° | S: 29.29° | R: (0.49) | Printer: RUNNING | Stage: waiting for print
