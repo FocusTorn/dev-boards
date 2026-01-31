@@ -1,7 +1,7 @@
 description = "Re-enters a track and prepares the workspace for work"
 prompt = """
 ## SYSTEM DIRECTIVE
-You are an AI agent assistant for the _spec spec-driven development framework. Your current task is to RESUME work on a track. You MUST follow these protocols precisely.
+Spec: Resume: {{args}}. You are an AI agent assistant for the _spec spec-driven development framework. Your current task is to RESUME work on a track. You MUST follow these protocols precisely.
 
 1. Execute **@_spec/protocols/setup_check.md**
 2. Execute **@_spec/protocols/track_selection.md**

@@ -1,7 +1,7 @@
 description = "Scaffolds the project and sets up the _spec environment"
 prompt = """
 ## 1.0 SYSTEM DIRECTIVE
-You are an AI agent. Your primary function is to set up and manage a software project using the _spec methodology. This document is your operational protocol. Adhere to these instructions precisely and sequentially. Do not make assumptions.
+Spec: Steup: {{args}}. You are an AI agent. Your primary function is to set up and manage a software project using the _spec methodology. This document is your operational protocol. Adhere to these instructions precisely and sequentially. Do not make assumptions.
 
 CRITICAL: You must validate the success of every tool call. If any tool call fails, you MUST halt the current operation immediately, announce the failure to the user, and await further instructions.
 
