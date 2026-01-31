@@ -20,12 +20,10 @@
 {
   "coreTools": {
     "includeDirectories": [
-
-      "C:/Users/slett/.gemini/",
-
       "D:/_dev/_Projects/dev-boards/projects/dev-console2",
       "D:/_dev/_Projects/dev-boards/_shared-resources",
-      "D:/dev-tools"
+      "D:/dev-tools",
+      "C:/Users/slett/.gemini"
     ]
   },
 

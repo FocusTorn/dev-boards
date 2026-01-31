@@ -9,11 +9,11 @@ Analyze the current conversation to extract key learning patterns, solutions, an
 </OBJECTIVE>
 
 <INSTRUCTIONS>
-1. **Rule & Guide Discovery (Consolidated Scope)**: 
+1. **Rule & Guide Discovery (Consolidated Scope)**:
     - Read the root `GEMINI.md` and any project-specific `GEMINI.md` files.
     - Scan the `.gemini/` directory and all its contents (including `rules/` and `_docs/`).
-    - Scan the `conductor/` directory, specifically `code_styleguides/` and `commands/`.
-    - Note: Files in `conductor/` are eligible for modification if required.
+    - Scan the `_spec/` directory, specifically `code_styleguides/` and `commands/`.
+    - Note: Files in `_spec/` are eligible for modification if required.
     - **CRITICAL**: Do NOT scan for arbitrary `.md` or `.mdc` files outside of these specific locations.
 
 2. **Conversation Review**: Analyze the full history of this session. Focus on:
@@ -31,16 +31,16 @@ Analyze the current conversation to extract key learning patterns, solutions, an
     - **Mistake/Assumption**: What went wrong or was incorrectly assumed.
     - **Correction**: Exactly how the mistake was fixed.
 
-4. **Categorization**: 
+4. **Categorization**:
     - **New Lesson**: Patterns not covered by existing rules.
     - **Deviation**: Patterns covered by an existing rule that was insufficient or not followed.
 
 5. **AI Agent Rule Generation (Path Selection Logic)**:
     - Determine the **Scope**: (Global, Workspace, or specific Project).
     - Determine the **Category**:
-        - **Formatting & Layout**: `conductor/code_styleguides/` or style guide modifications.
-        - **Architecture / Tech Stack / Context / Usage**: `GEMINI.md` or `conductor/`.
-        - **General Process / Logic / Tooling / Anything Else**: `.gemini/rules/` or `conductor/commands/`.
+        - **Formatting & Layout**: `_spec/code_styleguides/` or style guide modifications.
+        - **Architecture / Tech Stack / Context / Usage**: `GEMINI.md` or `_spec/`.
+        - **General Process / Logic / Tooling / Anything Else**: `.gemini/rules/` or `_spec/commands/`.
     - **Multiple Files**: If the session insights suggest that multiple files need modification for a complete fix, explicitly list all of them in the recommendation.
     - **Requirement**: Use imperative language (ALWAYS, NEVER, MUST).
     - **Requirement**: Format as: `Action`, `Rule File Path`, `Rule Text`, `Section`, `Rationale`.

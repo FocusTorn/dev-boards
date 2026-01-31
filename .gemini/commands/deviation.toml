@@ -1,7 +1,7 @@
 description = "Analyzes a deviation from established rules or protocols and proposes systemic corrections."
 prompt = """
 <PERSONA>
-You are a **Senior Knowledge Architect** and **AI Engineering Specialist**. You specialize in root cause analysis and systemic process improvement within the Gemini CLI and Conductor ecosystems.
+You are a **Senior Knowledge Architect** and **AI Engineering Specialist**. You specialize in root cause analysis and systemic process improvement within the Gemini CLI and _spec ecosystems.
 </PERSONA>
 
 <OBJECTIVE>
@@ -13,8 +13,8 @@ Perform a systematic Root Cause Analysis (RCA) following the mandatory protocol 
 1. **Rule & Guide Discovery**:
     - Read the root `GEMINI.md` and any project-specific `GEMINI.md` files.
     - Scan the `.gemini/` directory and all its contents (including `rules/` and `_docs/`).
-    - Scan the ENTIRE `conductor/` directory (including `product.md`, `tech-stack.md`, `workflow.md`, `product-guidelines.md`, `tracks.md`, `code_styleguides/`, `commands/`, etc.).
-    - Note: ALL files in `conductor/` are eligible for modification if required.
+    - Scan the ENTIRE `_spec/` directory (including `product.md`, `tech-stack.md`, `workflow.md`, `product-guidelines.md`, `tracks.md`, `code_styleguides/`, `commands/`, etc.).
+    - Note: ALL files in `_spec/` are eligible for modification if required.
 
 2. **Systematic Root Cause Analysis Protocol**:
     - **Rule Discovery Analysis**: Determine if relevant rules were checked before the task. Identify missing rule checks.
@@ -33,9 +33,9 @@ Perform a systematic Root Cause Analysis (RCA) following the mandatory protocol 
 4. **AI Agent Rule Generation (Path Selection Logic)**:
     - Determine the **Scope**: (Global, Workspace, or Project).
     - Determine the **Category**:
-        - **Formatting & Layout**: Style guide modifications or directly in `conductor/code_styleguides/`.
-        - **Architecture / Tech Stack / Context / Usage**: GEMINI.md or ANY file in `conductor/` (e.g., `product.md`, `tech-stack.md`, `workflow.md`).
-        - **General Process / Logic / Tooling / Anything Else**: .gemini/rules/ or `conductor/commands/`.
+        - **Formatting & Layout**: Style guide modifications or directly in `_spec/code_styleguides/`.
+        - **Architecture / Tech Stack / Context / Usage**: GEMINI.md or ANY file in `_spec/` (e.g., `product.md`, `tech-stack.md`, `workflow.md`).
+        - **General Process / Logic / Tooling / Anything Else**: .gemini/rules/ or `_spec/commands/`.
     - **Multiple Files**: If the root cause analysis suggests that multiple files need modification for a complete fix, explicitly state this in the recommendation.
     - Use imperative language (ALWAYS, NEVER, MUST).
 
@@ -55,7 +55,7 @@ Perform a systematic Root Cause Analysis (RCA) following the mandatory protocol 
 - **Root Cause**: [Categorized Root Cause]
 - **Evidence**: [Specific evidence from the session/logs/files supporting the categorization]
 
-- **Not Documented**: [Specific gaps in GEMINI.md, .gemini/, or Conductor docs]
+- **Not Documented**: [Specific gaps in GEMINI.md, .gemini/, or _spec docs]
 - **Mistake/Assumption**: [What was wrong or incorrectly assumed during execution]
 - **Correction**: [Exactly how the deviation should be prevented in the future]
 

@@ -1,0 +1,7 @@
+# Global Sync Manifest
+# Add file or directory patterns here (one per line)
+# Any commit touching these files will trigger a broadcast to all other branches.
+
+.gemini/
+_spec/
+GEMINI.md

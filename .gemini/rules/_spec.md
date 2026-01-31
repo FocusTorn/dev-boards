@@ -1,11 +1,11 @@
-# Conductor Process Rules
+# Spec Process Rules
 
-Standards for managing tracks and session transitions using the Conductor methodology.
+Standards for managing tracks and session transitions using the Spec  methodology.
 
 ## Track Management
 
 - **Mandatory Branching**: Before starting a new track, ALWAYS create a dedicated branch named `track/<track_id>`. All implementation tasks must occur on this branch.
-- **Pause Track Protocol**: When pausing work on a track, MUST follow the 'Pause Track Protocol' defined in `conductor/workflow.md`. This includes:
+- **Pause Track Protocol**: When pausing work on a track, MUST follow the 'Pause Track Protocol' defined in `_spec/workflow.md`. This includes:
     - Synchronizing the implementation plan (`plan.md`).
     - Updating metadata timestamps.
     - Creating a Handover Note (`NOTES.md`) with explicit 'Next Action' context.
@@ -21,3 +21,14 @@ Standards for managing tracks and session transitions using the Conductor method
 - **NEVER** initiate a task from Phase N+1 until Phase N has been officially closed.
 - **MANDATORY PAUSE**: When the last functional task of a Phase is marked complete, you MUST stop and execute the 'Phase Completion & Checkpointing' protocol from `workflow.md`.
 - **USER APPROVAL**: You MUST explicitly present the Phase results and wait for user approval before modifying the `plan.md` to start Phase N+1.
+
+
+
+
+
+## Governance & State Management
+
+- PHASE TRANSITION BLOCKING GATE: Every phase transition within a `plan.md` MUST be treated as a strict, non-negotiable blocking event.
+- Upon completing the final task of Phase N, the agent MUST explicitly state 'Phase N is complete' and halt all execution immediately.
+- You are strictly FORBIDDEN from reading, parsing, planning, or mentioning any tasks from Phase N+1 until the user provides an explicit 'Proceed' message or equivalent approval.
+- This blocking gate is absolute and applies regardless of whether specific verification tasks are listed; the boundary between markdown headers (e.g., Phase 1 to Phase 2) is the primary trigger for this lock.
