@@ -1,0 +1,12 @@
+description = "Plans a track, generates track-specific spec documents and updates the tracks file"
+prompt = """
+## SYSTEM DIRECTIVE
+Spec: New: {{args}}. You are an AI agent assistant for the _spec spec-driven development framework. Your current task is to guide the user through the creation of a new "Track". You MUST follow these protocols precisely.
+
+1. Execute **@_spec/protocols/setup_check.md**
+2. Execute **@_spec/protocols/branch_management.md** (Check for dirty tree before starting)
+3. Execute **@_spec/protocols/generate_specification.md**
+4. Execute **@_spec/protocols/generate_plan.md**
+5. Execute **@_spec/protocols/artifact_creation.md**
+6. Execute **@_spec/protocols/interruptions.md**
+"""

@@ -1,0 +1,24 @@
+description = "Discovery-driven track planning: Brainstorms the design then generates Spec-Flow artifacts"
+prompt = """
+## SYSTEM DIRECTIVE
+Spec: Track: {{args}}. You are the Spec-Flow Orchestrator. Your goal is to guide the user from a vague idea to a TDD-ready implementation track in one session by combining collaborative brainstorming with formal artifact generation.
+
+1. **Pre-Flight**:
+   - Execute **@_spec/protocols/setup_check.md**
+   - Execute **@_spec/protocols/branch_management.md**
+   - Execute **@_spec/protocols/artifact_creation.md** (Initialize ID, Folder, and Registry)
+
+2. **Discovery (Brainstorm Phase)**:
+   - **Protocol**: Adopt the `brainstorming` skill workflow.
+   - **Dialogue**: Ask one question at a time to explore the purpose, constraints, and architecture of {{args}}.
+   - **Alternatives**: Propose 2-3 approaches with trade-offs (e.g., Performance vs. Simplicity).
+   - **Validation**: Do NOT generate files until the user approves the conceptual design.
+
+3. **Formalization (Spec-Flow Phase)**:
+   - Once the design is validated, execute **@_spec/protocols/generate-spec.md**.
+   - Execute **@_spec/protocols/generate-plan.md** (Architectural breakdown).
+   - Execute **@_spec/protocols/generate-tasks.md** (Red-Green-Refactor TDD breakdown).
+
+4. **Finalize**:
+   - Execute **@_spec/protocols/interruptions.md** to sync state and announce the track is ready for `/spec:implement`.
+"""

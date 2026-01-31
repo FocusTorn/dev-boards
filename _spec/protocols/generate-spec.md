@@ -1,5 +1,5 @@
 # SF-GENERATE-SPEC
-**PROTOCOL: Generate feature specification using Spec-Flow patterns tailored for _spec.**
+**PROTOCOL: Generate feature specification.**
 
 1.  **State Goal:** "I will now generate a technical specification (spec.md) using Spec-Flow standards within the _spec architecture."
 2.  **Context Loading:**

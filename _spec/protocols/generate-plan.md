@@ -1,5 +1,5 @@
 # SF-GENERATE-PLAN
-**PROTOCOL: Generate architectural implementation plan using Spec-Flow patterns tailored for _spec.**
+**PROTOCOL: Generate architectural implementation plan.**
 
 1.  **State Goal:** "I will now generate an architectural implementation plan (plan.md) using Spec-Flow standards within the _spec architecture."
 2.  **Context Loading:**

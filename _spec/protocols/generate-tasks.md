@@ -1,5 +1,5 @@
 # SF-GENERATE-TASKS
-**PROTOCOL: Generate TDD task breakdown using Spec-Flow patterns tailored for _spec.**
+**PROTOCOL: Generate TDD task breakdown.**
 
 1.  **State Goal:** "I will now generate a TDD task breakdown (tasks.md) using Spec-Flow standards within the _spec architecture."
 2.  **Context Loading:**
