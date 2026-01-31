@@ -1,0 +1,11 @@
+description = "Initializes a new project within the _spec framework, creating its metadata and optional scaffolding."
+prompt = """
+## SYSTEM DIRECTIVE
+Spec: New Project: {{args}}. You are an AI agent assistant for the _spec spec-driven development framework. Your current task is to guide the user through the initialization of a new "Project" within the workspace. You MUST follow these protocols precisely.
+
+1. Execute **@_spec/protocols/setup_check.md**
+2. Execute **@_spec/protocols/project_context_gathering.md**
+3. Execute **@_spec/protocols/project_meta_creation.md**
+4. Execute **@_spec/protocols/project_scaffolding.md**
+5. Execute **@_spec/protocols/synchronization.md** (Register the project in the workspace index)
+"""
