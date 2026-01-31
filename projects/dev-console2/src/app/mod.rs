@@ -65,8 +65,15 @@ pub enum Action {
     Clean,
     CommandsUp,
     CommandsDown,
+    SettingsUp,
+    SettingsDown,
     #[strum(serialize = "execute", serialize = "commands_execute")]
     Execute,
+    ToggleFocus,
+    ProfileNew,
+    ProfileClone,
+    ProfileDelete,
+    ProfileSave,
     Cancel,
 }
 
@@ -83,6 +90,24 @@ impl Action {
 pub enum MonitorType {
     Serial,
     Mqtt,
+}
+
+/// Modes for handling list selection/highlighting.
+#[derive(Debug, Clone, Copy, PartialEq, EnumString, Display)]
+#[strum(serialize_all = "snake_case")]
+pub enum DispatchMode {
+    /// Action triggers only on Enter or Click.
+    OnSelect,
+    /// Action triggers as the user cycles through items with Up/Down.
+    OnHighlight,
+}
+
+/// UI focus regions for keyboard navigation.
+#[derive(Debug, Clone, Copy, PartialEq, EnumString, Display)]
+#[strum(serialize_all = "snake_case")]
+pub enum Focus {
+    Sidebar,
+    Content,
 }
 
 /// Represents the current state of a background task or monitoring process.
@@ -125,6 +150,14 @@ pub struct AppLayout {
     pub commands: Rect,
     pub status: Rect,
     pub output: Rect,
+    pub settings: Option<SettingsLayout>,
+}
+
+/// Layout specifically for the Settings/Profiles tab.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SettingsLayout {
+    pub sidebar: Rect,
+    pub content: Rect,
 }
 
 /// The central application state following the Elm Architecture (Model).
@@ -144,6 +177,8 @@ pub struct App {
     selected_command_index: usize,
     hovered_command_index: Option<usize>,
     command_index_before_hover: Option<usize>,
+    settings_categories: Vec<String>,
+    selected_settings_category_index: usize,
     output_lines: Vec<String>,
     output_cached_lines: Vec<ratatui::text::Line<'static>>,
     output_scroll: u16,
@@ -155,6 +190,7 @@ pub struct App {
     status_text: String,
     toast_manager: ToastManager,
     profile_config: Option<ProfileConfig>,
+    pub profile_config_path: String,
     selected_profile_index: usize,
     profile_ids: Vec<String>,
     cancel_signal: Arc<AtomicBool>,
@@ -165,6 +201,8 @@ pub struct App {
     last_raw_input: String,
     last_frame_time: Instant,
     pub should_redraw: bool,
+    pub dispatch_mode: DispatchMode,
+    pub focus: Focus,
 
     // Input state
     pub input: tui_input::Input,
@@ -248,6 +286,12 @@ impl App {
             selected_command_index: 0,
             hovered_command_index: None,
             command_index_before_hover: None,
+            settings_categories: vec![
+                "Device".to_string(),
+                "MQTT".to_string(),
+                "Paths".to_string(),
+            ],
+            selected_settings_category_index: 0,
             output_lines: initial_output.clone(),
             output_cached_lines: initial_output.iter().map(|l| crate::app::ansi::parse_ansi_line(l)).collect(),
             output_scroll: 0,
@@ -259,6 +303,7 @@ impl App {
             status_text: initial_status,
             toast_manager,
             profile_config,
+            profile_config_path: "config.yaml".to_string(),
             selected_profile_index: 0,
             profile_ids,
             cancel_signal: Arc::new(AtomicBool::new(false)),
@@ -272,12 +317,15 @@ impl App {
                 commands: Rect::default(),
                 status: Rect::default(),
                 output: Rect::default(),
+                settings: None,
             },
             theme: app_theme,
             predictor: crate::commands::ProgressPredictor::new(),
             last_raw_input: String::new(),
             last_frame_time: Instant::now(),
             should_redraw: true,
+            dispatch_mode: DispatchMode::OnSelect,
+            focus: Focus::Sidebar,
             input: tui_input::Input::default(),
             input_active: false,
             serial_tx: None,
@@ -315,33 +363,69 @@ impl App {
         }
         inner_main = Block::bordered().inner(inner_main);
 
-        let [left_col, right_col] = Layout::horizontal([
+        let active_tab_id = self.tabs.iter()
+            .find(|t| t.active)
+            .map(|t| t.id.as_str())
+            .unwrap_or("dashboard");
+
+        if active_tab_id == "profiles" {
+            let settings = self.calculate_settings_layout(inner_main);
+            AppLayout {
+                title,
+                main,
+                bindings,
+                status_bar,
+                profile: Rect::default(),
+                commands: Rect::default(),
+                status: Rect::default(),
+                output: Rect::default(),
+                settings: Some(settings),
+            }
+        } else {
+            let [left_col, right_col] = Layout::horizontal([
+                Constraint::Length(25),
+                Constraint::Min(0),
+            ])
+            .areas(inner_main);
+
+            let [profile, commands] = Layout::vertical([
+                Constraint::Length(10),
+                Constraint::Min(0),
+            ])
+            .areas(left_col);
+
+            let [status, output] = Layout::vertical([
+                Constraint::Length(4),
+                Constraint::Min(0),
+            ])
+            .areas(right_col);
+
+            AppLayout {
+                title,
+                main,
+                bindings,
+                status_bar,
+                profile,
+                commands,
+                status,
+                output,
+                settings: None,
+            }
+        }
+    }
+
+    /// Calculates the partitioning for the Settings/Profiles tab.
+    pub fn calculate_settings_layout(&self, area: Rect) -> SettingsLayout {
+        let [sidebar, spacer, content] = Layout::horizontal([
             Constraint::Length(25),
+            Constraint::Length(3), // 3 column gap
             Constraint::Min(0),
         ])
-        .areas(inner_main);
+        .areas(area);
 
-        let [profile, commands] = Layout::vertical([
-            Constraint::Length(10),
-            Constraint::Min(0),
-        ])
-        .areas(left_col);
-
-        let [status, output] = Layout::vertical([
-            Constraint::Length(4),
-            Constraint::Min(0),
-        ])
-        .areas(right_col);
-
-        AppLayout {
-            title,
-            main,
-            bindings,
-            status_bar,
-            profile,
-            commands,
-            status,
-            output,
+        SettingsLayout {
+            sidebar,
+            content,
         }
     }
 
@@ -423,6 +507,12 @@ impl App {
             return;
         }
 
+        // 0. Hardcoded Tab handling for focus switching
+        if self.key_matches(key, "[Tab]") {
+            self.dispatch_command(Action::ToggleFocus);
+            return;
+        }
+
         // 1. Tab Bar Navigation Bindings
         if let Some(tab_bar) = self.tab_bar_map.get("MainContentTabBar") {
             for key_str in &tab_bar.navigation.left {
@@ -492,6 +582,8 @@ impl App {
                     for (i, tab) in self.tabs.iter_mut().enumerate() {
                         tab.active = i == tab_idx;
                     }
+                    // Recalculate layout for the new tab
+                    self.layout = self.calculate_layout(self.view_area);
                     self.should_redraw = true;
                     return; 
                 }
@@ -581,8 +673,9 @@ impl App {
 
     /// Checks if a physical key event matches a string binding (e.g., "[Ctrl+Q]").
     fn key_matches(&self, key: event::KeyEvent, binding_key: &str) -> bool {
-        let inner = binding_key.trim_matches(|c| c == '[' || c == ']');
-        let parts: Vec<String> = inner.split('+').map(|s| s.to_lowercase()).collect();
+        let binding_lower = binding_key.to_lowercase();
+        let inner = binding_lower.trim_matches(|c| c == '[' || c == ']');
+        let parts: Vec<String> = inner.split('+').map(|s| s.to_string()).collect();
         let mut req_mods = KeyModifiers::empty();
         let mut target = String::new();
 
@@ -606,8 +699,8 @@ impl App {
             "down" => matches!(key.code, KeyCode::Down),
             "left" => matches!(key.code, KeyCode::Left),
             "right" => matches!(key.code, KeyCode::Right),
-            "pgup" | "pageup" => matches!(key.code, KeyCode::PageUp),
-            "pgdn" | "pagedown" => matches!(key.code, KeyCode::PageDown),
+            "pgup" | "pg_up" | "pageup" | "page_up" => matches!(key.code, KeyCode::PageUp),
+            "pgdn" | "pg_dn" | "pgdown" | "pagedown" | "page_down" => matches!(key.code, KeyCode::PageDown),
             "home" => matches!(key.code, KeyCode::Home),
             "end" => matches!(key.code, KeyCode::End),
             "backspace" => matches!(key.code, KeyCode::Backspace),
@@ -675,7 +768,14 @@ impl App {
             Action::CopyOutputFull => self.exec_copy_output(true),
             Action::CommandsUp => self.exec_commands_up(),
             Action::CommandsDown => self.exec_commands_down(),
+            Action::SettingsUp => self.exec_settings_up(),
+            Action::SettingsDown => self.exec_settings_down(),
             Action::Execute => self.exec_execute_selected_command(),
+            Action::ToggleFocus => self.exec_toggle_focus(),
+            Action::ProfileNew => self.exec_profile_new(),
+            Action::ProfileClone => self.exec_profile_clone(),
+            Action::ProfileDelete => self.exec_profile_delete(),
+            Action::ProfileSave => self.exec_profile_save(),
             Action::Cancel => self.exec_cancel(),
             Action::Compile => self.exec_compile(),
             Action::Upload => self.exec_upload(),

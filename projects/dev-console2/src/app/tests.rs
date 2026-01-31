@@ -5,6 +5,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 use ratatui::layout::Rect;
+use ratatui::style::Color;
 use crossterm::event::{KeyEvent, KeyCode, KeyModifiers, KeyEventKind, MouseEvent, MouseEventKind, MouseButton};
 use tui_input::backend::crossterm::EventHandler;
 use ratatui::Terminal;
@@ -27,11 +28,41 @@ fn create_test_app() -> App {
     let (tx, rx) = mpsc::channel();
     let mut config = crate::config::Config::default();
     config.application.min_width = 80;
-    config.application.min_height = 21;
+    config.application.min_height = 27;
 
     let mut tab_bar_map = std::collections::HashMap::new();
+    let mut profiles_tab_bindings = crate::config::BindingsConfig::default();
+    profiles_tab_bindings.items = vec![
+        crate::config::BindingConfig {
+            key: "[Ctrl+N]".to_string(),
+            description: "New".to_string(),
+            triggers: [("ctrl+n".to_string(), "profile_new".to_string())].into_iter().collect(),
+        },
+        crate::config::BindingConfig {
+            key: "[Ctrl+C]".to_string(),
+            description: "Clone".to_string(),
+            triggers: [("ctrl+c".to_string(), "profile_clone".to_string())].into_iter().collect(),
+        },
+        crate::config::BindingConfig {
+            key: "[Ctrl+D]".to_string(),
+            description: "Delete".to_string(),
+            triggers: [("ctrl+d".to_string(), "profile_delete".to_string())].into_iter().collect(),
+        },
+        crate::config::BindingConfig {
+            key: "[Ctrl+S]".to_string(),
+            description: "Save".to_string(),
+            triggers: [("ctrl+s".to_string(), "profile_save".to_string())].into_iter().collect(),
+        },
+    ];
+
     let main_tab_bar_config = crate::config::TabBarConfig {
         id: "MainContentTabBar".to_string(),
+        alignment: crate::config::Alignment {
+            vertical: Some(crate::widgets::tab_bar::TabBarAlignment::Top),
+            horizontal: Some(crate::widgets::tab_bar::TabBarAlignment::Left),
+            ..Default::default()
+        },
+        tab_bindings: [("profiles".to_string(), profiles_tab_bindings)].into_iter().collect(),
         ..Default::default()
     };
     tab_bar_map.insert("MainContentTabBar".to_string(), main_tab_bar_config.clone());
@@ -40,7 +71,7 @@ fn create_test_app() -> App {
         running: true,
         tabs: vec![
             crate::widgets::tab_bar::TabBarItem { id: "dashboard".to_string(), name: "Dashboard".to_string(), active: true },
-            crate::widgets::tab_bar::TabBarItem { id: "tab2".to_string(), name: "Tab 2".to_string(), active: false },
+            crate::widgets::tab_bar::TabBarItem { id: "profiles".to_string(), name: "Profiles".to_string(), active: false },
         ],
         config: crate::config::Config {
             application: config.application,
@@ -53,6 +84,8 @@ fn create_test_app() -> App {
         selected_command_index: 0,
         hovered_command_index: None,
         command_index_before_hover: None,
+        settings_categories: vec!["Device".to_string(), "MQTT".to_string()],
+        selected_settings_category_index: 0,
         output_lines: Vec::new(),
         output_cached_lines: Vec::new(),
         output_scroll: 0,
@@ -63,17 +96,49 @@ fn create_test_app() -> App {
         command_rx: rx,
         status_text: String::new(),
         toast_manager: crate::widgets::toast::ToastManager::new(crate::widgets::toast::ToastConfig::default()),
-        profile_config: None,
+        profile_config: Some(crate::config::ProfileConfig {
+            connections: vec![crate::config::Connection {
+                id: "c1".to_string(),
+                compiler: "arduino-cli".to_string(),
+                port: "COM1".to_string(),
+                baudrate: 115200,
+            }],
+            devices: vec![crate::config::Device {
+                id: "d1".to_string(),
+                board_model: "esp32".to_string(),
+                fbqn: "esp32:esp32:esp32".to_string(),
+            }],
+            mqtt: vec![crate::config::Mqtt {
+                id: "m1".to_string(),
+                host: "localhost".to_string(),
+                port: 1883,
+                username: "".to_string(),
+                password: "".to_string(),
+            }],
+            sketches: vec![crate::config::Sketch {
+                id: "p1".to_string(),
+                path: "test.ino".to_string(),
+                connection: "c1".to_string(),
+                device: "d1".to_string(),
+                mqtt: "m1".to_string(),
+            }],
+        }),
+        profile_config_path: "test_config.yaml".to_string(),
         selected_profile_index: 0,
-        profile_ids: Vec::new(),
+        profile_ids: vec!["p1".to_string()],
         cancel_signal: Arc::new(AtomicBool::new(false)),
         view_area: Rect::new(0, 0, 100, 50),
-        layout: crate::app::AppLayout::default(),
+        layout: crate::app::AppLayout {
+            settings: None,
+            ..Default::default()
+        },
         theme: crate::app::theme::Theme::default(),
         predictor: crate::commands::ProgressPredictor::new(),
         last_raw_input: String::new(),
         last_frame_time: Instant::now(),
         should_redraw: false,
+        dispatch_mode: crate::app::DispatchMode::OnSelect,
+        focus: crate::app::Focus::Sidebar,
         input: tui_input::Input::default(),
         input_active: false,
         serial_tx: None,
@@ -843,6 +908,254 @@ fn test_app_view_progress_bar_rendering() {
     assert!(s.contains("Compiling"));
     assert!(s.contains("45.0%"));
     assert!(s.contains("█"));
+}
+
+#[test]
+fn test_app_dispatch_mode_transition() {
+    let mut app = create_test_app();
+    // This will fail to compile initially as dispatch_mode and DispatchMode are not defined
+    app.dispatch_mode = crate::app::DispatchMode::OnSelect;
+    assert_eq!(app.dispatch_mode, crate::app::DispatchMode::OnSelect);
+    
+    app.dispatch_mode = crate::app::DispatchMode::OnHighlight;
+    assert_eq!(app.dispatch_mode, crate::app::DispatchMode::OnHighlight);
+}
+
+#[test]
+fn test_app_dispatch_on_highlight_navigation() {
+    let mut app = create_test_app();
+    app.dispatch_mode = crate::app::DispatchMode::OnHighlight;
+    app.commands = vec!["Compile".to_string(), "Upload".to_string()];
+    app.selected_command_index = 0;
+    
+    // Moving down should trigger "Compile" (current) then "Upload" (newly highlighted)
+    // Actually, if we highlight "Upload", it should execute "Upload" immediately.
+    app.exec_commands_down();
+    assert_eq!(app.selected_command_index, 1);
+    
+    // Check if "Upload" was triggered. Since it's a long running task, task_state should become Running.
+    assert!(matches!(app.task_state, crate::app::TaskState::Running { .. }), "Action should have been dispatched on highlight");
+}
+
+#[test]
+fn test_app_tab_focus_toggle() {
+    let mut app = create_test_app();
+    // This will fail to compile as focus and Focus are not defined
+    app.focus = crate::app::Focus::Sidebar;
+    
+    // Simulate Tab key press
+    app.update(Message::Key(press(KeyCode::Tab, KeyModifiers::empty())));
+    assert_eq!(app.focus, crate::app::Focus::Content);
+    
+    app.update(Message::Key(press(KeyCode::Tab, KeyModifiers::empty())));
+    assert_eq!(app.focus, crate::app::Focus::Sidebar);
+}
+
+#[test]
+fn test_app_settings_layout_partitioning() {
+    let mut app = create_test_app();
+    let area = Rect::new(0, 0, 100, 50);
+    // This will fail to compile as calculate_settings_layout and SettingsLayout are not defined
+    let settings_area = Rect::new(0, 0, 100, 40); // Mocked inner main area
+    let layout = app.calculate_settings_layout(settings_area);
+    
+    assert_eq!(layout.sidebar.width, 25);
+    assert_eq!(layout.content.width, 72);
+    assert_eq!(layout.sidebar.height, 40);
+    assert_eq!(layout.content.height, 40);
+}
+
+#[test]
+fn test_app_settings_category_switching() {
+    let mut app = create_test_app();
+    // This will fail as settings_categories etc are not on App
+    app.settings_categories = vec!["Device".to_string(), "MQTT".to_string()];
+    app.selected_settings_category_index = 0;
+    
+    // Select Profiles tab (index 2 if we add it, but let's assume index 1 for now)
+    // Actually let's just mock the state.
+    app.dispatch_mode = crate::app::DispatchMode::OnHighlight;
+    
+    // We need a way to tell the executors to move settings categories instead of commands
+    // Or we reuse the same index if they are never visible at the same time?
+    // Dashboard has commands. Settings has categories.
+    // Let's use separate state for clarity.
+    app.exec_settings_up(); 
+    assert_eq!(app.selected_settings_category_index, 1);
+    
+    app.exec_settings_down();
+    assert_eq!(app.selected_settings_category_index, 0);
+}
+
+#[test]
+fn test_profile_crud_operations() {
+    let mut app = create_test_app();
+    app.profile_ids = vec!["p1".to_string()];
+    app.selected_profile_index = 0;
+    
+    // 1. Create New
+    app.dispatch_command(crate::app::Action::ProfileNew);
+    assert_eq!(app.profile_ids.len(), 2);
+    assert_eq!(app.profile_ids[1], "new_profile");
+    
+    // 2. Clone
+    app.selected_profile_index = 0;
+    app.dispatch_command(crate::app::Action::ProfileClone);
+    assert_eq!(app.profile_ids.len(), 3);
+    assert!(app.profile_ids.contains(&"p1_copy".to_string()));
+    
+    // 3. Delete
+    let to_delete = app.profile_ids[0].clone();
+    app.selected_profile_index = 0;
+    app.dispatch_command(crate::app::Action::ProfileDelete);
+    assert_eq!(app.profile_ids.len(), 2);
+    assert!(!app.profile_ids.contains(&to_delete));
+}
+
+#[test]
+fn test_app_layout_recalculation_on_tab_switch() {
+    let mut app = create_test_app();
+    app.view_area = Rect::new(0, 0, 100, 50);
+    app.layout = app.calculate_layout(app.view_area);
+    
+    // Initially on dashboard, layout.settings should be None
+    assert!(app.layout.settings.is_none());
+    
+    // Switch to Profiles tab
+    app.exec_next_tab();
+    assert_eq!(app.tabs.iter().find(|t| t.active).unwrap().id, "profiles");
+    
+    // Verify that the layout has automatically updated to include settings layout
+    // This will FAIL if exec_next_tab does not call calculate_layout
+    assert!(app.layout.settings.is_some(), "Layout should have been recalculated automatically when switching to Profiles tab");
+}
+
+#[test]
+fn test_app_layout_recalculation_on_mouse_tab_switch() {
+    let mut app = create_test_app();
+    app.view_area = Rect::new(0, 0, 100, 50);
+    app.layout = app.calculate_layout(app.view_area);
+    
+    // Initially on dashboard
+    assert!(app.layout.settings.is_none());
+    
+    // Simulate mouse click on the second tab (Profiles)
+    // Left aligned. Tab 0: " Dashboard " (~11 wide), Tab 1: " Profiles " (~10 wide)
+    // Row 0 is title bar, Row 1 is tab bar.
+    let event = MouseEvent {
+        kind: MouseEventKind::Down(MouseButton::Left),
+        column: 15, // Should hit Profiles (starts around 13)
+        row: 1,    // Tab bar row
+        modifiers: KeyModifiers::empty(),
+    };
+    
+    app.dispatch_mouse(event);
+    
+    // Check if tab switched
+    assert!(app.tabs[1].active, "Profiles tab should be active after mouse click at col 15");
+    
+    // Check if layout updated
+    // This will FAIL if dispatch_mouse does not call calculate_layout
+    assert!(app.layout.settings.is_some(), "Layout should have been recalculated after mouse-based tab switch");
+}
+
+#[test]
+fn test_app_settings_itemized_rendering() {
+    let mut app = create_test_app();
+    let backend = TestBackend::new(100, 50);
+    let mut terminal = Terminal::new(backend).unwrap();
+    
+    app.exec_next_tab(); // Switch to Profiles
+    app.layout = app.calculate_layout(app.view_area);
+    
+    terminal.draw(|f| {
+        app.view(f);
+    }).unwrap();
+    
+    let buffer = terminal.backend().buffer();
+    
+    // Verify header alignment (Should be at row 3 absolute: Title 0, Tabbar 1, Offset 1)
+    let header_line = buffer_content(buffer).lines().nth(3).unwrap().to_string();
+    assert!(header_line.contains("DEVICE"), "Header should contain 'DEVICE' at row 3");
+    
+    // Verify Field 4 (Baud Rate) styling: Now expected to have a border like the others
+    let mut found_baud_border = false;
+    // Baud rate area is lower down (around row 20+)
+    for y in 18..buffer.area.height {
+        for x in 28..buffer.area.width {
+            if buffer[(x, y)].symbol() == "┌" {
+                found_baud_border = true;
+                break;
+            }
+        }
+    }
+    assert!(found_baud_border, "Field 4 (Baud Rate) should now have a border for consistency");
+}
+
+#[test]
+fn test_app_pgdn_tab_switching() {
+    let mut app = create_test_app();
+    app.tab_bar_map.insert("MainContentTabBar".to_string(), crate::config::TabBarConfig {
+        id: "MainContentTabBar".to_string(),
+        navigation: crate::config::Navigation {
+            left: vec!["[PgUp]".to_string()],
+            right: vec!["[PgDown]".to_string()],
+        },
+        ..Default::default()
+    });
+    
+    assert!(app.tabs[0].active, "Initial tab should be Dashboard");
+    
+    // Simulate PgDown
+    app.update(Message::Key(press(KeyCode::PageDown, KeyModifiers::empty())));
+    
+    // Verify tab switch
+    // This will FAIL if PgDown is not correctly matched
+    assert!(app.tabs[1].active, "Profiles tab should be active after PgDown");
+}
+
+#[test]
+fn test_profile_crud_entry_points() {
+    let mut app = create_test_app();
+    app.exec_next_tab(); // Switch to Profiles
+    app.layout = app.calculate_layout(app.view_area);
+    app.profile_ids = vec!["p1".to_string()];
+    app.selected_profile_index = 0;
+    
+    // 1. Test Ctrl+N (New)
+    app.update(Message::Key(press(KeyCode::Char('n'), KeyModifiers::CONTROL)));
+    assert_eq!(app.profile_ids.len(), 2, "Ctrl+N should trigger ProfileNew");
+    
+    // 2. Test Ctrl+C (Clone)
+    app.selected_profile_index = 0;
+    app.update(Message::Key(press(KeyCode::Char('c'), KeyModifiers::CONTROL)));
+    assert_eq!(app.profile_ids.len(), 3, "Ctrl+C should trigger ProfileClone");
+    
+    // 3. Test Ctrl+D (Delete)
+    app.selected_profile_index = 0;
+    app.update(Message::Key(press(KeyCode::Char('d'), KeyModifiers::CONTROL)));
+    assert_eq!(app.profile_ids.len(), 2, "Ctrl+D should trigger ProfileDelete");
+    
+    // 4. Test Ctrl+S (Save)
+    // We'll verify this by checking if a log message was produced (since we can't easily mock the FS here without more plumbing)
+    app.update(Message::Key(press(KeyCode::Char('s'), KeyModifiers::CONTROL)));
+    assert!(app.output_lines.iter().any(|l| l.contains("Configuration saved")), "Ctrl+S should trigger ProfileSave");
+}
+
+#[test]
+fn test_dashboard_commands_title_regression() {
+    let mut app = create_test_app();
+    let backend = TestBackend::new(100, 50);
+    let mut terminal = Terminal::new(backend).unwrap();
+    
+    terminal.draw(|f| {
+        app.view(f);
+    }).unwrap();
+
+    let s = buffer_content(terminal.backend().buffer());
+    // This should always pass with CommandListWidget (current)
+    // but will FAIL when we switch to SelectionListWidget until we wrap it in a Block in view.rs
+    assert!(s.contains(" Commands "), "The Dashboard MUST show a 'Commands' title for the selection list");
 }
 
 

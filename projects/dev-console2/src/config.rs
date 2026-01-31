@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Write};
 use color_eyre::eyre; // Explicitly import eyre for the macro
 use color_eyre::Result;
 use serde_saphyr; // New YAML deserializer
@@ -125,7 +125,7 @@ pub struct TabConfig {
     pub default: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Connection {
     pub id: String,
     pub compiler: String,
@@ -133,14 +133,14 @@ pub struct Connection {
     pub baudrate: u32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Device {
     pub id: String,
     pub board_model: String,
     pub fbqn: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Mqtt {
     pub id: String,
     pub host: String,
@@ -149,7 +149,7 @@ pub struct Mqtt {
     pub password: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Sketch {
     pub id: String,
     pub path: String,
@@ -158,7 +158,7 @@ pub struct Sketch {
     pub mqtt: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ProfileConfig {
     pub connections: Vec<Connection>,
     pub devices: Vec<Device>,
@@ -182,6 +182,21 @@ pub fn load_profile_config() -> Result<ProfileConfig> {
 fn parse_profile_config(contents: &str) -> Result<ProfileConfig> {
     serde_saphyr::from_str::<ProfileConfig>(contents)
         .map_err(|e| eyre::eyre!("Failed to parse config.yaml: {}", e))
+}
+
+pub fn save_profile_config(config: &ProfileConfig) -> Result<()> {
+    save_profile_config_to_path(config, "config.yaml")
+}
+
+pub fn save_profile_config_to_path(config: &ProfileConfig, path: &str) -> Result<()> {
+    let contents = serde_saphyr::to_string(config)
+        .map_err(|e| eyre::eyre!("Failed to serialize config.yaml: {}", e))?;
+    let config_path = std::path::PathBuf::from(path);
+    let mut file = File::create(&config_path)
+        .map_err(|e| eyre::eyre!("Failed to create config at {:?}: {}", config_path, e))?;
+    file.write_all(contents.as_bytes())
+        .map_err(|e| eyre::eyre!("Failed to write config: {}", e))?;
+    Ok(())
 }
 
 /// Extracts initial hardware settings from the first available sketch profile.

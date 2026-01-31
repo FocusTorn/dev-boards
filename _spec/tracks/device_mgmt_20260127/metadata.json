@@ -1,8 +1,0 @@
-{
-  "track_id": "device_mgmt_20260127",
-  "type": "feature",
-  "status": "new",
-  "created_at": "2026-01-27T14:45:00Z",
-  "updated_at": "2026-01-27T14:45:00Z",
-  "description": "dc2: Implement port autodetection and Profile Management UI with sidebar-based settings."
-}

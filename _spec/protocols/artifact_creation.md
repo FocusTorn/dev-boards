@@ -7,6 +7,7 @@
     - `metadata.json`
     - `spec.md`
     - `plan.md`
+    - `tasks.md`
     - `NOTES.md`
     - `index.md`
 4.  **Update Registry:** Append new track section to **Tracks Registry**.

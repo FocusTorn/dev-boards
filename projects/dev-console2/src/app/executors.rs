@@ -25,12 +25,42 @@ impl App {
             self.commands.len() - 1
         };
         self.hovered_command_index = None;
+        
+        if self.dispatch_mode == crate::app::DispatchMode::OnHighlight {
+            self.exec_execute_selected_command();
+        }
     }
 
     /// Moves the command selection highlight downwards.
     pub fn exec_commands_down(&mut self) {
         self.selected_command_index = (self.selected_command_index + 1) % self.commands.len();
         self.hovered_command_index = None;
+
+        if self.dispatch_mode == crate::app::DispatchMode::OnHighlight {
+            self.exec_execute_selected_command();
+        }
+    }
+
+    pub fn exec_settings_up(&mut self) {
+        self.selected_settings_category_index = if self.selected_settings_category_index > 0 {
+            self.selected_settings_category_index - 1
+        } else {
+            self.settings_categories.len().saturating_sub(1)
+        };
+        
+        if self.dispatch_mode == crate::app::DispatchMode::OnHighlight {
+            // Future: Trigger content switch
+        }
+    }
+
+    pub fn exec_settings_down(&mut self) {
+        if !self.settings_categories.is_empty() {
+            self.selected_settings_category_index = (self.selected_settings_category_index + 1) % self.settings_categories.len();
+        }
+
+        if self.dispatch_mode == crate::app::DispatchMode::OnHighlight {
+            // Future: Trigger content switch
+        }
     }
 
     /// Executes the currently highlighted command from the sidebar.
@@ -235,6 +265,8 @@ impl App {
             for (i, tab) in self.tabs.iter_mut().enumerate() {
                 tab.active = i == next;
             }
+            // Recalculate layout for the new tab
+            self.layout = self.calculate_layout(self.view_area);
         }
     }
 
@@ -245,6 +277,8 @@ impl App {
             for (i, tab) in self.tabs.iter_mut().enumerate() {
                 tab.active = i == prev;
             }
+            // Recalculate layout for the new tab
+            self.layout = self.calculate_layout(self.view_area);
         }
     }
 
@@ -374,6 +408,92 @@ impl App {
         self.input_active = !self.input_active;
         if !self.input_active {
             self.input.reset();
+        }
+    }
+
+    pub fn exec_toggle_focus(&mut self) {
+        self.focus = match self.focus {
+            crate::app::Focus::Sidebar => crate::app::Focus::Content,
+            crate::app::Focus::Content => crate::app::Focus::Sidebar,
+        };
+    }
+
+    pub fn exec_profile_new(&mut self) {
+        if let Some(config) = &mut self.profile_config {
+            let new_id = "new_profile".to_string();
+            // Ensure unique ID
+            let mut final_id = new_id.clone();
+            let mut count = 1;
+            while config.sketches.iter().any(|s| s.id == final_id) {
+                final_id = format!("{}_{}", new_id, count);
+                count += 1;
+            }
+
+            let new_sketch = crate::config::Sketch {
+                id: final_id.clone(),
+                path: "".to_string(),
+                connection: config.connections.first().map(|c| c.id.clone()).unwrap_or_default(),
+                device: config.devices.first().map(|d| d.id.clone()).unwrap_or_default(),
+                mqtt: config.mqtt.first().map(|m| m.id.clone()).unwrap_or_default(),
+            };
+
+            config.sketches.push(new_sketch);
+            self.profile_ids.push(final_id);
+            self.selected_profile_index = self.profile_ids.len() - 1;
+            self.log("system", &format!("Created new profile: {}", self.profile_ids[self.selected_profile_index]));
+        }
+    }
+
+    pub fn exec_profile_clone(&mut self) {
+        if let Some(config) = &mut self.profile_config {
+            if let Some(current_id) = self.profile_ids.get(self.selected_profile_index) {
+                if let Some(current_sketch) = config.sketches.iter().find(|s| s.id == *current_id).cloned() {
+                    let mut new_sketch = current_sketch;
+                    new_sketch.id = format!("{}_copy", current_id);
+                    
+                    // Ensure unique
+                    let mut final_id = new_sketch.id.clone();
+                    let mut count = 1;
+                    while config.sketches.iter().any(|s| s.id == final_id) {
+                        final_id = format!("{}_copy_{}", current_id, count);
+                        count += 1;
+                    }
+                    new_sketch.id = final_id.clone();
+
+                    config.sketches.push(new_sketch);
+                    self.profile_ids.push(final_id);
+                    self.selected_profile_index = self.profile_ids.len() - 1;
+                    self.log("system", &format!("Cloned profile to: {}", self.profile_ids[self.selected_profile_index]));
+                }
+            }
+        }
+    }
+
+    pub fn exec_profile_delete(&mut self) {
+        if let Some(config) = &mut self.profile_config {
+            if !self.profile_ids.is_empty() {
+                let id_to_remove = self.profile_ids.remove(self.selected_profile_index);
+                config.sketches.retain(|s| s.id != id_to_remove);
+                
+                if self.selected_profile_index >= self.profile_ids.len() && !self.profile_ids.is_empty() {
+                    self.selected_profile_index = self.profile_ids.len() - 1;
+                }
+                self.log("system", &format!("Deleted profile: {}", id_to_remove));
+            }
+        }
+    }
+
+    pub fn exec_profile_save(&mut self) {
+        if let Some(config) = &self.profile_config {
+            match crate::config::save_profile_config_to_path(config, &self.profile_config_path) {
+                Ok(_) => {
+                    self.log("system", &format!("Configuration saved to {}", self.profile_config_path));
+                    self.toast_manager.success("Settings Saved");
+                },
+                Err(e) => {
+                    self.report_error(format!("Failed to save config: {}", e));
+                }
+            }
         }
     }
 }

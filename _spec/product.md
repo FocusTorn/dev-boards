@@ -15,7 +15,7 @@ A unified, high-performance development workspace for the ESP32-S3 ecosystem, de
 - **Integrated Serial Monitoring:** High-performance logging and interaction built directly into the Rust console.
 - **Future-Proofing:** 
     - Eventual migration to tabbed project interfaces.
-    - Planned OS auto-detection for hardware ports (COM vs /dev/tty) to minimize configuration friction.
+    - Rich port auto-detection (VID/PID/Manufacturer) integrated into the Profile management system.
 
 ## Target User
 - A single developer handling the full stack: firmware (C++/Arduino/ESP-IDF), systems (environment setup/automation), and TUI (Rust).

@@ -107,9 +107,24 @@ tab_bars:
       tabs:
           - id: "dashboard"
             name: "Dashboard"
+          - id: "profiles"
+            name: "Profiles"
             default: "active"
 
       tab_bindings:
+          profiles:
+              separator: " "
+              items:
+                  - key: "[🡙]"
+                    description: "Navigate Categories"
+                    triggers:
+                        "[Up]": "settings_up"
+                        "[Down]": "settings_down"
+                  - key: "[Tab]"
+                    description: "Focus Content"
+                    triggers:
+                        "[Tab]": "toggle_focus"
+
           dashboard:
               separator: " "
               items:
