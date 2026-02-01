@@ -10,7 +10,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 ## 2. :: Closed <!-- Start Fold -->
 
 - [x] **Track: refactor-widgets_20260131**
-  *Link: [./tracks/refactor-widgets_20260131/](./tracks/refactor-widgets_20260131/)*
+  *Link: [./tracks/dev-console2/closed/refactor-widgets_20260131/](./tracks/dev-console2/closed/refactor-widgets_20260131/)*
 
 - [x] **Track: testing_100_coverage_20260128**
 
