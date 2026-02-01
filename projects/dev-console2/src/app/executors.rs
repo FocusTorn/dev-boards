@@ -42,24 +42,149 @@ impl App {
     }
 
     pub fn exec_settings_up(&mut self) {
-        self.selected_settings_category_index = if self.selected_settings_category_index > 0 {
-            self.selected_settings_category_index - 1
+        if self.focus == crate::app::Focus::Sidebar {
+            self.selected_settings_category_index = if self.selected_settings_category_index > 0 {
+                self.selected_settings_category_index - 1
+            } else {
+                self.settings_categories.len().saturating_sub(1)
+            };
+            self.selected_field_index = 0; // Reset field when switching category
+            self.icon_focused = false;
         } else {
-            self.settings_categories.len().saturating_sub(1)
-        };
-        
-        if self.dispatch_mode == crate::app::DispatchMode::OnHighlight {
-            // Future: Trigger content switch
+            // Arrow Up: Move to previous row
+            let count = self.get_active_settings_field_count();
+            if count > 0 {
+                self.selected_field_index = if self.selected_field_index > 0 {
+                    self.selected_field_index - 1
+                } else {
+                    count - 1
+                };
+                self.icon_focused = false; // Reset sub-focus on row change
+            }
         }
     }
 
     pub fn exec_settings_down(&mut self) {
-        if !self.settings_categories.is_empty() {
-            self.selected_settings_category_index = (self.selected_settings_category_index + 1) % self.settings_categories.len();
+        if self.focus == crate::app::Focus::Sidebar {
+            if !self.settings_categories.is_empty() {
+                self.selected_settings_category_index = (self.selected_settings_category_index + 1) % self.settings_categories.len();
+            }
+            self.selected_field_index = 0; // Reset field when switching category
+            self.icon_focused = false;
+        } else {
+            // Arrow Down: Move to next row
+            let count = self.get_active_settings_field_count();
+            if count > 0 {
+                self.selected_field_index = (self.selected_field_index + 1) % count;
+                self.icon_focused = false; // Reset sub-focus on row change
+            }
+        }
+    }
+
+    pub fn exec_settings_next_field(&mut self) {
+        if self.focus == crate::app::Focus::Sidebar {
+            self.focus = crate::app::Focus::Content;
+            self.selected_field_index = 0;
+            self.icon_focused = false;
+            return;
         }
 
-        if self.dispatch_mode == crate::app::DispatchMode::OnHighlight {
-            // Future: Trigger content switch
+        let count = self.get_active_settings_field_count();
+        if count == 0 { return; }
+
+        let has_icon = self.field_has_action_icon(self.selected_field_index);
+        
+        if has_icon && !self.icon_focused {
+            // Move from Input to Icon in same row
+            self.icon_focused = true;
+        } else {
+            // Move to next row
+            if self.selected_field_index < count - 1 {
+                self.selected_field_index += 1;
+                self.icon_focused = false;
+            } else {
+                // Loop back to sidebar? Or just loop within content?
+                // Let's loop back to sidebar for a complete cycle
+                self.focus = crate::app::Focus::Sidebar;
+                self.selected_field_index = 0;
+                self.icon_focused = false;
+            }
+        }
+    }
+
+    pub fn exec_settings_prev_field(&mut self) {
+        if self.focus == crate::app::Focus::Sidebar {
+            self.focus = crate::app::Focus::Content;
+            let count = self.get_active_settings_field_count();
+            self.selected_field_index = count.saturating_sub(1);
+            self.icon_focused = self.field_has_action_icon(self.selected_field_index);
+            return;
+        }
+
+        let count = self.get_active_settings_field_count();
+        if count == 0 { return; }
+
+        if self.icon_focused {
+            // Move from Icon to Input in same row
+            self.icon_focused = false;
+        } else {
+            // Move to previous row
+            if self.selected_field_index > 0 {
+                self.selected_field_index -= 1;
+                // If the new row has an icon, focus it (moving backward)
+                if self.field_has_action_icon(self.selected_field_index) {
+                    self.icon_focused = true;
+                } else {
+                    self.icon_focused = false;
+                }
+            } else {
+                // Move to sidebar
+                self.focus = crate::app::Focus::Sidebar;
+                self.selected_field_index = 0;
+                self.icon_focused = false;
+            }
+        }
+    }
+
+    /// Helper to check if a field has an associated action icon.
+    fn field_has_action_icon(&self, index: usize) -> bool {
+        let category = self.settings_categories.get(self.selected_settings_category_index)
+            .map(|s| s.as_str())
+            .unwrap_or("");
+        
+        if category == "Device" {
+            // Sketch Path (index 1) has a Folder icon
+            return index == 1;
+        }
+        false
+    }
+
+    pub fn exec_settings_edit(&mut self) {
+        let category = self.settings_categories.get(self.selected_settings_category_index)
+            .map(|s| s.as_str())
+            .unwrap_or("");
+
+        let current_profile_id = self.get_current_sketch_id();
+
+        if category == "Device" {
+            if let (Some(config), Some(profile_id)) = (&self.profile_config, current_profile_id) {
+                if let Some(sketch) = config.sketches.iter().find(|s| s.id == profile_id) {
+                    let connection = config.connections.iter().find(|c| c.id == sketch.connection);
+                    
+                    let value = match self.selected_field_index {
+                        0 => Some(sketch.id.clone()),
+                        1 => Some(sketch.path.clone()),
+                        2 => connection.map(|c| c.port.clone()),
+                        3 => connection.map(|c| c.baudrate.to_string()),
+                        _ => None,
+                    };
+
+                    if let Some(v) = value {
+                        self.input = tui_input::Input::new(v);
+                        self.input_active = true;
+                    }
+                }
+            }
         }
     }
 
@@ -75,6 +200,11 @@ impl App {
 
     /// Attempts to cancel any active background tasks or exit input mode.
     pub fn exec_cancel(&mut self) {
+        if self.modal.is_some() {
+            self.modal = None;
+            return;
+        }
+
         let is_active = matches!(self.task_state, TaskState::Running { .. }) || matches!(self.task_state, TaskState::Monitoring { .. });
         
         if is_active {
@@ -442,6 +572,79 @@ impl App {
             self.selected_profile_index = self.profile_ids.len() - 1;
             self.log("system", &format!("Created new profile: {}", self.profile_ids[self.selected_profile_index]));
         }
+    }
+
+    pub fn exec_settings_action(&mut self) {
+        let category = self.settings_categories.get(self.selected_settings_category_index)
+            .map(|s| s.as_str())
+            .unwrap_or("");
+
+        if category == "Device" && self.selected_field_index == 1 {
+            // Trigger File Picker for Sketch Path
+            use crate::widgets::file_browser::FileBrowser;
+            use crate::widgets::popup::Popup;
+            use std::path::{Path, PathBuf};
+
+            let current_path = if let (Some(config), Some(profile_id)) = (&self.profile_config, self.get_current_sketch_id()) {
+                config.sketches.iter().find(|s| s.id == profile_id).map(|s| s.path.clone()).unwrap_or_else(|| ".".to_string())
+            } else {
+                ".".to_string()
+            };
+
+            let mut start_dir = PathBuf::from(current_path);
+            if start_dir.is_file() {
+                start_dir = start_dir.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| PathBuf::from("."));
+            } else if !start_dir.exists() {
+                start_dir = PathBuf::from(".");
+            }
+
+            let browser = FileBrowser::new(start_dir);
+            self.modal = Some(Popup::new(browser, "SELECT SKETCH".to_string()));
+            self.log("action", "Opening file picker...");
+        }
+    }
+
+    pub fn exec_settings_finish_edit(&mut self) {
+        let new_value = self.input.value().to_string();
+        let category = self.settings_categories.get(self.selected_settings_category_index)
+            .map(|s| s.as_str())
+            .unwrap_or("");
+
+        let current_profile_id = self.get_current_sketch_id();
+
+        if category == "Device" {
+            if let (Some(config), Some(profile_id)) = (&mut self.profile_config, current_profile_id) {
+                if let Some(sketch) = config.sketches.iter_mut().find(|s| s.id == profile_id) {
+                    match self.selected_field_index {
+                        0 => {
+                            // Update profile ID (requires updating profile_ids list too)
+                            let old_id = sketch.id.clone();
+                            sketch.id = new_value.clone();
+                            if let Some(pos) = self.profile_ids.iter().position(|id| id == &old_id) {
+                                self.profile_ids[pos] = new_value;
+                            }
+                        },
+                        1 => sketch.path = new_value,
+                        2 => {
+                            let connection_id = sketch.connection.clone();
+                            if let Some(conn) = config.connections.iter_mut().find(|c| c.id == connection_id) {
+                                conn.port = new_value;
+                            }
+                        },
+                        3 => {
+                            let connection_id = sketch.connection.clone();
+                            if let Some(conn) = config.connections.iter_mut().find(|c| c.id == connection_id) {
+                                if let Ok(baud) = new_value.parse::<u32>() {
+                                    conn.baudrate = baud;
+                                }
+                            }
+                        },
+                        _ => {},
+                    }
+                }
+            }
+        }
+        self.input.reset();
     }
 
     pub fn exec_profile_clone(&mut self) {

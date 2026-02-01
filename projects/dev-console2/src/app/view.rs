@@ -20,6 +20,19 @@ use crate::widgets::toast::ToastWidget;
 /// terminal screen. It is responsible for calculating layout, rendering 
 /// widgets, and managing visual transitions like animations and toasts.
 ///< 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ActionIcon {
+    Folder,
+}
+
+impl ActionIcon {
+    fn symbol(&self) -> &'static str {
+        match self {
+            ActionIcon::Folder => "📁",
+        }
+    }
+}
+
 impl App {
     /// Main entry point for the frame-based rendering pass.
     ///>
@@ -45,6 +58,14 @@ impl App {
         self.render_main_content(frame, layout);
         self.render_bindings(frame, layout.bindings);
         self.render_status_bar(frame, layout.status_bar);
+        
+        // 0. Render Modal if present
+        if let Some(modal) = &self.modal {
+            let area = frame.area();
+            crate::widgets::dimmer::apply_dimming(frame.buffer_mut(), area);
+            frame.render_widget(modal, area);
+        }
+
         frame.render_widget(ToastWidget::new(&mut self.toast_manager), frame.area());
     }
 
@@ -250,13 +271,15 @@ impl App {
                 ]);
                 let chunks = settings_layout.split(area);
 
+                let is_focused = self.focus == crate::app::Focus::Content;
+
                 // Unified styling for all fields (Dimmer Grey border)
-                self.render_setting_item(frame, chunks[0], "Device: Profile ID", "Unique identifier for this hardware configuration.", &sketch.id, FieldStyle::DimGreyBorder);
-                self.render_setting_item(frame, chunks[1], "Device: Sketch Path", "FileSystem path to the primary .ino or project file.", &sketch.path, FieldStyle::DimGreyBorder);
+                self.render_setting_item(frame, chunks[0], "Device: Profile ID", "Unique identifier for this hardware configuration.", &sketch.id, is_focused && self.selected_field_index == 0, None, is_focused && self.selected_field_index == 0 && self.input_active, is_focused && self.selected_field_index == 0 && self.icon_focused, self.hovered_field_index == Some(0));
+                self.render_setting_item(frame, chunks[1], "Device: Sketch Path", "FileSystem path to the primary .ino or project file.", &sketch.path, is_focused && self.selected_field_index == 1, Some(ActionIcon::Folder), is_focused && self.selected_field_index == 1 && self.input_active, is_focused && self.selected_field_index == 1 && self.icon_focused, self.hovered_field_index == Some(1));
 
                 if let Some(conn) = connection {
-                    self.render_setting_item(frame, chunks[2], "Device: Serial Port", "Select the hardware port used for flashing and monitoring.", &conn.port, FieldStyle::DimGreyBorder);
-                    self.render_setting_item(frame, chunks[3], "Device: Baud Rate", "Communication speed in bits per second (standard is 115200).", &conn.baudrate.to_string(), FieldStyle::DimGreyBorder);
+                    self.render_setting_item(frame, chunks[2], "Device: Serial Port", "Select the hardware port used for flashing and monitoring.", &conn.port, is_focused && self.selected_field_index == 2, None, is_focused && self.selected_field_index == 2 && self.input_active, is_focused && self.selected_field_index == 2 && self.icon_focused, self.hovered_field_index == Some(2));
+                    self.render_setting_item(frame, chunks[3], "Device: Baud Rate", "Communication speed in bits per second (standard is 115200).", &conn.baudrate.to_string(), is_focused && self.selected_field_index == 3, None, is_focused && self.selected_field_index == 3 && self.input_active, is_focused && self.selected_field_index == 3 && self.icon_focused, self.hovered_field_index == Some(3));
                 }
             }
         } else {
@@ -265,17 +288,20 @@ impl App {
     }
 
     /// Helper to render a single setting item in VS Code style
-    fn render_setting_item(&self, frame: &mut Frame, area: Rect, label: &str, description: &str, value: &str, _style: FieldStyle) {
+    fn render_setting_item(&self, frame: &mut Frame, area: Rect, label: &str, description: &str, value: &str, highlighted: bool, action_icon: Option<ActionIcon>, is_editing: bool, icon_focused: bool, hovered: bool) {
         let vertical_chunks = Layout::vertical([
             Constraint::Length(1), // Label
             Constraint::Length(1), // Description
             Constraint::Length(3), // Input
         ]).split(area);
 
+        // Label only highlights if the row is selected AND the icon is NOT focused
+        let fg = if highlighted && !icon_focused { Color::Cyan } else { Color::White };
+
         // Label
         frame.render_widget(
             Paragraph::new(Line::from(vec![
-                Span::styled(label, Style::default().add_modifier(Modifier::BOLD).fg(Color::White)),
+                Span::styled(label, Style::default().add_modifier(Modifier::BOLD).fg(fg)),
             ])),
             vertical_chunks[0]
         );
@@ -291,18 +317,63 @@ impl App {
         // Value (The "Input Box") - Constrained width
         let horizontal_chunks = Layout::horizontal([
             Constraint::Percentage(50), // Input width
+            Constraint::Length(4),      // Action Icon space
             Constraint::Min(0),         // Spacer
         ]).split(vertical_chunks[2]);
 
         let input_area = horizontal_chunks[0];
-        let border_color = Color::Indexed(241); // Dimmer grey
+        let icon_area = horizontal_chunks[1];
+        
+        // Border only highlights if the row is selected AND the icon is NOT focused
+        let border_color = if highlighted && !icon_focused { 
+            Color::Cyan 
+        } else {
+            Color::Indexed(241) 
+        };
+
+        let display_value = if is_editing {
+            let cursor = self.input.visual_cursor().min(self.input.value().len());
+            let (head, tail) = self.input.value().split_at(cursor);
+            Line::from(vec![
+                Span::raw(" "),
+                Span::raw(head),
+                Span::styled("█", Style::default().fg(Color::Yellow)),
+                Span::raw(tail),
+            ])
+        } else {
+            Line::from(format!(" {}", value))
+        };
 
         frame.render_widget(
-            Paragraph::new(format!(" {}", value))
+            Paragraph::new(display_value)
                 .style(Style::default().fg(Color::White))
                 .block(Block::bordered().border_style(Style::default().fg(border_color))),
             input_area
         );
+
+        // Render Action Icon if present (No border)
+        if let Some(icon) = action_icon {
+            let icon_style = if (highlighted || hovered) && icon_focused { 
+                Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD) 
+            } else { 
+                Style::default().fg(Color::DarkGray) 
+};
+            
+            // Center the icon vertically in the input row
+            let centered_icon_area = Rect {
+                x: icon_area.x,
+                y: icon_area.y + 1, // Vertical center of the 3-height row
+                width: icon_area.width,
+                height: 1,
+            };
+
+            frame.render_widget(
+                Paragraph::new(icon.symbol())
+                    .alignment(Alignment::Center)
+                    .style(icon_style),
+                centered_icon_area
+            );
+        }
     }
 
     /// Renders context-sensitive keybinding help text.
@@ -366,8 +437,4 @@ impl App {
             frame.render_widget(Paragraph::new(Line::from(spans)).alignment(Alignment::Right), text_area);
         } //< 
     }
-}
-
-pub enum FieldStyle {
-    DimGreyBorder,
 }

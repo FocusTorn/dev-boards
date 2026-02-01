@@ -1,0 +1,8 @@
+{
+  "id": "refactor-widgets_20260131",
+  "title": "Refactor Reusable Widgets (Popup, FileBrowser)",
+  "status": "open",
+  "created_at": "2026-01-31",
+  "updated_at": "2026-01-31",
+  "description": "Refactor shared-rust components into encapsulated, reusable widgets in dev-console2 with buffer-mutating dimming."
+}

@@ -1,0 +1,26 @@
+connections:
+  - id: c1
+    compiler: arduino-cli
+    port: COM1
+    baudrate: 115200
+devices:
+  - id: d1
+    board_model: esp32
+    fbqn: esp32:esp32:esp32
+mqtt:
+  - id: m1
+    host: localhost
+    port: 1883
+    username: ""
+    password: ""
+sketches:
+  - id: new_profile
+    path: ""
+    connection: c1
+    device: d1
+    mqtt: m1
+  - id: p1_copy
+    path: test.ino
+    connection: c1
+    device: d1
+    mqtt: m1

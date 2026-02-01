@@ -12,6 +12,9 @@ use crate::widgets::tab_bar::{TabBarItem, TabBarWidget, TabBarAlignment};
 use crate::widgets::command_list::CommandListWidget;
 use crate::widgets::smooth_scrollbar::{ScrollBar, ScrollBarInteraction, ScrollCommand, ScrollLengths, ScrollEvent};
 use crate::widgets::toast::{ToastManager};
+use crate::widgets::popup::Popup;
+use crate::widgets::file_browser::FileBrowser;
+use crate::widgets::WidgetOutcome;
 use ratatui::{
     layout::{Constraint, Layout, Rect, Position},
     widgets::{Block},
@@ -158,6 +161,8 @@ pub struct AppLayout {
 pub struct SettingsLayout {
     pub sidebar: Rect,
     pub content: Rect,
+    pub field_areas: [Rect; 4],
+    pub icon_areas: [Option<Rect>; 4],
 }
 
 /// The central application state following the Elm Architecture (Model).
@@ -179,6 +184,10 @@ pub struct App {
     command_index_before_hover: Option<usize>,
     settings_categories: Vec<String>,
     selected_settings_category_index: usize,
+    selected_field_index: usize,
+    hovered_field_index: Option<usize>,
+    field_index_before_hover: Option<usize>,
+    icon_focused: bool,
     output_lines: Vec<String>,
     output_cached_lines: Vec<ratatui::text::Line<'static>>,
     output_scroll: u16,
@@ -203,6 +212,8 @@ pub struct App {
     pub should_redraw: bool,
     pub dispatch_mode: DispatchMode,
     pub focus: Focus,
+
+    pub modal: Option<Popup<FileBrowser>>,
 
     // Input state
     pub input: tui_input::Input,
@@ -292,6 +303,10 @@ impl App {
                 "Paths".to_string(),
             ],
             selected_settings_category_index: 0,
+            selected_field_index: 0,
+            hovered_field_index: None,
+            field_index_before_hover: None,
+            icon_focused: false,
             output_lines: initial_output.clone(),
             output_cached_lines: initial_output.iter().map(|l| crate::app::ansi::parse_ansi_line(l)).collect(),
             output_scroll: 0,
@@ -326,6 +341,7 @@ impl App {
             should_redraw: true,
             dispatch_mode: DispatchMode::OnSelect,
             focus: Focus::Sidebar,
+            modal: None,
             input: tui_input::Input::default(),
             input_active: false,
             serial_tx: None,
@@ -338,7 +354,7 @@ impl App {
     /// This method partitions the terminal into semantic blocks (Title, Sidebar, 
     /// Output, etc.) while respecting widget-specific height requirements 
     /// defined in the configuration.
-    ///<
+    ///< 
     pub fn calculate_layout(&self, area: Rect) -> AppLayout {
         let vertical_layout = Layout::vertical([
             Constraint::Length(1),
@@ -423,9 +439,53 @@ impl App {
         ])
         .areas(area);
 
+        let vertical_layout = Layout::vertical([
+            Constraint::Length(1),  // Alignment offset
+            Constraint::Length(2),  // Header
+            Constraint::Min(0),     // Settings fields
+        ]);
+        let chunks = vertical_layout.split(content);
+        let fields_area = chunks[2];
+
+        let settings_layout = Layout::vertical([
+            Constraint::Length(5), // Field 0
+            Constraint::Length(5), // Field 1
+            Constraint::Length(5), // Field 2
+            Constraint::Length(5), // Field 3
+            Constraint::Min(0),
+        ]);
+        let field_chunks = settings_layout.split(fields_area);
+
+        let mut field_areas = [Rect::default(); 4];
+        let mut icon_areas = [None; 4];
+
+        for i in 0..4 {
+            let row_area = field_chunks[i];
+            let row_layout = Layout::vertical([
+                Constraint::Length(1), // Label
+                Constraint::Length(1), // Description
+                Constraint::Length(3), // Input row
+            ]);
+            let row_chunks = row_layout.split(row_area);
+            let input_row = row_chunks[2];
+
+            let horizontal_chunks = Layout::horizontal([
+                Constraint::Percentage(50), // Input width
+                Constraint::Length(4),      // Action Icon space
+                Constraint::Min(0),         // Spacer
+            ]).split(input_row);
+
+            field_areas[i] = horizontal_chunks[0];
+            if i == 1 { // Sketch Path has icon
+                icon_areas[i] = Some(horizontal_chunks[1]);
+            }
+        }
+
         SettingsLayout {
             sidebar,
             content,
+            field_areas,
+            icon_areas,
         }
     }
 
@@ -433,7 +493,7 @@ impl App {
     ///>
     /// Processes messages from user input or system updates and transitions 
     /// the application state accordingly.
-    ///<
+    ///< 
     pub fn update(&mut self, msg: Message) {
         self.should_redraw = true;
         
@@ -474,7 +534,7 @@ impl App {
     ///>
     /// Handles input field capture, global hotkeys, and context-sensitive 
     /// bindings defined in `build-config.yaml`.
-    ///<
+    ///< 
     fn dispatch_key(&mut self, key: event::KeyEvent) {
         if key.kind != KeyEventKind::Press { return; }
 
@@ -486,7 +546,16 @@ impl App {
             use tui_input::backend::crossterm::EventHandler;
             match key.code {
                 KeyCode::Enter => {
-                    self.exec_send_command();
+                    let active_tab_id = self.tabs.iter()
+                        .find(|t| t.active)
+                        .map(|t| t.id.as_str())
+                        .unwrap_or("");
+                    
+                    if active_tab_id == "profiles" {
+                        self.exec_settings_finish_edit();
+                    } else {
+                        self.exec_send_command();
+                    }
                     self.input_active = false;
                     self.should_redraw = true;
                 }
@@ -507,13 +576,92 @@ impl App {
             return;
         }
 
-        // 0. Hardcoded Tab handling for focus switching
+        // 0. Modal Handling (Priority)
+        if let Some(modal) = &mut self.modal {
+            match modal.handle_key(key) {
+                WidgetOutcome::Consumed | WidgetOutcome::Changed(_) => {
+                    return;
+                }
+                WidgetOutcome::Confirmed(path) => {
+                    // Update settings based on context
+                    let active_tab_id = self.tabs.iter()
+                        .find(|t| t.active)
+                        .map(|t| t.id.as_str())
+                        .unwrap_or("");
+                    
+                    if active_tab_id == "profiles" && self.selected_field_index == 1 {
+                        let path_str = path.to_string_lossy().to_string();
+                        let current_profile_id = self.get_current_sketch_id();
+                        if let (Some(config), Some(profile_id)) = (&mut self.profile_config, current_profile_id) {
+                            if let Some(sketch) = config.sketches.iter_mut().find(|s| s.id == profile_id) {
+                                sketch.path = path_str.clone();
+                                self.log("info", &format!("Updated sketch path to: {}", path_str));
+                            }
+                        }
+                    } else {
+                        let msg = format!("Confirmed path: {:?}", path);
+                        self.log("info", &msg);
+                    }
+                    self.modal = None;
+                    return;
+                }
+                WidgetOutcome::Canceled => {
+                    self.modal = None;
+                    return;
+                }
+                WidgetOutcome::None => {}
+            }
+        }
+
+        let active_tab_id = self.tabs.iter()
+            .find(|t| t.active)
+            .map(|t| t.id.as_str())
+            .unwrap_or("");
+        
+        // 1. Tab-specific Override (e.g. Profiles navigation)
+        if active_tab_id == "profiles" {
+            if self.key_matches(key, "[Up]") {
+                self.dispatch_command(Action::SettingsUp);
+                return;
+            }
+            if self.key_matches(key, "[Down]") {
+                self.dispatch_command(Action::SettingsDown);
+                return;
+            }
+            if self.key_matches(key, "[Left]") || self.key_matches(key, "[Shift+Tab]") {
+                self.last_raw_input = format!("{} >> ACTION: SettingsPrevField", self.last_raw_input);
+                self.exec_settings_prev_field();
+                return;
+            }
+            if self.key_matches(key, "[Right]") || self.key_matches(key, "[Tab]") {
+                self.last_raw_input = format!("{} >> ACTION: SettingsNextField", self.last_raw_input);
+                self.exec_settings_next_field();
+                return;
+            }
+            if self.key_matches(key, "[Enter]") && self.focus == Focus::Content {
+                if self.icon_focused {
+                    self.last_raw_input = format!("{} >> ACTION: SettingsAction", self.last_raw_input);
+                    self.exec_settings_action();
+                } else {
+                    self.last_raw_input = format!("{} >> ACTION: SettingsEdit", self.last_raw_input);
+                    self.exec_settings_edit();
+                }
+                return;
+            }
+            if self.key_matches(key, "f") && self.focus == Focus::Content {
+                self.last_raw_input = format!("{} >> ACTION: SettingsAction", self.last_raw_input);
+                self.exec_settings_action();
+                return;
+            }
+        }
+
+        // 2. Hardcoded Tab handling for focus switching (Fallback)
         if self.key_matches(key, "[Tab]") {
             self.dispatch_command(Action::ToggleFocus);
             return;
         }
 
-        // 1. Tab Bar Navigation Bindings
+        // 3. Tab Bar Navigation Bindings
         if let Some(tab_bar) = self.tab_bar_map.get("MainContentTabBar") {
             for key_str in &tab_bar.navigation.left {
                 if self.key_matches(key, key_str) { 
@@ -563,8 +711,48 @@ impl App {
     /// Coordinates interactions between modular widgets (TabBars, Scrollbars, 
     /// CommandLists) and provides global hover/click detection for status 
     /// and output regions.
-    ///<
+    ///< 
     pub fn dispatch_mouse(&mut self, mouse_event: event::MouseEvent) {
+        // 0. Handle Modal Mouse Input (Priority)
+        if let Some(modal) = &mut self.modal {
+            match modal.handle_mouse(mouse_event, self.view_area) {
+                WidgetOutcome::Consumed | WidgetOutcome::Changed(_) => {
+                    self.should_redraw = true;
+                    return;
+                }
+                WidgetOutcome::Confirmed(path) => {
+                    let active_tab_id = self.tabs.iter()
+                        .find(|t| t.active)
+                        .map(|t| t.id.as_str())
+                        .unwrap_or("");
+                    
+                    if active_tab_id == "profiles" && self.selected_field_index == 1 {
+                        let path_str = path.to_string_lossy().to_string();
+                        let current_profile_id = self.get_current_sketch_id();
+                        if let (Some(config), Some(profile_id)) = (&mut self.profile_config, current_profile_id) {
+                            if let Some(sketch) = config.sketches.iter_mut().find(|s| s.id == profile_id) {
+                                sketch.path = path_str.clone();
+                                self.log("info", &format!("Updated sketch path to: {}", path_str));
+                            }
+                        }
+                    }
+                    self.modal = None;
+                    self.should_redraw = true;
+                    return;
+                }
+                WidgetOutcome::Canceled => {
+                    self.modal = None;
+                    self.should_redraw = true;
+                    return;
+                }
+                WidgetOutcome::None => {
+                    // Block base UI if mouse is outside modal but modal is open? 
+                    // Usually yes, modals are "capture-all"
+                    return;
+                }
+            }
+        }
+
         // RAW LOGGING (Ignore Move noise)
         if mouse_event.kind != event::MouseEventKind::Moved {
             let mods_str = self.get_modifiers_display(mouse_event.modifiers);
@@ -586,6 +774,101 @@ impl App {
                     self.layout = self.calculate_layout(self.view_area);
                     self.should_redraw = true;
                     return; 
+                }
+            }
+        }
+
+        // 1.1 Settings Tab Hit Detection
+        let active_tab_id = self.tabs.iter()
+            .find(|t| t.active)
+            .map(|t| t.id.as_str())
+            .unwrap_or("");
+
+        if active_tab_id == "profiles" {
+            if let Some(settings_layout) = layout.settings {
+                // Sidebar Category Selection
+                if settings_layout.sidebar.contains(mouse_pos) {
+                    let sidebar_inner = Block::bordered().inner(settings_layout.sidebar);
+                    if sidebar_inner.contains(mouse_pos) {
+                        let relative_y = mouse_pos.y.saturating_sub(sidebar_inner.y);
+                        if (relative_y as usize) < self.settings_categories.len() {
+                            self.selected_settings_category_index = relative_y as usize;
+                            self.focus = Focus::Sidebar;
+                            self.selected_field_index = 0;
+                            self.icon_focused = false;
+                            self.should_redraw = true;
+                            return;
+                        }
+                    }
+                }
+
+                // Content Field Selection
+                if settings_layout.content.contains(mouse_pos) {
+                    let mut found_hit = false;
+                    for i in 0..4 {
+                        // Check Field Click/Hover
+                        if settings_layout.field_areas[i].contains(mouse_pos) {
+                            found_hit = true;
+                            if let event::MouseEventKind::Down(event::MouseButton::Left) = mouse_event.kind {
+                                self.selected_field_index = i;
+                                self.icon_focused = false;
+                                self.focus = Focus::Content;
+                                self.field_index_before_hover = None;
+                                self.exec_settings_edit();
+                            } else {
+                                // Hover
+                                if self.hovered_field_index.is_none() {
+                                    self.field_index_before_hover = Some(self.selected_field_index);
+                                }
+                                if self.hovered_field_index != Some(i) {
+                                    self.hovered_field_index = Some(i);
+                                    self.selected_field_index = i;
+                                    self.icon_focused = false;
+                                    self.should_redraw = true;
+                                }
+                            }
+                            break;
+                        }
+                        // Check Icon Click/Hover
+                        if let Some(icon_area) = settings_layout.icon_areas[i] {
+                            if icon_area.contains(mouse_pos) {
+                                found_hit = true;
+                                if let event::MouseEventKind::Down(event::MouseButton::Left) = mouse_event.kind {
+                                    self.selected_field_index = i;
+                                    self.icon_focused = true;
+                                    self.focus = Focus::Content;
+                                    self.field_index_before_hover = None;
+                                    self.exec_settings_action();
+                                } else {
+                                    // Hover
+                                    if self.hovered_field_index.is_none() {
+                                        self.field_index_before_hover = Some(self.selected_field_index);
+                                    }
+                                    if self.hovered_field_index != Some(i) || !self.icon_focused {
+                                        self.hovered_field_index = Some(i);
+                                        self.selected_field_index = i;
+                                        self.icon_focused = true;
+                                        self.should_redraw = true;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    if !found_hit {
+                        if let Some(old_idx) = self.field_index_before_hover {
+                            self.selected_field_index = old_idx;
+                            self.field_index_before_hover = None;
+                            self.icon_focused = false;
+                            self.should_redraw = true;
+                        }
+                        if self.hovered_field_index.is_some() {
+                            self.hovered_field_index = None;
+                            self.should_redraw = true;
+                        }
+                    }
+                    if found_hit { return; }
                 }
             }
         }
@@ -744,7 +1027,7 @@ impl App {
     ///>
     /// This is the final stage of input routing, ensuring all commands flow 
     /// through a single centralized bottleneck for logging and state tracking.
-    ///<
+    ///< 
     fn dispatch_command(&mut self, action: Action) {
         self.last_raw_input = format!("{} >> ACTION: {:?}", self.last_raw_input, action);
         self.should_redraw = true;
@@ -852,6 +1135,20 @@ impl App {
         self.status_text = format!("[Error] {}", msg);
         self.log("error", &msg);
         self.toast_manager.error(&msg);
+    }
+
+    /// Returns the number of settings fields in the currently selected category.
+    fn get_active_settings_field_count(&self) -> usize {
+        let category = self.settings_categories.get(self.selected_settings_category_index)
+            .map(|s| s.as_str())
+            .unwrap_or("");
+        
+        match category {
+            "Device" => 4, // Profile ID, Sketch Path, Serial Port, Baud Rate
+            "MQTT" => 5,   // Host, Port, Client ID, Username, Password (approx)
+            "Paths" => 1,  // config.yaml path
+            _ => 0,
+        }
     }
 }
 
