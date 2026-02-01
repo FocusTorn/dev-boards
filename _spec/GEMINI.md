@@ -26,17 +26,24 @@ To find a file (e.g., "**Product Definition**") within a specific context (Proje
 
 5.  **Verify:** You MUST verify the resolved file actually exists on the disk.
 
-**Standard Default Paths (Project):**
-- **Product Definition**: `_spec/product.md`
-- **Tech Stack**: `_spec/tech-stack.md`
-- **Workflow**: `_spec/workflow.md`
-- **Product Guidelines**: `_spec/product-guidelines.md`
+**Standard Default Paths (Workspace):**
+- **Product Definition**: `_spec/_meta/workspace/product.md`
+- **Tech Stack**: `_spec/_meta/workspace/tech-stack.md`
+- **Workflow**: `_spec/_meta/workspace/workflow.md`
+- **Product Guidelines**: `_spec/_meta/workspace/product-guidelines.md`
 - **Tracks Registry**: `_spec/tracks.md`
 - **Tracks Directory**: `_spec/tracks/`
+- **Aliases Registry**: `_spec/_meta/aliases.md`
+
+**Standard Default Paths (Project):**
+- **North Star (Definition)**: `_spec/_meta/<project_id>/north_star.md`
+- **Architecture**: `_spec/_meta/<project_id>/architecture.md`
+- **Components**: `_spec/_meta/<project_id>/components.md`
+- **Project Backlog**: `_spec/_meta/<project_id>/tracks.md`
 
 **Standard Default Paths (Track):**
-- **Specification**: `_spec/tracks/<track_id>/spec.md`
-- **Implementation Plan**: `_spec/tracks/<track_id>/plan.md`
-- **Metadata**: `_spec/tracks/<track_id>/metadata.json`
+- **Specification**: `_spec/tracks/<project_id>/<track_id>/spec.md`
+- **Implementation Plan**: `_spec/tracks/<project_id>/<track_id>/plan.md`
+- **Metadata**: `_spec/tracks/<project_id>/<track_id>/metadata.json`
 
 

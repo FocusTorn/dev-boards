@@ -7,11 +7,7 @@
 - [Workflow](./_meta/workspace/workflow.md)
 
 ## Projects
-### Dev Console V2
-- [Architecture](./_meta/dev-console2/architecture.md)
-- [North Star](./_meta/dev-console2/north_star.md)
-- [Components](./_meta/dev-console2/components.md)
-- [Backlog](./_meta/dev-console2/tracks.md)
+- [Aliases Registry](./_meta/aliases.md)
 
 ## Shared Standards
 - [Standard Style Guides](./code_styleguides/)

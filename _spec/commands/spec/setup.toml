@@ -108,7 +108,8 @@ CRITICAL: When determining model complexity, ALWAYS select the "flash" model, re
     -   **Ask the user the following question and wait for their response before proceeding to the next step:** "What do you want to build?"
     -   **CRITICAL: You MUST NOT execute any tool calls until the user has provided a response.**
     -   **Upon receiving the user's response:**
-        -   Execute `mkdir -p _spec`.
+        -   Execute `mkdir -p _spec/_meta`.
+        -   **Initialize Aliases File:** Create `_spec/_meta/aliases.md` with a header: `# Project Aliases\n\n- workspace: workspace`.
         -   **Initialize State File:** Immediately after creating the `_spec` directory, you MUST create `_spec/setup_state.json` with the exact content:
             `{"last_successful_step": ""}`
         -   Write the user's response into `_spec/product.md` under a header named `# Initial Concept`.
