@@ -4,9 +4,11 @@ Standards for tool selection, shell environment, and persistence to ensure maxim
 
 ## Shell Environment
 
-- **GitBash Preference**: You MUST use `GitBash` (typically `sh` or `bash`) as the primary shell for all `run_shell_command` calls. 
-- **Unix Syntax**: Always use Unix-style syntax (e.g., `ls -la`, `mkdir -p`, `rm -rf`) instead of PowerShell cmdlets to maintain consistency with `LF` line endings.
-- **Path Handling**: Use forward slashes (`/`) for all paths in shell commands to ensure compatibility with GitBash.
+- **PowerShell 7 (pwsh) Preference**: You MUST use `pwsh` as the primary shell.
+- **PowerShell Syntax**: Use standard PowerShell syntax (e.g., `&&`, `;`, `Test-Path`) and avoid legacy CMD or Bash-specific wrappers unless executing a script that requires them.
+- **Absolute Pathing**: When referencing the shell for environment setup, always use the absolute path to the `pwsh.exe` executable to ensure consistent process resolution.
+
+This ensures the CLI's internal `getShellConfiguration()` logic detects a valid PowerShell executable while maintaining the full environment context required for server connectivity.
 
 ## Preferred Tool Persistence
 
