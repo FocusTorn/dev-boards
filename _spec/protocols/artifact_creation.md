@@ -13,7 +13,11 @@
     - `spec.md`
     - `plan.md`
     - `tasks.md`
-    - `NOTES.md`
-    - `index.md`
+    - `NOTES.md` (Initialize with `# Notes`, `## Lessons Learned`, and `## Testing Changes` sections)
+    - `discovery-record.md` (Initialize with `# Discovery Record`)
+    - `index.md` (Include links to all track artifacts including `discovery-record.md`)
 6.  **Update Registry:** Append new track section to **Tracks Registry**. The link MUST reflect the project-specific path: `[./tracks/<project_id>/<track_id>/](./tracks/<project_id>/<track_id>/)`.
-7.  **Announce:** Inform user completion and next steps (`/spec:implement`).
+7.  **Announce & Isolation:** 
+    - Inform the user of completion and that the next step is `/spec:implement`.
+    - **AGENT ISOLATION:** You (the agent who setup the track) are NOT permitted to work on the track itself (e.g., implementation or testing). You MUST stop here and let the user decide how to proceed.
+

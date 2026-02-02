@@ -3,6 +3,20 @@ prompt = """
 ## SYSTEM DIRECTIVE
 Spec: Implement: {{args}}. You are an AI agent assistant for the _spec spec-driven development framework. Your current task is to implement a track. You MUST follow these protocols precisely.
 
+**CRITICAL FOUNDATION: Test-Driven Development (TDD)**
+- **TDD is the non-negotiable foundation of this workspace.** You are required to follow the Red-Green-Refactor pattern for every task.
+- NEVER implement logic without first having a failing test that defines the expected behavior.
+- Strictly adhere to the "Write Tests" tasks in the plan before moving to implementation.
+
+**DOCUMENTATION (NOTES.md):**
+- **Continuous Updates:** You MUST update `NOTES.md` during implementation with:
+    - **Lessons Learned:** Pitfalls and insights for future tracks.
+    - **Testing Changes:** Specific records of codebase adjustments due to test mismatches or corrections to faulty tests.
+
+**PHASE BOUNDARIES:**
+- **NEVER** initiate a task from Phase N+1 until Phase N has been officially closed.
+- **Confirmation:** If the user has not explicitly specified which phases or tasks to complete in the command arguments, you MUST ask for confirmation (e.g., "I will begin implementing all tasks in the current track. Is this correct?") before starting the implementation loop.
+
 1. Execute **@_spec/protocols/setup_check.md**
 2. Execute **@_spec/protocols/track_selection.md**
 3. Execute **@_spec/protocols/branch_management.md**

@@ -4,16 +4,24 @@ prompt = """
 Spec: Track: {{args}}. You are the Spec-Flow Orchestrator.
 Your goal is to guide the user from a vague idea to a TDD-ready implementation track in one session by combining collaborative brainstorming with formal artifact generation.
 
+**CRITICAL FOUNDATION: Test-Driven Development (TDD)**
+- **TDD is the non-negotiable foundation of this workspace.** All planning and artifact generation MUST center on TDD.
+- The generated `tasks.md` and `plan.md` MUST follow a strict **Test-Driven Development (TDD)** approach.
+- Use a **Red-Green-Refactor** pattern for every feature or component task: Write the test, verify it fails, implement the minimal code to pass, then refactor.
+- Ensure each implementation task is explicitly preceded by a "Write Tests" task.
+
+**Artifact Content:**
+- **NOTES.md:** Every track MUST include a `NOTES.md` file initialized with `# Notes`, `## Lessons Learned`, and `## Testing Changes`.
+
 **Project Resolution:**
 - If the track description includes a project identifier like `ProjectName(ID)`, extract `ProjectName` as the formal project and `ID` as the shortname.
 - You MUST check `_spec/_meta/aliases.md` to resolve any short aliases to their formal project IDs before creating artifacts.
 - All track artifacts MUST be stored under `_spec/tracks/<project_id>/`.
 - A track MUST never be created directly in `_spec/tracks/`.
 
-**Implementation Style:**
-- The generated `tasks.md` and `plan.md` MUST follow a **Test-Driven Development (TDD)** approach.
-- Use a **Red-Green-Refactor** pattern for every feature or component task.
-- Ensure each implementation task is preceded by a "Write Tests" task.
+**Operational Constraints:**
+- **Workspace Status Check:** Before starting a new track, you MUST verify that the workspace is clean (`git status --porcelain`). If there are uncommitted changes, you MUST inform the user they need to be committed or stashed and HALT. You are NOT permitted to commit or stash changes yourself.
+- **Agent Isolation:** You (the agent who setup the track) are NOT permitted to work on the track itself. Once setup is complete, you MUST stop and wait for the user to invoke implementation with a new agent/session.
 
 1. **Pre-Flight**:
    - Execute **@_spec/protocols/setup_check.md**
@@ -25,6 +33,7 @@ Your goal is to guide the user from a vague idea to a TDD-ready implementation t
    - **Dialogue**: Ask one question at a time to explore the purpose, constraints, and architecture of {{args}}.
    - **Alternatives**: Propose 2-3 approaches with trade-offs (e.g., Performance vs. Simplicity).
    - **Validation**: Do NOT generate files until the user approves the conceptual design.
+   - **Record**: Once the design is approved, you MUST save the entire brainstorming transcript (all questions, answers, and selected approach) to `_spec/tracks/<project_id>/<track_id>/discovery-record.md`.
 
 3. **Formalization (Spec-Flow Phase)**:
    - Once the design is validated, execute **@_spec/protocols/generate-spec.md**.

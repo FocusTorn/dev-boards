@@ -3,8 +3,11 @@
 
 1.  **Workspace Integrity Check:** Check for uncommitted changes (`git status --porcelain`).
 2.  **Handle Dirty Tree:** 
-    -   If the workspace is dirty and you are NOT on the target `track/<track_id>` branch: Commit a checkpoint (`chore: checkpoint before switching to track branch`) OR inform the user that changes must be committed/stashed if the command is `/spec:newTrack`.
-    -   If resuming/implementing: Auto-commit checkpoint if necessary.
+    -   **CRITICAL (New Track):** If the command is to create a new track (e.g., `/spec:track`) and the workspace is dirty:
+        -   Inform the user: "The workspace has uncommitted changes. You MUST commit or stash these changes prior to beginning a new track."
+        -   **HALT:** You are NOT permitted to commit or stash these changes yourself.
+    -   **Existing Track:** If the workspace is dirty and you are NOT on the target `track/<track_id>` branch: Commit a checkpoint (`chore: checkpoint before switching to track branch`).
+    -   **Resuming/Implementing:** Auto-commit checkpoint if necessary.
 3.  **Switch Branch:**
     -   Identify target branch `track/<track_id>`.
     -   If current branch is different, checkout the target branch.
