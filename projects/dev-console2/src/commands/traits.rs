@@ -34,7 +34,11 @@ pub trait FileSystem: Send + Sync {
 /// Trait for serial port operations.
 #[cfg_attr(test, automock)]
 pub trait SerialProvider: Send + Sync {
-    fn open(&self, port_name: &str, baud_rate: u32) -> Result<Box<dyn SerialPort>, serialport::Error>;
+    fn open(
+        &self,
+        port_name: &str,
+        baud_rate: u32,
+    ) -> Result<Box<dyn SerialPort>, serialport::Error>;
 }
 
 /// Rich metadata for a discovered serial port.
@@ -92,10 +96,16 @@ pub struct RealChildProcess {
 
 impl ChildProcess for RealChildProcess {
     fn stdout(&mut self) -> Option<Box<dyn io::Read + Send>> {
-        self.child.stdout.take().map(|s| Box::new(s) as Box<dyn io::Read + Send>)
+        self.child
+            .stdout
+            .take()
+            .map(|s| Box::new(s) as Box<dyn io::Read + Send>)
     }
     fn stderr(&mut self) -> Option<Box<dyn io::Read + Send>> {
-        self.child.stderr.take().map(|s| Box::new(s) as Box<dyn io::Read + Send>)
+        self.child
+            .stderr
+            .take()
+            .map(|s| Box::new(s) as Box<dyn io::Read + Send>)
     }
     fn wait(&mut self) -> io::Result<std::process::ExitStatus> {
         self.child.wait()
@@ -124,14 +134,20 @@ impl FileSystem for RealFileSystem {
         std::fs::copy(from, to)
     }
     fn read_dir(&self, path: &Path) -> io::Result<Vec<PathBuf>> {
-        std::fs::read_dir(path)?.map(|res| res.map(|e| e.path())).collect()
+        std::fs::read_dir(path)?
+            .map(|res| res.map(|e| e.path()))
+            .collect()
     }
 }
 
 /// Real implementation of SerialProvider.
 pub struct RealSerialProvider;
 impl SerialProvider for RealSerialProvider {
-    fn open(&self, port_name: &str, baud_rate: u32) -> Result<Box<dyn SerialPort>, serialport::Error> {
+    fn open(
+        &self,
+        port_name: &str,
+        baud_rate: u32,
+    ) -> Result<Box<dyn SerialPort>, serialport::Error> {
         let port = serialport::new(port_name, baud_rate)
             .timeout(std::time::Duration::from_millis(10))
             .open()?;

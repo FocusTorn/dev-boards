@@ -8,13 +8,14 @@ pub mod theme;
 
 use crate::app::theme::Theme;
 
-use crate::widgets::tab_bar::{TabBarItem, TabBarWidget, TabBarAlignment};
 use crate::widgets::command_list::CommandListWidget;
-use crate::widgets::smooth_scrollbar::{ScrollBar, ScrollBarInteraction, ScrollCommand, ScrollLengths, ScrollEvent};
-use crate::widgets::toast::{ToastManager};
-use crate::widgets::popup::Popup;
 use crate::widgets::file_browser::FileBrowser;
-use crate::widgets::WidgetOutcome;
+use crate::widgets::popup::Popup;
+use crate::widgets::smooth_scrollbar::{
+    ScrollBar, ScrollBarInteraction, ScrollCommand, ScrollEvent, ScrollLengths,
+};
+use crate::widgets::toast::ToastManager;
+use crate::widgets::{WidgetOutcome, InteractiveWidget};
 use ratatui::{
     layout::{Constraint, Layout, Rect, Position},
     widgets::{Block},
@@ -174,7 +175,6 @@ pub struct SettingsLayout {
 #[derive(Debug)]
 pub struct App {
     pub running: bool,
-    tabs: Vec<TabBarItem>,
     config: crate::config::Config,
     tab_bar_map: HashMap<String, crate::config::TabBarConfig>,
     terminal_too_small: bool,
@@ -213,13 +213,17 @@ pub struct App {
     pub dispatch_mode: DispatchMode,
     pub focus: Focus,
 
-    pub modal: Option<Popup<FileBrowser>>,
+    modal: Option<Popup<FileBrowser>>,
 
     // Input state
     pub input: tui_input::Input,
     pub input_active: bool,
     pub serial_tx: Option<mpsc::Sender<crate::commands::SerialCommand>>,
     pub mqtt_tx: Option<mpsc::Sender<crate::commands::MqttCommand>>,
+
+    pub output_button_bar: crate::widgets::components::button_bar::button_bar::ButtonBar,
+    pub main_tab_bar: crate::widgets::components::tabbed_bar::tabbed_bar::TabbedBar,
+    pub profile_id_button_bar: crate::widgets::components::button_bar::button_bar::ButtonBar,
 }
 
 impl App {
@@ -236,15 +240,6 @@ impl App {
         for tb in config.tab_bars.iter() {
             tab_bar_map.insert(tb.id.clone(), tb.clone());
         }
-
-        let tabs = config.tab_bars.iter()
-            .find(|t| t.id == "MainContentTabBar")
-            .map(|c| c.tabs.iter().map(|t| TabBarItem {
-                id: t.id.clone(),
-                name: t.name.clone(),
-                active: t.default == Some("active".to_string()),
-            }).collect())
-            .unwrap_or_default();
 
         let output_autoscroll = config.tab_bars.iter()
             .find(|t| t.id == "OutputPanelStaticOptions")
@@ -287,9 +282,22 @@ impl App {
 
         let app_theme = Theme::new(&config.theme);
 
+        let mut output_button_bar = crate::widgets::components::button_bar::button_bar::ButtonBar::new("OutputPanelStaticOptions")?;
+        output_button_bar.set_active("autoscroll", output_autoscroll);
+
+        let mut main_tab_bar = crate::widgets::components::tabbed_bar::tabbed_bar::TabbedBar::new("MainContentTabBar")?;
+        
+        // Find initial active tab from config
+        if let Some(tab_config) = config.tab_bars.iter().find(|t| t.id == "MainContentTabBar") {
+            if let Some(active_id) = tab_config.tabs.iter().find(|t| t.default == Some("active".to_string())).map(|t| t.id.clone()) {
+                main_tab_bar.set_active(&active_id);
+            }
+        }
+
+        let profile_id_button_bar = crate::widgets::components::button_bar::button_bar::ButtonBar::new("ProfileIDButtonBar")?;
+
         Ok(Self {
             running: true,
-            tabs,
             config,
             tab_bar_map,
             terminal_too_small: false,
@@ -346,6 +354,9 @@ impl App {
             input_active: false,
             serial_tx: None,
             mqtt_tx: None,
+            output_button_bar,
+            main_tab_bar,
+            profile_id_button_bar,
         })
     }
 
@@ -365,26 +376,10 @@ impl App {
 
         let [title, main, bindings, status_bar] = vertical_layout.areas(area);
 
-        let mut inner_main = main;
-        for id in &["MainContentTabBar"] {
-            if let Some(tab_config) = self.config.tab_bars.iter().find(|t| t.id == *id) {
-                if tab_config.alignment.vertical != Some(TabBarAlignment::Bottom) {
-                    let consumed = TabBarWidget::config_consumed_height(&self.config, id);
-                    if inner_main.height >= consumed {
-                        inner_main.y += consumed;
-                        inner_main.height = inner_main.height.saturating_sub(consumed);
-                    }
-                }
-            }
-        }
-        inner_main = Block::bordered().inner(inner_main);
-
-        let active_tab_id = self.tabs.iter()
-            .find(|t| t.active)
-            .map(|t| t.id.as_str())
-            .unwrap_or("dashboard");
+        let active_tab_id = self.main_tab_bar.get_active_id().unwrap_or_else(|| "dashboard".to_string());
 
         if active_tab_id == "profiles" {
+            let inner_main = self.main_tab_bar.get_content_area(main);
             let settings = self.calculate_settings_layout(inner_main);
             AppLayout {
                 title,
@@ -398,6 +393,7 @@ impl App {
                 settings: Some(settings),
             }
         } else {
+            let inner_main = self.main_tab_bar.get_content_area(main);
             let [left_col, right_col] = Layout::horizontal([
                 Constraint::Length(25),
                 Constraint::Min(0),
@@ -546,10 +542,7 @@ impl App {
             use tui_input::backend::crossterm::EventHandler;
             match key.code {
                 KeyCode::Enter => {
-                    let active_tab_id = self.tabs.iter()
-                        .find(|t| t.active)
-                        .map(|t| t.id.as_str())
-                        .unwrap_or("");
+                    let active_tab_id = self.main_tab_bar.get_active_id().unwrap_or_else(|| "dashboard".to_string());
                     
                     if active_tab_id == "profiles" {
                         self.exec_settings_finish_edit();
@@ -584,10 +577,7 @@ impl App {
                 }
                 WidgetOutcome::Confirmed(path) => {
                     // Update settings based on context
-                    let active_tab_id = self.tabs.iter()
-                        .find(|t| t.active)
-                        .map(|t| t.id.as_str())
-                        .unwrap_or("");
+                    let active_tab_id = self.main_tab_bar.get_active_id().unwrap_or_else(|| "dashboard".to_string());
                     
                     if active_tab_id == "profiles" && self.selected_field_index == 1 {
                         let path_str = path.to_string_lossy().to_string();
@@ -613,10 +603,7 @@ impl App {
             }
         }
 
-        let active_tab_id = self.tabs.iter()
-            .find(|t| t.active)
-            .map(|t| t.id.as_str())
-            .unwrap_or("");
+        let active_tab_id = self.main_tab_bar.get_active_id().unwrap_or_else(|| "dashboard".to_string());
         
         // 1. Tab-specific Override (e.g. Profiles navigation)
         if active_tab_id == "profiles" {
@@ -662,14 +649,14 @@ impl App {
         }
 
         // 3. Tab Bar Navigation Bindings
-        if let Some(tab_bar) = self.tab_bar_map.get("MainContentTabBar") {
-            for key_str in &tab_bar.navigation.left {
+        if let Some(tab_bar_config) = self.tab_bar_map.get("MainContentTabBar") {
+            for key_str in &tab_bar_config.navigation.left {
                 if self.key_matches(key, key_str) { 
                     self.dispatch_command(Action::PrevTab); 
                     return; 
                 }
             }
-            for key_str in &tab_bar.navigation.right {
+            for key_str in &tab_bar_config.navigation.right {
                 if self.key_matches(key, key_str) { 
                     self.dispatch_command(Action::NextTab); 
                     return; 
@@ -677,8 +664,8 @@ impl App {
             }
             
             // 1.1 Tab-specific Semantic Bindings
-            if let Some(active_tab) = self.tabs.iter().find(|tab| tab.active) {
-                if let Some(bindings_config) = tab_bar.tab_bindings.get(&active_tab.id) {
+            if let Some(active_tab_id) = self.main_tab_bar.get_active_id() {
+                if let Some(bindings_config) = tab_bar_config.tab_bindings.get(&active_tab_id) {
                     for binding in &bindings_config.items {
                         for (phys_key, action_str) in &binding.triggers {
                             if self.key_matches(key, phys_key) {
@@ -721,10 +708,7 @@ impl App {
                     return;
                 }
                 WidgetOutcome::Confirmed(path) => {
-                    let active_tab_id = self.tabs.iter()
-                        .find(|t| t.active)
-                        .map(|t| t.id.as_str())
-                        .unwrap_or("");
+                    let active_tab_id = self.main_tab_bar.get_active_id().unwrap_or_else(|| "dashboard".to_string());
                     
                     if active_tab_id == "profiles" && self.selected_field_index == 1 {
                         let path_str = path.to_string_lossy().to_string();
@@ -764,25 +748,16 @@ impl App {
         let layout = self.layout;
 
         // 1. Tab Bar Widget Interactions
-        if let Some(_) = self.tab_bar_map.get("MainContentTabBar") {
-            if let Some((tab_bar, horiz, vert, off_x, off_y)) = TabBarWidget::from_config(&self.config, &self.tabs, "MainContentTabBar") {
-                if let Some(tab_idx) = tab_bar.handle_mouse_event(layout.main, horiz, vert, off_x, off_y, mouse_event) {
-                    for (i, tab) in self.tabs.iter_mut().enumerate() {
-                        tab.active = i == tab_idx;
-                    }
-                    // Recalculate layout for the new tab
-                    self.layout = self.calculate_layout(self.view_area);
-                    self.should_redraw = true;
-                    return; 
-                }
-            }
+        if let WidgetOutcome::Confirmed(id) = self.main_tab_bar.handle_mouse(mouse_event, layout.main) {
+            self.main_tab_bar.set_active(&id);
+            // Recalculate layout for the new tab
+            self.layout = self.calculate_layout(self.view_area);
+            self.should_redraw = true;
+            return; 
         }
 
         // 1.1 Settings Tab Hit Detection
-        let active_tab_id = self.tabs.iter()
-            .find(|t| t.active)
-            .map(|t| t.id.as_str())
-            .unwrap_or("");
+        let active_tab_id = self.main_tab_bar.get_active_id().unwrap_or_else(|| "dashboard".to_string());
 
         if active_tab_id == "profiles" {
             if let Some(settings_layout) = layout.settings {
@@ -806,6 +781,18 @@ impl App {
                 if settings_layout.content.contains(mouse_pos) {
                     let mut found_hit = false;
                     for i in 0..4 {
+                        // Check Button Bar hit if it's the first field (Profile ID)
+                        if i == 0 {
+                            if let WidgetOutcome::Confirmed(btn_id) = self.profile_id_button_bar.handle_mouse(mouse_event, settings_layout.field_areas[0]) {
+                                match btn_id.as_str() {
+                                    "save" => self.dispatch_command(Action::ProfileSave),
+                                    "delete" => self.dispatch_command(Action::ProfileDelete),
+                                    _ => {}
+                                }
+                                return;
+                            }
+                        }
+
                         // Check Field Click/Hover
                         if settings_layout.field_areas[i].contains(mouse_pos) {
                             found_hit = true;
@@ -874,13 +861,10 @@ impl App {
         }
 
         // 1.2 Output Panel "Auto" Toggle
-        let output_static_tabs = vec![TabBarItem { id: "autoscroll".to_string(), name: "Auto".to_string(), active: self.output_autoscroll }];
-        if let Some(_) = self.tab_bar_map.get("OutputPanelStaticOptions") {
-            if let Some((tab_bar, horiz, vert, off_x, off_y)) = TabBarWidget::from_config(&self.config, &output_static_tabs, "OutputPanelStaticOptions") {
-                if tab_bar.handle_mouse_event(layout.output, horiz, vert, off_x, off_y, mouse_event).is_some() {
-                    self.dispatch_command(Action::ToggleAutoscroll);
-                    return;
-                }
+        if let WidgetOutcome::Confirmed(id) = self.output_button_bar.handle_mouse(mouse_event, layout.output) {
+            if id == "autoscroll" {
+                self.dispatch_command(Action::ToggleAutoscroll);
+                return;
             }
         }
 

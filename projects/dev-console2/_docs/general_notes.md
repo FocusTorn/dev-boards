@@ -414,3 +414,6 @@ and one for each of these gemini-cli extensions:
 - conductor @https://github.com/gemini-cli-extensions/conductor
 
 
+
+## Cleaned PATH Environment Variable
+

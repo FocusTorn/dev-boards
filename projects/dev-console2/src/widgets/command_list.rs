@@ -1,11 +1,11 @@
+use crossterm::event::{KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     buffer::Buffer,
-    layout::{Rect, Position},
+    layout::{Position, Rect},
     style::{Color, Style},
-    text::{Span},
+    text::Span,
     widgets::{Block, Widget},
 };
-use crossterm::event::{MouseEvent, MouseButton, MouseEventKind, KeyModifiers};
 
 /// Semantic result of a mouse interaction with the command list.
 pub enum CommandListInteraction {
@@ -15,8 +15,8 @@ pub enum CommandListInteraction {
 
 /// A sidebar widget for selecting and executing development commands.
 ///>
-/// Displays a vertical list of available actions (Compile, Upload, etc.) 
-/// with integrated mouse support for hover-based highlighting and 
+/// Displays a vertical list of available actions (Compile, Upload, etc.)
+/// with integrated mouse support for hover-based highlighting and
 /// click-to-execute logic.
 ///<
 pub struct CommandListWidget<'a> {
@@ -30,10 +30,14 @@ pub struct CommandListWidget<'a> {
 
 impl<'a> CommandListWidget<'a> {
     /// Creates a new command list with initial selection and hover state.
-    pub fn new(commands: &'a [String], selected_index: usize, hovered_index: Option<usize>) -> Self {
-        Self { 
-            commands, 
-            selected_index, 
+    pub fn new(
+        commands: &'a [String],
+        selected_index: usize,
+        hovered_index: Option<usize>,
+    ) -> Self {
+        Self {
+            commands,
+            selected_index,
             hovered_index,
             border_style: Style::default(),
             title_style: Style::default(),
@@ -61,36 +65,45 @@ impl<'a> CommandListWidget<'a> {
 
     /// Identifies if a mouse event occurred over a specific command entry.
     ///>
-    /// Maps physical screen coordinates to zero-based command indices and 
-    /// returns semantic interactions (Click or Hover) based on the mouse button 
+    /// Maps physical screen coordinates to zero-based command indices and
+    /// returns semantic interactions (Click or Hover) based on the mouse button
     /// and movement state.
     ///<
-    pub fn handle_mouse_event(&self, area: Rect, mouse_event: MouseEvent) -> Option<CommandListInteraction> {
+    pub fn handle_mouse_event(
+        &self,
+        area: Rect,
+        mouse_event: MouseEvent,
+    ) -> Option<CommandListInteraction> {
         let mouse_pos = Position::new(mouse_event.column, mouse_event.row);
-        
+
         if !area.contains(mouse_pos) {
             return None;
         }
 
         let inner_area = Block::bordered().inner(area);
         let rel_y = mouse_event.row.saturating_sub(inner_area.y) as usize;
-        
-        if rel_y < self.commands.len() && inner_area.contains(mouse_pos) { //>
+
+        if rel_y < self.commands.len() && inner_area.contains(mouse_pos) {
+            //>
             match mouse_event.kind {
-                MouseEventKind::Down(MouseButton::Left) => Some(CommandListInteraction::Click(rel_y)),
-                MouseEventKind::Moved | MouseEventKind::Drag(MouseButton::Left) => Some(CommandListInteraction::Hover(rel_y)),
+                MouseEventKind::Down(MouseButton::Left) => {
+                    Some(CommandListInteraction::Click(rel_y))
+                }
+                MouseEventKind::Moved | MouseEventKind::Drag(MouseButton::Left) => {
+                    Some(CommandListInteraction::Hover(rel_y))
+                }
                 _ => None,
             }
         } else {
             None
-        } //< 
+        } //<
     }
 }
 
 impl<'a> Widget for CommandListWidget<'a> {
     /// Renders the command list with appropriate highlighting.
     ///>
-    /// Prioritizes hover highlighting over the actual selection index to 
+    /// Prioritizes hover highlighting over the actual selection index to
     /// provide visual feedback during mouse navigation.
     ///<
     fn render(self, area: Rect, buf: &mut Buffer) {
@@ -100,36 +113,42 @@ impl<'a> Widget for CommandListWidget<'a> {
         let inner_area = block.inner(area);
         block.render(area, buf);
 
-        for (idx, cmd) in self.commands.iter().enumerate() { //>
-            if idx >= inner_area.height as usize { break; }
-            
+        for (idx, cmd) in self.commands.iter().enumerate() {
+            //>
+            if idx >= inner_area.height as usize {
+                break;
+            }
+
             let item_y = inner_area.y + idx as u16;
             let item_area = Rect::new(inner_area.x, item_y, inner_area.width, 1);
-            
+
             let is_selected = idx == self.selected_index;
             let is_hovered = self.hovered_index == Some(idx);
-            
-            let is_highlighted = if self.hovered_index.is_some() { //>
+
+            let is_highlighted = if self.hovered_index.is_some() {
+                //>
                 is_hovered
             } else {
                 is_selected
-            }; //< 
+            }; //<
 
-            let style = if is_highlighted { //>
+            let style = if is_highlighted {
+                //>
                 self.highlight_style
             } else {
                 Style::default().fg(Color::DarkGray)
-            }; //< 
+            }; //<
 
-            if is_highlighted { //>
+            if is_highlighted {
+                //>
                 // Fill background border to border
                 for x in inner_area.left()..inner_area.right() {
                     buf[(x, item_y)].set_style(style);
                 }
-            } //< 
+            } //<
 
             buf.set_string(item_area.x + 1, item_y, format!(" {}", cmd), style);
-        } //< 
+        } //<
     }
 }
 
@@ -155,11 +174,13 @@ mod tests {
         let backend = TestBackend::new(20, 10);
         let mut terminal = Terminal::new(backend).unwrap();
         let commands = vec!["C1".to_string(), "C2".to_string()];
-        
-        terminal.draw(|f| {
-            let widget = CommandListWidget::new(&commands, 0, None);
-            f.render_widget(widget, f.area());
-        }).unwrap();
+
+        terminal
+            .draw(|f| {
+                let widget = CommandListWidget::new(&commands, 0, None);
+                f.render_widget(widget, f.area());
+            })
+            .unwrap();
 
         let buffer = terminal.backend().buffer();
         let s = buffer_to_string(buffer);
@@ -173,7 +194,7 @@ mod tests {
         let commands = vec!["C1".to_string()];
         let widget = CommandListWidget::new(&commands, 0, None);
         let area = Rect::new(0, 0, 20, 5);
-        
+
         // Hover
         let event = MouseEvent {
             kind: MouseEventKind::Moved,
@@ -184,7 +205,9 @@ mod tests {
         let interaction = widget.handle_mouse_event(area, event).unwrap();
         if let CommandListInteraction::Hover(idx) = interaction {
             assert_eq!(idx, 0);
-        } else { panic!(); } //>
+        } else {
+            panic!();
+        } //>
 
         // Click
         let event = MouseEvent {
@@ -196,7 +219,9 @@ mod tests {
         let interaction = widget.handle_mouse_event(area, event).unwrap();
         if let CommandListInteraction::Click(idx) = interaction {
             assert_eq!(idx, 0);
-        } else { panic!(); }
+        } else {
+            panic!();
+        }
     }
 
     #[test]
@@ -204,17 +229,21 @@ mod tests {
         let backend = TestBackend::new(20, 5);
         let mut terminal = Terminal::new(backend).unwrap();
         let commands = vec!["C1".to_string()];
-        
+
         // Selected, not hovered
-        terminal.draw(|f| {
-            let widget = CommandListWidget::new(&commands, 0, None);
-            f.render_widget(widget, f.area());
-        }).unwrap();
+        terminal
+            .draw(|f| {
+                let widget = CommandListWidget::new(&commands, 0, None);
+                f.render_widget(widget, f.area());
+            })
+            .unwrap();
 
         // Not selected, hovered
-        terminal.draw(|f| {
-            let widget = CommandListWidget::new(&commands, 1, Some(0));
-            f.render_widget(widget, f.area());
-        }).unwrap();
+        terminal
+            .draw(|f| {
+                let widget = CommandListWidget::new(&commands, 1, Some(0));
+                f.render_widget(widget, f.area());
+            })
+            .unwrap();
     }
 }

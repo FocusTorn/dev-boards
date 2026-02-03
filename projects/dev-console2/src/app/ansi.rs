@@ -1,8 +1,9 @@
+use lazy_static::lazy_static;
 /// High-performance ANSI escape sequence parsing for TUI rendering.
 ///>
-/// This module provides the logic for translating raw terminal output (containing 
-/// color and style codes) into `ratatui::text::Line` objects. It is designed to 
-/// handle standard SGR (Select Graphic Rendition) codes, 256-color palettes, 
+/// This module provides the logic for translating raw terminal output (containing
+/// color and style codes) into `ratatui::text::Line` objects. It is designed to
+/// handle standard SGR (Select Graphic Rendition) codes, 256-color palettes,
 /// and true-color (RGB) sequences.
 ///<
 use ratatui::{
@@ -10,7 +11,6 @@ use ratatui::{
     text::{Line, Span},
 };
 use regex::Regex;
-use lazy_static::lazy_static;
 
 lazy_static! {
     /// Matches standard ANSI escape sequences: \x1b[ followed by codes and ending with a command character.
@@ -19,7 +19,7 @@ lazy_static! {
 
 /// Translates a raw string line into a styled Ratatui Line.
 ///>
-/// If the input contains ANSI escape codes, it triggers the full regex-based 
+/// If the input contains ANSI escape codes, it triggers the full regex-based
 /// parser. Otherwise, it returns a simple raw line, avoiding unnecessary overhead.
 ///<
 pub fn parse_ansi_line(line: &str) -> Line<'static> {
@@ -35,12 +35,12 @@ fn parse_ansi_to_spans(text: &str) -> Line<'static> {
     let mut spans = Vec::new();
     let mut last_end = 0;
     let mut current_style = Style::default();
-    
+
     for cap in ANSI_REGEX.captures_iter(text) {
         let full_match = cap.get(0).unwrap();
         let codes = cap.get(1).map(|m| m.as_str()).unwrap_or("");
         let command = cap.get(2).map(|m| m.as_str()).unwrap_or("");
-        
+
         // Add text before this ANSI code
         if full_match.start() > last_end {
             let text_before = &text[last_end..full_match.start()];
@@ -48,15 +48,15 @@ fn parse_ansi_to_spans(text: &str) -> Line<'static> {
                 spans.push(Span::styled(text_before.to_string(), current_style));
             }
         }
-        
+
         // Parse ANSI codes and update style
         if command == "m" {
             current_style = parse_ansi_codes_to_style(codes, current_style);
         }
-        
+
         last_end = full_match.end();
     }
-    
+
     // Add remaining text
     if last_end < text.len() {
         let remaining = &text[last_end..];
@@ -64,7 +64,7 @@ fn parse_ansi_to_spans(text: &str) -> Line<'static> {
             spans.push(Span::styled(remaining.to_string(), current_style));
         }
     }
-    
+
     if spans.is_empty() {
         Line::from(Span::raw(text.to_string()))
     } else {
@@ -77,16 +77,22 @@ fn parse_ansi_codes_to_style(codes: &str, mut current_style: Style) -> Style {
     if codes.is_empty() {
         return Style::default();
     }
-    
+
     let code_parts: Vec<&str> = codes.split(';').collect();
     let mut i = 0;
-    
+
     while i < code_parts.len() {
         if let Ok(code) = code_parts[i].parse::<u8>() {
             match code {
-                0 => { current_style = Style::default(); }
-                1 => { current_style = current_style.add_modifier(Modifier::BOLD); }
-                30..=37 => { current_style = current_style.fg(parse_ansi_color(code - 30)); }
+                0 => {
+                    current_style = Style::default();
+                }
+                1 => {
+                    current_style = current_style.add_modifier(Modifier::BOLD);
+                }
+                30..=37 => {
+                    current_style = current_style.fg(parse_ansi_color(code - 30));
+                }
                 38 => {
                     if i + 1 < code_parts.len() {
                         let color_type = code_parts[i + 1].parse::<u8>().unwrap_or(0);
@@ -103,8 +109,12 @@ fn parse_ansi_codes_to_style(codes: &str, mut current_style: Style) -> Style {
                         }
                     }
                 }
-                39 => { current_style = current_style.fg(Color::Reset); }
-                90..=97 => { current_style = current_style.fg(parse_ansi_color(code - 90 + 8)); }
+                39 => {
+                    current_style = current_style.fg(Color::Reset);
+                }
+                90..=97 => {
+                    current_style = current_style.fg(parse_ansi_color(code - 90 + 8));
+                }
                 _ => {}
             }
         }

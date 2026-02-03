@@ -1,8 +1,11 @@
-use std::time::Duration;
-use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
-use std::sync::mpsc;
+use super::traits::{RealSerialProvider, SerialProvider};
 use crate::commands::compile::ProgressUpdate;
-use super::traits::{SerialProvider, RealSerialProvider};
+use std::sync::mpsc;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
+use std::time::Duration;
 
 /// Commands sent from the TUI to the background serial thread.
 pub enum SerialCommand {
@@ -29,11 +32,11 @@ pub fn run_serial_monitor(
 
 /// A high-performance Serial Monitor implementation with byte-level line buffering.
 ///>
-/// Operates in a background thread to prevent blocking the TUI. Handles 
-/// bidirectional communication with hardware, split-line reassembly for 
-/// UTF-8 data, and semantic tagging for different message types to support 
+/// Operates in a background thread to prevent blocking the TUI. Handles
+/// bidirectional communication with hardware, split-line reassembly for
+/// UTF-8 data, and semantic tagging for different message types to support
 /// consistent UI theming.
-///< 
+///<
 pub fn run_serial_monitor_with_provider(
     provider: &dyn SerialProvider,
     port_name: String,
@@ -47,19 +50,25 @@ pub fn run_serial_monitor_with_provider(
 
     let mut port = match port_result {
         Ok(p) => {
-            callback(ProgressUpdate::OutputLine(format!("⇄ Connected to {} at {} baud.", port_name, baud_rate)));
+            callback(ProgressUpdate::OutputLine(format!(
+                "⇄ Connected to {} at {} baud.",
+                port_name, baud_rate
+            )));
             p
         }
         Err(e) => {
             // Signal error using the requested icon (will be themed by App)
-            callback(ProgressUpdate::Failed(format!("✗ Failed to open port {}: {}", port_name, e)));
+            callback(ProgressUpdate::Failed(format!(
+                "✗ Failed to open port {}: {}",
+                port_name, e
+            )));
             return;
         }
     };
 
     let mut read_buffer = [0u8; 1024];
     let mut line_buffer = Vec::new();
-    
+
     while !cancel_signal.load(Ordering::SeqCst) {
         // 2. Process Outgoing Data (TX)
         // We drain the channel to handle multiple commands between reads
@@ -103,14 +112,19 @@ pub fn run_serial_monitor_with_provider(
             Ok(_) => {} // Nothing to read yet
             Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {} // Expected timeout
             Err(e) => {
-                callback(ProgressUpdate::OutputLine(format!("✗ Serial Read Error: {}", e)));
+                callback(ProgressUpdate::OutputLine(format!(
+                    "✗ Serial Read Error: {}",
+                    e
+                )));
                 break;
             }
         }
-        
+
         // Snipe CPU usage while maintaining high throughput
         std::thread::sleep(Duration::from_millis(1));
     }
-    
-    callback(ProgressUpdate::OutputLine("⬒ Serial connection closed.".to_string()));
+
+    callback(ProgressUpdate::OutputLine(
+        "⬒ Serial connection closed.".to_string(),
+    ));
 }

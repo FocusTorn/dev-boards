@@ -6,12 +6,10 @@ use ratatui::{
     Frame,
 };
 use crate::app::{App, AppLayout, TaskState};
-use crate::widgets::tab_bar::{TabBarItem, TabBarWidget};
 use crate::widgets::selection_list::SelectionListWidget;
 use crate::widgets::progress_bar::ProgressBarWidget;
 use crate::widgets::status_box::StatusBoxWidget;
 use crate::widgets::output_box::OutputBoxWidget;
-use crate::widgets::smooth_scrollbar::{ScrollBar, ScrollLengths};
 use crate::widgets::toast::ToastWidget;
 
 /// UI Rendering implementation (The 'View' of application logic).
@@ -90,7 +88,9 @@ impl App {
     /// Displays an error message when the terminal window is too small.
     fn render_terminal_too_small(&self, frame: &mut Frame) {
         frame.render_widget(Clear, frame.area());
-        let message = format!("Terminal Too Small\nRequired: {}x{}\nCurrent: {}x{}\n\nPress 'q' to quit", self.config.application.min_width, self.config.application.min_height, frame.area().width, frame.area().height);
+        let message = format!("Terminal Too Small\nRequired: {}x{}
+Current: {}x{}
+\nPress 'q' to quit", self.config.application.min_width, self.config.application.min_height, frame.area().width, frame.area().height);
         frame.render_widget(Paragraph::new(message).alignment(Alignment::Center).style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)), frame.area());
     }
 
@@ -100,19 +100,37 @@ impl App {
     /// lists, progress bars, and the output scroll region.
     ///< 
     fn render_main_content(&mut self, frame: &mut Frame, layout: AppLayout) {
-        TabBarWidget::render_composite(&self.config, &self.tabs, &["MainContentTabBar"], layout.main, frame.buffer_mut());
+        let main_block = Block::bordered();
+        let inner_main = self.main_tab_bar.render_integrated(layout.main, frame.buffer_mut(), main_block);
         
-        let active_tab_id = self.tabs.iter()
-            .find(|t| t.active)
-            .map(|t| t.id.as_str())
-            .unwrap_or("dashboard");
+        let active_tab_id = self.main_tab_bar.get_active_id().unwrap_or_else(|| "dashboard".to_string());
 
         if active_tab_id == "profiles" {
-            if let Some(settings_layout) = layout.settings {
-                self.render_profiles_tab(frame, settings_layout);
-            }
+            let settings_layout = self.calculate_settings_layout(inner_main);
+            self.render_profiles_tab(frame, settings_layout);
         } else {
-            self.render_dashboard_tab(frame, layout);
+            let dashboard_layout = self.calculate_dashboard_layout(inner_main);
+            self.render_dashboard_tab(frame, dashboard_layout);
+        }
+    }
+
+    /// Calculates the partitioning for the Dashboard tab.
+    fn calculate_dashboard_layout(&self, area: Rect) -> AppLayout {
+        let [left_col, right_col] =
+            Layout::horizontal([Constraint::Length(25), Constraint::Min(0)]).areas(area);
+
+        let [profile, commands] =
+            Layout::vertical([Constraint::Length(10), Constraint::Min(0)]).areas(left_col);
+
+        let [status, output] =
+            Layout::vertical([Constraint::Length(4), Constraint::Min(0)]).areas(right_col);
+
+        AppLayout {
+            profile,
+            commands,
+            status,
+            output,
+            ..Default::default()
         }
     }
 
@@ -125,7 +143,8 @@ impl App {
         if !self.profile_ids.is_empty() { //> 
             let current_profile = &self.profile_ids[self.selected_profile_index];
             let profile_text = if self.profile_ids.len() > 1 { 
-                format!("{} ({} of {})", current_profile, self.selected_profile_index + 1, self.profile_ids.len()) 
+                format!("{}
+ ({} of {})", current_profile, self.selected_profile_index + 1, self.profile_ids.len()) 
             } else { 
                 current_profile.to_string() 
             };
@@ -209,10 +228,7 @@ impl App {
         }
         
         // Render Output Auto-Toggle (Static Tab)
-        let output_static_tabs = vec![TabBarItem { id: "autoscroll".to_string(), name: "Auto".to_string(), active: self.output_autoscroll }];
-        if let Some((widget, horizontal, vertical, off_x, off_y)) = TabBarWidget::from_config(&self.config, &output_static_tabs, "OutputPanelStaticOptions") { //> 
-            widget.render_aligned(layout.output, horizontal, vertical, off_x, off_y, frame.buffer_mut()); 
-        } //< 
+        frame.render_widget(&self.output_button_bar, layout.output);
     }
 
     fn render_profiles_tab(&mut self, frame: &mut Frame, layout: crate::app::SettingsLayout) {
@@ -274,12 +290,60 @@ impl App {
                 let is_focused = self.focus == crate::app::Focus::Content;
 
                 // Unified styling for all fields (Dimmer Grey border)
-                self.render_setting_item(frame, chunks[0], "Device: Profile ID", "Unique identifier for this hardware configuration.", &sketch.id, is_focused && self.selected_field_index == 0, None, is_focused && self.selected_field_index == 0 && self.input_active, is_focused && self.selected_field_index == 0 && self.icon_focused, self.hovered_field_index == Some(0));
-                self.render_setting_item(frame, chunks[1], "Device: Sketch Path", "FileSystem path to the primary .ino or project file.", &sketch.path, is_focused && self.selected_field_index == 1, Some(ActionIcon::Folder), is_focused && self.selected_field_index == 1 && self.input_active, is_focused && self.selected_field_index == 1 && self.icon_focused, self.hovered_field_index == Some(1));
+                self.render_setting_item(
+                    frame,
+                    chunks[0],
+                    "Device: Profile ID",
+                    "Unique identifier for this hardware configuration.",
+                    &sketch.id,
+                    is_focused && self.selected_field_index == 0,
+                    None,
+                    is_focused && self.selected_field_index == 0 && self.input_active,
+                    is_focused && self.selected_field_index == 0 && self.icon_focused,
+                    self.hovered_field_index == Some(0),
+                    Some(&self.profile_id_button_bar),
+                );
+                self.render_setting_item(
+                    frame,
+                    chunks[1],
+                    "Device: Sketch Path",
+                    "FileSystem path to the primary .ino or project file.",
+                    &sketch.path,
+                    is_focused && self.selected_field_index == 1,
+                    Some(ActionIcon::Folder),
+                    is_focused && self.selected_field_index == 1 && self.input_active,
+                    is_focused && self.selected_field_index == 1 && self.icon_focused,
+                    self.hovered_field_index == Some(1),
+                    None,
+                );
 
                 if let Some(conn) = connection {
-                    self.render_setting_item(frame, chunks[2], "Device: Serial Port", "Select the hardware port used for flashing and monitoring.", &conn.port, is_focused && self.selected_field_index == 2, None, is_focused && self.selected_field_index == 2 && self.input_active, is_focused && self.selected_field_index == 2 && self.icon_focused, self.hovered_field_index == Some(2));
-                    self.render_setting_item(frame, chunks[3], "Device: Baud Rate", "Communication speed in bits per second (standard is 115200).", &conn.baudrate.to_string(), is_focused && self.selected_field_index == 3, None, is_focused && self.selected_field_index == 3 && self.input_active, is_focused && self.selected_field_index == 3 && self.icon_focused, self.hovered_field_index == Some(3));
+                    self.render_setting_item(
+                        frame,
+                        chunks[2],
+                        "Device: Serial Port",
+                        "Select the hardware port used for flashing and monitoring.",
+                        &conn.port,
+                        is_focused && self.selected_field_index == 2,
+                        None,
+                        is_focused && self.selected_field_index == 2 && self.input_active,
+                        is_focused && self.selected_field_index == 2 && self.icon_focused,
+                        self.hovered_field_index == Some(2),
+                        None,
+                    );
+                    self.render_setting_item(
+                        frame,
+                        chunks[3],
+                        "Device: Baud Rate",
+                        "Communication speed in bits per second (standard is 115200).",
+                        &conn.baudrate.to_string(),
+                        is_focused && self.selected_field_index == 3,
+                        None,
+                        is_focused && self.selected_field_index == 3 && self.input_active,
+                        is_focused && self.selected_field_index == 3 && self.icon_focused,
+                        self.hovered_field_index == Some(3),
+                        None,
+                    );
                 }
             }
         } else {
@@ -288,7 +352,20 @@ impl App {
     }
 
     /// Helper to render a single setting item in VS Code style
-    fn render_setting_item(&self, frame: &mut Frame, area: Rect, label: &str, description: &str, value: &str, highlighted: bool, action_icon: Option<ActionIcon>, is_editing: bool, icon_focused: bool, hovered: bool) {
+    fn render_setting_item(
+        &self,
+        frame: &mut Frame,
+        area: Rect,
+        label: &str,
+        description: &str,
+        value: &str,
+        highlighted: bool,
+        action_icon: Option<ActionIcon>,
+        is_editing: bool,
+        icon_focused: bool,
+        hovered: bool,
+        button_bar: Option<&crate::widgets::components::button_bar::button_bar::ButtonBar>,
+    ) {
         let vertical_chunks = Layout::vertical([
             Constraint::Length(1), // Label
             Constraint::Length(1), // Description
@@ -351,13 +428,18 @@ impl App {
             input_area
         );
 
+        // Render Button Bar if present
+        if let Some(bb) = button_bar {
+            frame.render_widget(bb, input_area);
+        }
+
         // Render Action Icon if present (No border)
         if let Some(icon) = action_icon {
             let icon_style = if (highlighted || hovered) && icon_focused { 
                 Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD) 
             } else { 
                 Style::default().fg(Color::DarkGray) 
-};
+            };
             
             // Center the icon vertically in the input row
             let centered_icon_area = Rect {
@@ -381,9 +463,9 @@ impl App {
         let mut spans = Vec::new();
         
         // 1. Tab-specific Bindings (Cyan)
-        if let Some(active_tab) = self.tabs.iter().find(|tab| tab.active) { //> 
-            if let Some(tab_bar) = self.config.tab_bars.iter().find(|tb| tb.id == "MainContentTabBar") { //> 
-                if let Some(bindings_config) = tab_bar.tab_bindings.get(&active_tab.id) { //> 
+        if let Some(active_tab_id) = self.main_tab_bar.get_active_id() { //> 
+            if let Some(tab_bar_config) = self.config.tab_bars.iter().find(|tb| tb.id == "MainContentTabBar") { //> 
+                if let Some(bindings_config) = tab_bar_config.tab_bindings.get(&active_tab_id) { //> 
                     let separator = &bindings_config.separator;
                     for (i, binding) in bindings_config.items.iter().enumerate() { //> 
                         if i > 0 { spans.push(Span::raw(separator.clone())); }

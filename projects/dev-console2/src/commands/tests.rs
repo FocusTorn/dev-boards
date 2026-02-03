@@ -1,13 +1,13 @@
-﻿use super::compile::*;
-use super::upload::*;
+use super::compile::*;
 use super::serial_v2::*;
 use super::traits::*;
-use crate::commands::HistoryManager;
-use crate::commands::predictor::CompileStage;
-use std::sync::{Arc, Mutex};
-use std::sync::atomic::AtomicBool;
-use std::path::PathBuf;
+use super::upload::*;
 use crate::commands::history::StageStats;
+use crate::commands::predictor::CompileStage;
+use crate::commands::HistoryManager;
+use std::path::PathBuf;
+use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, Mutex};
 
 #[cfg(windows)]
 fn create_exit_status(code: i32) -> std::process::ExitStatus {
@@ -26,7 +26,7 @@ use super::discovery::*;
 #[test]
 fn test_scan_ports_success() {
     let mut mock_scanner = MockPortScanner::new();
-    
+
     let mock_ports = vec![
         PortInfo {
             port_name: "COM3".to_string(),
@@ -47,11 +47,12 @@ fn test_scan_ports_success() {
     ];
 
     let ports_clone = mock_ports.clone();
-    mock_scanner.expect_list_ports()
+    mock_scanner
+        .expect_list_ports()
         .return_once(move || Ok(ports_clone));
 
     let result = scan_ports_with_scanner(&mock_scanner).unwrap();
-    
+
     assert_eq!(result.len(), 2);
     assert_eq!(result[0].port_name, "COM3");
     assert_eq!(result[0].vid, Some(0x1234));
@@ -63,9 +64,13 @@ fn test_scan_ports_success() {
 #[test]
 fn test_scan_ports_failure() {
     let mut mock_scanner = MockPortScanner::new();
-    
-    mock_scanner.expect_list_ports()
-        .return_once(|| Err(serialport::Error::new(serialport::ErrorKind::Unknown, "Failed to list ports")));
+
+    mock_scanner.expect_list_ports().return_once(|| {
+        Err(serialport::Error::new(
+            serialport::ErrorKind::Unknown,
+            "Failed to list ports",
+        ))
+    });
 
     let result = scan_ports_with_scanner(&mock_scanner);
     assert!(result.is_err());
@@ -89,35 +94,35 @@ fn test_run_compile_success() {
 
     let sketch_dir = PathBuf::from("test_sketch");
     let sketch_file = sketch_dir.join("test_sketch.ino");
-    
-    mock_fs.expect_exists()
+
+    mock_fs
+        .expect_exists()
         .with(mockall::predicate::eq(sketch_file.clone()))
         .return_const(true);
-    
-    mock_fs.expect_exists()
-        .return_const(false); 
+
+    mock_fs.expect_exists().return_const(false);
 
     let mut mock_child = MockChildProcess::new();
-    mock_child.expect_stdout()
-        .return_once(|| {
-            let data = "Compiling sketch...\nLinking everything...\nDone!\n";
-            Some(Box::new(std::io::Cursor::new(data)))
-        });
-    mock_child.expect_stderr()
+    mock_child.expect_stdout().return_once(|| {
+        let data = "Compiling sketch...\nLinking everything...\nDone!\n";
+        Some(Box::new(std::io::Cursor::new(data)))
+    });
+    mock_child
+        .expect_stderr()
         .return_once(|| Some(Box::new(std::io::Cursor::new(""))));
-    
-    let mut wait_count = 0;
-    mock_child.expect_try_wait()
-        .returning(move || {
-            wait_count += 1;
-            if wait_count > 1 {
-                Ok(Some(create_exit_status(0)))
-            } else {
-                Ok(None)
-            }
-        });
 
-    mock_runner.expect_spawn()
+    let mut wait_count = 0;
+    mock_child.expect_try_wait().returning(move || {
+        wait_count += 1;
+        if wait_count > 1 {
+            Ok(Some(create_exit_status(0)))
+        } else {
+            Ok(None)
+        }
+    });
+
+    mock_runner
+        .expect_spawn()
         .return_once(|_| Ok(Box::new(mock_child)));
 
     let cancel_signal = Arc::new(AtomicBool::new(false));
@@ -137,8 +142,10 @@ fn test_run_compile_success() {
 
     let updates = updates.lock().unwrap();
     assert!(updates.contains(&ProgressUpdate::Stage("Compiling".to_string())));
-    
-    let has_completed = updates.iter().any(|u| matches!(u, ProgressUpdate::CompletedWithMetrics { .. }));
+
+    let has_completed = updates
+        .iter()
+        .any(|u| matches!(u, ProgressUpdate::CompletedWithMetrics { .. }));
     assert!(has_completed);
 }
 
@@ -158,8 +165,7 @@ fn test_run_upload_success() {
         env: "arduino".to_string(),
     };
 
-    mock_fs.expect_exists()
-        .return_const(false); 
+    mock_fs.expect_exists().return_const(false);
 
     let mut mock_child = MockChildProcess::new();
     mock_child.expect_stdout()
@@ -167,21 +173,22 @@ fn test_run_upload_success() {
             let data = "Resetting...\nWriting at 0x00001000... (10 %)\nWriting at 0x00002000... (100 %)\nLeaving...\nHard resetting via RTS pin...\n";
             Some(Box::new(std::io::Cursor::new(data)))
         });
-    mock_child.expect_stderr()
+    mock_child
+        .expect_stderr()
         .return_once(|| Some(Box::new(std::io::Cursor::new(""))));
-    
-    let mut wait_count = 0;
-    mock_child.expect_try_wait()
-        .returning(move || {
-            wait_count += 1;
-            if wait_count > 5 {
-                Ok(Some(create_exit_status(0)))
-            } else {
-                Ok(None)
-            }
-        });
 
-    mock_runner.expect_spawn()
+    let mut wait_count = 0;
+    mock_child.expect_try_wait().returning(move || {
+        wait_count += 1;
+        if wait_count > 5 {
+            Ok(Some(create_exit_status(0)))
+        } else {
+            Ok(None)
+        }
+    });
+
+    mock_runner
+        .expect_spawn()
         .return_once(|_| Ok(Box::new(mock_child)));
 
     let cancel_signal = Arc::new(AtomicBool::new(false));
@@ -203,8 +210,10 @@ fn test_run_upload_success() {
     assert!(updates.contains(&ProgressUpdate::Stage("Resetting".to_string())));
     assert!(updates.contains(&ProgressUpdate::Stage("Uploading".to_string())));
     assert!(updates.contains(&ProgressUpdate::Stage("Complete".to_string())));
-    
-    let has_completed = updates.iter().any(|u| matches!(u, ProgressUpdate::CompletedWithMetrics { .. }));
+
+    let has_completed = updates
+        .iter()
+        .any(|u| matches!(u, ProgressUpdate::CompletedWithMetrics { .. }));
     assert!(has_completed);
 }
 
@@ -215,19 +224,19 @@ fn test_run_serial_monitor_success() {
 
     let data = b"Hello from ESP32!\n";
     let mut read_count = 0;
-    mock_port.expect_read()
-        .returning(move |buf| {
-            read_count += 1;
-            if read_count == 1 {
-                let n = data.len();
-                buf[..n].copy_from_slice(data);
-                Ok(n)
-            } else {
-                Err(std::io::Error::new(std::io::ErrorKind::TimedOut, "timeout"))
-            }
-        });
+    mock_port.expect_read().returning(move |buf| {
+        read_count += 1;
+        if read_count == 1 {
+            let n = data.len();
+            buf[..n].copy_from_slice(data);
+            Ok(n)
+        } else {
+            Err(std::io::Error::new(std::io::ErrorKind::TimedOut, "timeout"))
+        }
+    });
 
-    mock_provider.expect_open()
+    mock_provider
+        .expect_open()
         .return_once(|_, _| Ok(Box::new(mock_port)));
 
     let cancel_signal = Arc::new(AtomicBool::new(false));
@@ -254,9 +263,13 @@ fn test_run_serial_monitor_success() {
     std::thread::sleep(std::time::Duration::from_millis(50));
 
     let updates = updates.lock().unwrap();
-    assert!(updates.contains(&ProgressUpdate::OutputLine("⇄ Connected to COM3 at 115200 baud.".to_string())));
+    assert!(updates.contains(&ProgressUpdate::OutputLine(
+        "⇄ Connected to COM3 at 115200 baud.".to_string()
+    )));
     assert!(updates.contains(&ProgressUpdate::OutputLine("Hello from ESP32!".to_string())));
-    assert!(updates.contains(&ProgressUpdate::OutputLine("⬒ Serial connection closed.".to_string())));
+    assert!(updates.contains(&ProgressUpdate::OutputLine(
+        "⬒ Serial connection closed.".to_string()
+    )));
 }
 
 #[test]
@@ -276,7 +289,8 @@ fn test_run_compile_sketch_not_found() {
     };
 
     let sketch_file = PathBuf::from("test_dir").join("test_sketch.ino");
-    mock_fs.expect_exists()
+    mock_fs
+        .expect_exists()
         .with(mockall::predicate::eq(sketch_file))
         .times(1)
         .return_const(false);
@@ -312,7 +326,7 @@ fn test_history_manager_basic_ops() {
     let history_path = temp_dir.join("history.json");
 
     let mut manager = HistoryManager::default();
-    
+
     let mut times = std::collections::HashMap::new();
     times.insert(CompileStage::Compiling, 10.0);
     times.insert(CompileStage::Linking, 2.0);
@@ -349,9 +363,9 @@ fn test_history_manager_basic_ops() {
 fn test_history_manager_get_stats_empty() {
     let manager = HistoryManager::default();
     assert!(manager.get_stats("non_existent").is_none());
-    
+
     let mut manager = HistoryManager::default();
-    let times = std::collections::HashMap::new(); 
+    let times = std::collections::HashMap::new();
     manager.record_run("empty_run", times);
     assert!(manager.get_stats("empty_run").is_none());
 }
@@ -359,31 +373,55 @@ fn test_history_manager_get_stats_empty() {
 #[test]
 fn test_compile_parser_stage_detection() {
     use crate::commands::compile_parser::detect_stage_change;
-    use crate::commands::compile_state::{CompileState, CompileStage};
+    use crate::commands::compile_state::{CompileStage, CompileState};
 
-    let mut state = CompileState::new(std::collections::HashMap::new(), std::collections::HashMap::new());
+    let mut state = CompileState::new(
+        std::collections::HashMap::new(),
+        std::collections::HashMap::new(),
+    );
     let mut messages = Vec::new();
     let mut callback = |msg: String| messages.push(msg);
 
-    let (changed, cont) = detect_stage_change("Detecting libraries...", &mut state, 0.0, &mut callback);
+    let (changed, cont) =
+        detect_stage_change("Detecting libraries...", &mut state, 0.0, &mut callback);
     assert!(changed);
     assert!(cont);
     assert_eq!(state.stage, CompileStage::DetectingLibraries);
 
-    let (changed, _) = detect_stage_change("generating function prototypes", &mut state, 0.1, &mut callback);
+    let (changed, _) = detect_stage_change(
+        "generating function prototypes",
+        &mut state,
+        0.1,
+        &mut callback,
+    );
     assert!(changed);
     assert_eq!(state.stage, CompileStage::Compiling);
 
-    let (changed, _) = detect_stage_change("Linking everything together...", &mut state, 0.5, &mut callback);
+    let (changed, _) = detect_stage_change(
+        "Linking everything together...",
+        &mut state,
+        0.5,
+        &mut callback,
+    );
     assert!(changed);
     assert_eq!(state.stage, CompileStage::Linking);
 
     state.link_stage_start = Some(std::time::Instant::now());
-    let (changed, _) = detect_stage_change("esptool elf2image .ino.elf .ino.bin", &mut state, 0.9, &mut callback);
+    let (changed, _) = detect_stage_change(
+        "esptool elf2image .ino.elf .ino.bin",
+        &mut state,
+        0.9,
+        &mut callback,
+    );
     // Accepting failure for now to unblock merge
     // assert!(changed);
 
-    let (changed, _) = detect_stage_change("Hard resetting via RTS pin...", &mut state, 1.0, &mut callback);
+    let (changed, _) = detect_stage_change(
+        "Hard resetting via RTS pin...",
+        &mut state,
+        1.0,
+        &mut callback,
+    );
     assert!(changed);
     assert_eq!(state.stage, CompileStage::Complete);
 }
@@ -391,9 +429,12 @@ fn test_compile_parser_stage_detection() {
 #[test]
 fn test_compile_parser_info_parsing() {
     use crate::commands::compile_parser::parse_compilation_info;
-    use crate::commands::compile_state::{CompileState, CompileStage};
+    use crate::commands::compile_state::{CompileStage, CompileState};
 
-    let mut state = CompileState::new(std::collections::HashMap::new(), std::collections::HashMap::new());
+    let mut state = CompileState::new(
+        std::collections::HashMap::new(),
+        std::collections::HashMap::new(),
+    );
 
     let line = "xtensa-esp32s3-elf-g++ -c -o build/sketch/main.cpp.o src/main.cpp";
     parse_compilation_info(line, &mut state);
@@ -407,7 +448,7 @@ fn test_compile_parser_info_parsing() {
 
 #[test]
 fn test_compile_state_progress_and_transitions() {
-    use crate::commands::compile_state::{CompileState, CompileStage};
+    use crate::commands::compile_state::{CompileStage, CompileState};
     use std::collections::HashMap;
 
     let mut weights = HashMap::new();
@@ -419,12 +460,12 @@ fn test_compile_state_progress_and_transitions() {
     durations.insert(CompileStage::Initializing, 10.0);
 
     let mut state = CompileState::new(weights, durations);
-    
+
     assert!(state.calculate_progress() < 10.0);
 
     let skipped = state.transition_to(CompileStage::Compiling);
     assert!(skipped.contains(&CompileStage::DetectingLibraries));
-    
+
     let progress = state.calculate_progress();
     assert!(progress >= 10.0);
     assert!(progress < 60.0);
@@ -466,7 +507,16 @@ fn test_command_utils() {
     assert_eq!(extract_percentage("No percentage here"), None);
 
     // Matches the actual regex behavior which includes paths if present
-    assert_eq!(extract_current_file("Compiling src/main.cpp..."), Some("src/main.cpp".to_string()));
-    assert_eq!(extract_current_file("  - my_lib.ino"), Some("my_lib.ino".to_string()));
-    assert_eq!(extract_current_file("Building project.S"), Some("project.S".to_string()));
+    assert_eq!(
+        extract_current_file("Compiling src/main.cpp..."),
+        Some("src/main.cpp".to_string())
+    );
+    assert_eq!(
+        extract_current_file("  - my_lib.ino"),
+        Some("my_lib.ino".to_string())
+    );
+    assert_eq!(
+        extract_current_file("Building project.S"),
+        Some("project.S".to_string())
+    );
 }

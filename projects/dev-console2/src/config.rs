@@ -59,6 +59,37 @@ pub struct TabBarColors {
     pub negate: Option<String>,
 }
 
+// Map the alignment enums locally to avoid tab_bar dependency
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TabBarAlignment {
+    #[serde(alias = "Left")]
+    Left,
+    #[serde(alias = "Center")]
+    Center,
+    #[serde(alias = "Right")]
+    Right,
+    #[serde(alias = "Top")]
+    Top,
+    #[serde(alias = "Bottom")]
+    Bottom,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TabBarStyle {
+    #[serde(alias = "Tab")]
+    Tab,
+    #[serde(alias = "Text")]
+    Text,
+    #[serde(alias = "Boxed")]
+    Boxed,
+    #[serde(alias = "BoxStatic")]
+    BoxStatic,
+    #[serde(alias = "TextStatic")]
+    TextStatic,
+}
+
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct TabBarConfig {
     pub id: String,
@@ -97,8 +128,6 @@ pub struct Config {
 fn default_separator() -> String {
     " | ".to_string()
 }
-
-use crate::widgets::tab_bar::{TabBarAlignment, TabBarStyle};
 
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct Alignment {
@@ -414,11 +443,11 @@ sketches:
 
         
 
-                        style: "Boxed"
+                        style: "boxed"
 
         
 
-                        alignment: { vertical: "Bottom", horizontal: "Right" }
+                        alignment: { vertical: "bottom", horizontal: "right" }
 
         
 
@@ -426,11 +455,11 @@ sketches:
 
         
 
-                        style: "TextStatic"
+                        style: "text_static"
 
         
 
-                        alignment: { vertical: "Top", horizontal: "Left" }
+                        alignment: { vertical: "top", horizontal: "left" }
 
         
 
@@ -438,7 +467,7 @@ sketches:
 
         
 
-                        style: "BoxStatic"
+                        style: "box_static"
 
         
 

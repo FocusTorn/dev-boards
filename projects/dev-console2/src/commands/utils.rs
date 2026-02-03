@@ -1,7 +1,7 @@
 // Command execution utility functions
 
-use regex::Regex;
 use lazy_static::lazy_static;
+use regex::Regex;
 
 lazy_static! {
     static ref ANSI_RE: Regex = Regex::new(r"\x1B\[[0-9;]*[a-zA-Z]").unwrap();
@@ -11,7 +11,7 @@ lazy_static! {
 
 /// Strips all ANSI escape sequences from a string.
 ///>
-/// Essential for clean string matching and logging when processing 
+/// Essential for clean string matching and logging when processing
 /// colored output from CLI tools like `arduino-cli`.
 ///<
 pub fn remove_ansi_escapes(s: &str) -> String {

@@ -4,6 +4,9 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## 1. :: Open
 
+- [ ] **Track: dc2-restructure_20260202** (Restructure Plan + Discovery Transcript)
+  *Link: [./tracks/dev-console2/dc2-restructure_20260202/](./tracks/dev-console2/dc2-restructure_20260202/)*
+
 - [~] **Track: hardening_coverage_20260128**
   *Link: [./tracks/hardening_coverage_20260128/](./tracks/hardening_coverage_20260128/)*
 

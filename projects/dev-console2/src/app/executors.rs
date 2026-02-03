@@ -1,4 +1,4 @@
-use crate::app::{App, TaskState, MonitorType, Action};
+use crate::app::{Action, App, MonitorType, TaskState};
 use arboard::Clipboard;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc;
@@ -6,11 +6,11 @@ use std::time::Instant;
 
 /// Semantic action implementations (The 'How' of application logic).
 ///>
-/// The `executors` module contains the actual implementation for every `Action` 
-/// triggered by the user or system. By isolating these methods, the main `update` 
-/// loop remains a clean router while the complex state-mutating logic is 
+/// The `executors` module contains the actual implementation for every `Action`
+/// triggered by the user or system. By isolating these methods, the main `update`
+/// loop remains a clean router while the complex state-mutating logic is
 /// encapsulated here.
-///< 
+///<
 impl App {
     /// Terminates the application loop.
     pub fn exec_quit(&mut self) {
@@ -25,7 +25,7 @@ impl App {
             self.commands.len() - 1
         };
         self.hovered_command_index = None;
-        
+
         if self.dispatch_mode == crate::app::DispatchMode::OnHighlight {
             self.exec_execute_selected_command();
         }
@@ -67,7 +67,8 @@ impl App {
     pub fn exec_settings_down(&mut self) {
         if self.focus == crate::app::Focus::Sidebar {
             if !self.settings_categories.is_empty() {
-                self.selected_settings_category_index = (self.selected_settings_category_index + 1) % self.settings_categories.len();
+                self.selected_settings_category_index =
+                    (self.selected_settings_category_index + 1) % self.settings_categories.len();
             }
             self.selected_field_index = 0; // Reset field when switching category
             self.icon_focused = false;
@@ -90,10 +91,12 @@ impl App {
         }
 
         let count = self.get_active_settings_field_count();
-        if count == 0 { return; }
+        if count == 0 {
+            return;
+        }
 
         let has_icon = self.field_has_action_icon(self.selected_field_index);
-        
+
         if has_icon && !self.icon_focused {
             // Move from Input to Icon in same row
             self.icon_focused = true;
@@ -122,7 +125,9 @@ impl App {
         }
 
         let count = self.get_active_settings_field_count();
-        if count == 0 { return; }
+        if count == 0 {
+            return;
+        }
 
         if self.icon_focused {
             // Move from Icon to Input in same row
@@ -148,10 +153,12 @@ impl App {
 
     /// Helper to check if a field has an associated action icon.
     fn field_has_action_icon(&self, index: usize) -> bool {
-        let category = self.settings_categories.get(self.selected_settings_category_index)
+        let category = self
+            .settings_categories
+            .get(self.selected_settings_category_index)
             .map(|s| s.as_str())
             .unwrap_or("");
-        
+
         if category == "Device" {
             // Sketch Path (index 1) has a Folder icon
             return index == 1;
@@ -160,7 +167,9 @@ impl App {
     }
 
     pub fn exec_settings_edit(&mut self) {
-        let category = self.settings_categories.get(self.selected_settings_category_index)
+        let category = self
+            .settings_categories
+            .get(self.selected_settings_category_index)
             .map(|s| s.as_str())
             .unwrap_or("");
 
@@ -169,8 +178,11 @@ impl App {
         if category == "Device" {
             if let (Some(config), Some(profile_id)) = (&self.profile_config, current_profile_id) {
                 if let Some(sketch) = config.sketches.iter().find(|s| s.id == profile_id) {
-                    let connection = config.connections.iter().find(|c| c.id == sketch.connection);
-                    
+                    let connection = config
+                        .connections
+                        .iter()
+                        .find(|c| c.id == sketch.connection);
+
                     let value = match self.selected_field_index {
                         0 => Some(sketch.id.clone()),
                         1 => Some(sketch.path.clone()),
@@ -194,7 +206,10 @@ impl App {
         if let Some(action) = Action::from_str(&selected_str) {
             self.dispatch_command(action);
         } else {
-            self.log("action", &format!("No executor mapped for '{}'", selected_str));
+            self.log(
+                "action",
+                &format!("No executor mapped for '{}'", selected_str),
+            );
         }
     }
 
@@ -205,8 +220,9 @@ impl App {
             return;
         }
 
-        let is_active = matches!(self.task_state, TaskState::Running { .. }) || matches!(self.task_state, TaskState::Monitoring { .. });
-        
+        let is_active = matches!(self.task_state, TaskState::Running { .. })
+            || matches!(self.task_state, TaskState::Monitoring { .. });
+
         if is_active {
             self.cancel_signal.store(true, Ordering::SeqCst);
             self.log("system", "Cancellation signal sent...");
@@ -232,14 +248,19 @@ impl App {
     ///>
     /// This method resets progress, trains the time predictor with latest history,
     /// and dispatches the long-running task to a background thread.
-    ///< 
+    ///<
     fn start_process(&mut self, is_upload: bool) {
         let now = Instant::now();
         self.task_state = TaskState::Running {
             percentage: 0.0,
             visual_percentage: 0.0,
             last_percentage: 0.0,
-            stage: if is_upload { "Preparing Upload..." } else { "Initializing Compile..." }.to_string(),
+            stage: if is_upload {
+                "Preparing Upload..."
+            } else {
+                "Initializing Compile..."
+            }
+            .to_string(),
             start_time: now,
             last_updated: now,
             smoothed_eta: None,
@@ -249,15 +270,17 @@ impl App {
         let tx = self.command_tx.clone();
         let cancel_signal = self.cancel_signal.clone();
         cancel_signal.store(false, Ordering::SeqCst);
-        
+
         self.predictor = self.train_predictor();
         let stats = self.predictor.get_stats();
-        
+
         match self.get_settings_from_profile() {
             Ok(settings) => {
                 std::thread::spawn(move || {
                     let callback = move |update| {
-                        if tx.send(update).is_err() { return; }
+                        if tx.send(update).is_err() {
+                            return;
+                        }
                     };
                     if is_upload {
                         crate::commands::run_upload(&settings, stats, cancel_signal, callback);
@@ -265,7 +288,7 @@ impl App {
                         crate::commands::run_compile(&settings, stats, cancel_signal, callback);
                     }
                 });
-            },
+            }
             Err(e) => {
                 self.task_state = TaskState::Idle;
                 self.report_error(e);
@@ -283,7 +306,7 @@ impl App {
         self.output_lines.clear();
         self.output_cached_lines.clear();
         self.log("action", "Starting Serial Monitor...");
-        
+
         // Activate Input Field Automatically
         self.input_active = true;
         self.input.reset();
@@ -298,11 +321,19 @@ impl App {
             Ok(settings) => {
                 std::thread::spawn(move || {
                     let callback = move |update| {
-                        if tx.send(update).is_err() { return; }
+                        if tx.send(update).is_err() {
+                            return;
+                        }
                     };
-                    crate::commands::run_serial_monitor(settings.port, settings.baudrate, cancel_signal, serial_rx, callback);
+                    crate::commands::run_serial_monitor(
+                        settings.port,
+                        settings.baudrate,
+                        cancel_signal,
+                        serial_rx,
+                        callback,
+                    );
                 });
-            },
+            }
             Err(e) => {
                 self.task_state = TaskState::Idle;
                 self.input_active = false;
@@ -321,7 +352,7 @@ impl App {
         self.output_lines.clear();
         self.output_cached_lines.clear();
         self.log("action", "Starting MQTT Monitor...");
-        
+
         // Activate Input Field Automatically
         self.input_active = true;
         self.input.reset();
@@ -334,29 +365,63 @@ impl App {
 
         match self.get_settings_from_profile() {
             Ok(settings) => {
-                let mqtt_config = self.profile_config.as_ref()
-                    .and_then(|pc| pc.sketches.iter().find(|s| s.path.contains(&settings.sketch_name)))
-                    .and_then(|s| self.profile_config.as_ref().unwrap().mqtt.iter().find(|m| m.id == s.mqtt));
+                let mqtt_config = self
+                    .profile_config
+                    .as_ref()
+                    .and_then(|pc| {
+                        pc.sketches
+                            .iter()
+                            .find(|s| s.path.contains(&settings.sketch_name))
+                    })
+                    .and_then(|s| {
+                        self.profile_config
+                            .as_ref()
+                            .unwrap()
+                            .mqtt
+                            .iter()
+                            .find(|m| m.id == s.mqtt)
+                    });
 
                 if let Some(m) = mqtt_config {
                     let host = m.host.clone();
                     let port = m.port;
                     let client_id = m.id.clone();
-                    let username = if m.username.is_empty() { None } else { Some(m.username.clone()) };
-                    let password = if m.password.is_empty() { None } else { Some(m.password.clone()) };
-                    
+                    let username = if m.username.is_empty() {
+                        None
+                    } else {
+                        Some(m.username.clone())
+                    };
+                    let password = if m.password.is_empty() {
+                        None
+                    } else {
+                        Some(m.password.clone())
+                    };
+
                     std::thread::spawn(move || {
                         let callback = move |update| {
-                            if tx.send(update).is_err() { return; }
+                            if tx.send(update).is_err() {
+                                return;
+                            }
                         };
-                        crate::commands::run_mqtt_monitor(host, port, client_id, username, password, cancel_signal, mqtt_rx, callback);
+                        crate::commands::run_mqtt_monitor(
+                            host,
+                            port,
+                            client_id,
+                            username,
+                            password,
+                            cancel_signal,
+                            mqtt_rx,
+                            callback,
+                        );
                     });
                 } else {
                     self.task_state = TaskState::Idle;
                     self.input_active = false;
-                    self.report_error(color_eyre::eyre::eyre!("No MQTT configuration found for this profile."));
+                    self.report_error(color_eyre::eyre::eyre!(
+                        "No MQTT configuration found for this profile."
+                    ));
                 }
-            },
+            }
             Err(e) => {
                 self.task_state = TaskState::Idle;
                 self.input_active = false;
@@ -371,10 +436,10 @@ impl App {
         self.push_line("Done.".to_string());
     }
 
-
     pub fn exec_next_profile(&mut self) {
         if !self.profile_ids.is_empty() {
-            self.selected_profile_index = (self.selected_profile_index + 1) % self.profile_ids.len();
+            self.selected_profile_index =
+                (self.selected_profile_index + 1) % self.profile_ids.len();
         }
     }
 
@@ -389,27 +454,15 @@ impl App {
     }
 
     pub fn exec_next_tab(&mut self) {
-        if !self.tabs.is_empty() {
-            let current = self.tabs.iter().position(|t| t.active).unwrap_or(0);
-            let next = (current + 1) % self.tabs.len();
-            for (i, tab) in self.tabs.iter_mut().enumerate() {
-                tab.active = i == next;
-            }
-            // Recalculate layout for the new tab
-            self.layout = self.calculate_layout(self.view_area);
-        }
+        self.main_tab_bar.next_tab();
+        // Recalculate layout for the new tab
+        self.layout = self.calculate_layout(self.view_area);
     }
 
     pub fn exec_prev_tab(&mut self) {
-        if !self.tabs.is_empty() {
-            let current = self.tabs.iter().position(|t| t.active).unwrap_or(0);
-            let prev = if current > 0 { current - 1 } else { self.tabs.len() - 1 };
-            for (i, tab) in self.tabs.iter_mut().enumerate() {
-                tab.active = i == prev;
-            }
-            // Recalculate layout for the new tab
-            self.layout = self.calculate_layout(self.view_area);
-        }
+        self.main_tab_bar.prev_tab();
+        // Recalculate layout for the new tab
+        self.layout = self.calculate_layout(self.view_area);
     }
 
     pub fn exec_scroll_line_up(&mut self) {
@@ -442,7 +495,7 @@ impl App {
         let viewport_h = self.layout.output.height.saturating_sub(2);
         let max_scroll = self.output_lines.len().saturating_sub(viewport_h as usize) as u16;
         let next = self.output_scroll.saturating_add(viewport_h);
-        
+
         if next >= max_scroll {
             self.output_scroll = max_scroll;
             self.output_autoscroll = true;
@@ -464,6 +517,14 @@ impl App {
 
     pub fn exec_toggle_autoscroll(&mut self) {
         self.output_autoscroll = !self.output_autoscroll;
+        
+        // Sync the smart widget state
+        for item in &mut self.output_button_bar.items {
+            if item.id == "autoscroll" {
+                item.active = self.output_autoscroll;
+            }
+        }
+
         if self.output_autoscroll {
             self.sync_autoscroll();
         }
@@ -494,7 +555,11 @@ impl App {
         match Clipboard::new() {
             Ok(mut clipboard) => {
                 let _ = clipboard.set_text(content);
-                let msg = if full { "Full output copied." } else { "Visible lines copied." };
+                let msg = if full {
+                    "Full output copied."
+                } else {
+                    "Visible lines copied."
+                };
                 self.toast_manager.success(msg);
             }
             Err(_) => {
@@ -504,8 +569,10 @@ impl App {
     }
 
     pub fn exec_send_command(&mut self) {
-        if self.input.value().is_empty() { return; }
-        
+        if self.input.value().is_empty() {
+            return;
+        }
+
         let msg = self.input.value().to_string();
         self.input.reset();
 
@@ -520,9 +587,9 @@ impl App {
                     MonitorType::Mqtt => {
                         if let Some(tx) = &self.mqtt_tx {
                             // Dummy topic for now
-                            let _ = tx.send(crate::commands::MqttCommand::Publish { 
-                                topic: "dev/command".to_string(), 
-                                payload: msg 
+                            let _ = tx.send(crate::commands::MqttCommand::Publish {
+                                topic: "dev/command".to_string(),
+                                payload: msg,
                             });
                         }
                     }
@@ -562,20 +629,40 @@ impl App {
             let new_sketch = crate::config::Sketch {
                 id: final_id.clone(),
                 path: "".to_string(),
-                connection: config.connections.first().map(|c| c.id.clone()).unwrap_or_default(),
-                device: config.devices.first().map(|d| d.id.clone()).unwrap_or_default(),
-                mqtt: config.mqtt.first().map(|m| m.id.clone()).unwrap_or_default(),
+                connection: config
+                    .connections
+                    .first()
+                    .map(|c| c.id.clone())
+                    .unwrap_or_default(),
+                device: config
+                    .devices
+                    .first()
+                    .map(|d| d.id.clone())
+                    .unwrap_or_default(),
+                mqtt: config
+                    .mqtt
+                    .first()
+                    .map(|m| m.id.clone())
+                    .unwrap_or_default(),
             };
 
             config.sketches.push(new_sketch);
             self.profile_ids.push(final_id);
             self.selected_profile_index = self.profile_ids.len() - 1;
-            self.log("system", &format!("Created new profile: {}", self.profile_ids[self.selected_profile_index]));
+            self.log(
+                "system",
+                &format!(
+                    "Created new profile: {}",
+                    self.profile_ids[self.selected_profile_index]
+                ),
+            );
         }
     }
 
     pub fn exec_settings_action(&mut self) {
-        let category = self.settings_categories.get(self.selected_settings_category_index)
+        let category = self
+            .settings_categories
+            .get(self.selected_settings_category_index)
             .map(|s| s.as_str())
             .unwrap_or("");
 
@@ -585,15 +672,25 @@ impl App {
             use crate::widgets::popup::Popup;
             use std::path::{Path, PathBuf};
 
-            let current_path = if let (Some(config), Some(profile_id)) = (&self.profile_config, self.get_current_sketch_id()) {
-                config.sketches.iter().find(|s| s.id == profile_id).map(|s| s.path.clone()).unwrap_or_else(|| ".".to_string())
+            let current_path = if let (Some(config), Some(profile_id)) =
+                (&self.profile_config, self.get_current_sketch_id())
+            {
+                config
+                    .sketches
+                    .iter()
+                    .find(|s| s.id == profile_id)
+                    .map(|s| s.path.clone())
+                    .unwrap_or_else(|| ".".to_string())
             } else {
                 ".".to_string()
             };
 
             let mut start_dir = PathBuf::from(current_path);
             if start_dir.is_file() {
-                start_dir = start_dir.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| PathBuf::from("."));
+                start_dir = start_dir
+                    .parent()
+                    .map(|p| p.to_path_buf())
+                    .unwrap_or_else(|| PathBuf::from("."));
             } else if !start_dir.exists() {
                 start_dir = PathBuf::from(".");
             }
@@ -606,40 +703,52 @@ impl App {
 
     pub fn exec_settings_finish_edit(&mut self) {
         let new_value = self.input.value().to_string();
-        let category = self.settings_categories.get(self.selected_settings_category_index)
+        let category = self
+            .settings_categories
+            .get(self.selected_settings_category_index)
             .map(|s| s.as_str())
             .unwrap_or("");
 
         let current_profile_id = self.get_current_sketch_id();
 
         if category == "Device" {
-            if let (Some(config), Some(profile_id)) = (&mut self.profile_config, current_profile_id) {
+            if let (Some(config), Some(profile_id)) = (&mut self.profile_config, current_profile_id)
+            {
                 if let Some(sketch) = config.sketches.iter_mut().find(|s| s.id == profile_id) {
                     match self.selected_field_index {
                         0 => {
                             // Update profile ID (requires updating profile_ids list too)
                             let old_id = sketch.id.clone();
                             sketch.id = new_value.clone();
-                            if let Some(pos) = self.profile_ids.iter().position(|id| id == &old_id) {
+                            if let Some(pos) = self.profile_ids.iter().position(|id| id == &old_id)
+                            {
                                 self.profile_ids[pos] = new_value;
                             }
-                        },
+                        }
                         1 => sketch.path = new_value,
                         2 => {
                             let connection_id = sketch.connection.clone();
-                            if let Some(conn) = config.connections.iter_mut().find(|c| c.id == connection_id) {
+                            if let Some(conn) = config
+                                .connections
+                                .iter_mut()
+                                .find(|c| c.id == connection_id)
+                            {
                                 conn.port = new_value;
                             }
-                        },
+                        }
                         3 => {
                             let connection_id = sketch.connection.clone();
-                            if let Some(conn) = config.connections.iter_mut().find(|c| c.id == connection_id) {
+                            if let Some(conn) = config
+                                .connections
+                                .iter_mut()
+                                .find(|c| c.id == connection_id)
+                            {
                                 if let Ok(baud) = new_value.parse::<u32>() {
                                     conn.baudrate = baud;
                                 }
                             }
-                        },
-                        _ => {},
+                        }
+                        _ => {}
                     }
                 }
             }
@@ -650,10 +759,15 @@ impl App {
     pub fn exec_profile_clone(&mut self) {
         if let Some(config) = &mut self.profile_config {
             if let Some(current_id) = self.profile_ids.get(self.selected_profile_index) {
-                if let Some(current_sketch) = config.sketches.iter().find(|s| s.id == *current_id).cloned() {
+                if let Some(current_sketch) = config
+                    .sketches
+                    .iter()
+                    .find(|s| s.id == *current_id)
+                    .cloned()
+                {
                     let mut new_sketch = current_sketch;
                     new_sketch.id = format!("{}_copy", current_id);
-                    
+
                     // Ensure unique
                     let mut final_id = new_sketch.id.clone();
                     let mut count = 1;
@@ -666,7 +780,13 @@ impl App {
                     config.sketches.push(new_sketch);
                     self.profile_ids.push(final_id);
                     self.selected_profile_index = self.profile_ids.len() - 1;
-                    self.log("system", &format!("Cloned profile to: {}", self.profile_ids[self.selected_profile_index]));
+                    self.log(
+                        "system",
+                        &format!(
+                            "Cloned profile to: {}",
+                            self.profile_ids[self.selected_profile_index]
+                        ),
+                    );
                 }
             }
         }
@@ -677,8 +797,10 @@ impl App {
             if !self.profile_ids.is_empty() {
                 let id_to_remove = self.profile_ids.remove(self.selected_profile_index);
                 config.sketches.retain(|s| s.id != id_to_remove);
-                
-                if self.selected_profile_index >= self.profile_ids.len() && !self.profile_ids.is_empty() {
+
+                if self.selected_profile_index >= self.profile_ids.len()
+                    && !self.profile_ids.is_empty()
+                {
                     self.selected_profile_index = self.profile_ids.len() - 1;
                 }
                 self.log("system", &format!("Deleted profile: {}", id_to_remove));
@@ -690,9 +812,12 @@ impl App {
         if let Some(config) = &self.profile_config {
             match crate::config::save_profile_config_to_path(config, &self.profile_config_path) {
                 Ok(_) => {
-                    self.log("system", &format!("Configuration saved to {}", self.profile_config_path));
+                    self.log(
+                        "system",
+                        &format!("Configuration saved to {}", self.profile_config_path),
+                    );
                     self.toast_manager.success("Settings Saved");
-                },
+                }
                 Err(e) => {
                     self.report_error(format!("Failed to save config: {}", e));
                 }

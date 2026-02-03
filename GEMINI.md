@@ -107,3 +107,10 @@ The project utilizes `uv` for managing Python packages and development tools. Th
 *   **Windows Scripting:** PowerShell scripts (`.ps1`) are used for automating environment setup and tasks on Windows.
 *   **Type Checking:** The presence of `pyrightconfig.json` and commented sections in `pyproject.toml` suggest the use of `basedpyright` for static type checking in Python code.
 *   **Code Formatting/Linting:** Although not explicitly detailed here, `editorconfig` suggests adherence to consistent code styling across different editors.
+
+# 1. :: Workspace Integrity & Mandatory Rules
+
+**CRITICAL:** This workspace is governed by a set of strict, non-negotiable integrity rules. You MUST load and adhere to these rules before executing any tool calls or proposing code changes.
+
+*   **[Workspace Rules Orchestrator](.gemini/rules/README.md)**: **MANDATORY READING.** This is the central source of truth for all active standards (Code Integrity, Formatting, Stability, and Shell Usage).
+*   **Compliance Requirement**: Every response must be verified against the standards defined in the Orchestrator. Failure to comply with section numbering, title formatting, or code-elision rules is considered a system-level failure.

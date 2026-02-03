@@ -1,6 +1,6 @@
 use ratatui::style::{Color, Modifier, Style};
-use std::collections::HashMap;
 use serde::Deserialize;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct ThemeConfig {
@@ -29,7 +29,7 @@ impl Theme {
         for (name, style_str) in &config.styles {
             resolved.insert(name.clone(), parse_style(style_str));
         }
-        Self { 
+        Self {
             resolved,
             message_templates: config.message_types.clone(),
         }
@@ -45,30 +45,65 @@ impl Default for Theme {
 impl Theme {
     /// Formats a semantic message into an ANSI string for the output panel
     pub fn format_message(&self, kind: &str, message: &str) -> String {
-        let template = self.message_templates.get(kind).cloned().unwrap_or_else(|| {
-            // Provide sensible defaults if the template is missing from YAML
-            match kind {
-                "system" => MessageTypeConfig { icon: "⬒".to_string(), icon_style: "#808080".to_string(), text_style: "white".to_string() },
-                "action" => MessageTypeConfig { icon: "⮻".to_string(), icon_style: "#466473".to_string(), text_style: "white".to_string() },
-                "serial" => MessageTypeConfig { icon: "⇄".to_string(), icon_style: "#466473".to_string(), text_style: "white".to_string() },
-                "error" => MessageTypeConfig { icon: "✗".to_string(), icon_style: "red".to_string(), text_style: "red".to_string() },
-                "warn" => MessageTypeConfig { icon: "⚠".to_string(), icon_style: "yellow".to_string(), text_style: "yellow".to_string() },
-                "info" => MessageTypeConfig { icon: "ｉ".to_string(), icon_style: "bold white".to_string(), text_style: "white".to_string() },
-                _ => MessageTypeConfig { icon: "".to_string(), icon_style: "white".to_string(), text_style: "white".to_string() },
-            }
-        });
+        let template = self
+            .message_templates
+            .get(kind)
+            .cloned()
+            .unwrap_or_else(|| {
+                // Provide sensible defaults if the template is missing from YAML
+                match kind {
+                    "system" => MessageTypeConfig {
+                        icon: "⬒".to_string(),
+                        icon_style: "#808080".to_string(),
+                        text_style: "white".to_string(),
+                    },
+                    "action" => MessageTypeConfig {
+                        icon: "⮻".to_string(),
+                        icon_style: "#466473".to_string(),
+                        text_style: "white".to_string(),
+                    },
+                    "serial" => MessageTypeConfig {
+                        icon: "⇄".to_string(),
+                        icon_style: "#466473".to_string(),
+                        text_style: "white".to_string(),
+                    },
+                    "error" => MessageTypeConfig {
+                        icon: "✗".to_string(),
+                        icon_style: "red".to_string(),
+                        text_style: "red".to_string(),
+                    },
+                    "warn" => MessageTypeConfig {
+                        icon: "⚠".to_string(),
+                        icon_style: "yellow".to_string(),
+                        text_style: "yellow".to_string(),
+                    },
+                    "info" => MessageTypeConfig {
+                        icon: "ｉ".to_string(),
+                        icon_style: "bold white".to_string(),
+                        text_style: "white".to_string(),
+                    },
+                    _ => MessageTypeConfig {
+                        icon: "".to_string(),
+                        icon_style: "white".to_string(),
+                        text_style: "white".to_string(),
+                    },
+                }
+            });
 
         let icon_ansi = style_to_ansi(&parse_style(&template.icon_style));
         let text_ansi = style_to_ansi(&parse_style(&template.text_style));
         let reset = "\x1b[0m";
 
         // Skip space if no icon, or if it's the specific 'i' icon requested to be tight
-        let space = if template.icon.is_empty() || template.icon == "ｉ" { "" } else { " " };
+        let space = if template.icon.is_empty() || template.icon == "ｉ" {
+            ""
+        } else {
+            " "
+        };
 
-        format!("{}{}{}{}{}{}{}", 
-            icon_ansi, template.icon, reset,
-            space,
-            text_ansi, message, reset
+        format!(
+            "{}{}{}{}{}{}{}",
+            icon_ansi, template.icon, reset, space, text_ansi, message, reset
         )
     }
 
@@ -76,8 +111,13 @@ impl Theme {
         self.resolved.get(name).cloned().unwrap_or_else(|| {
             // Provide sensible defaults if the key is missing from YAML
             match name {
-                "commands_highlight" => Style::default().fg(Color::Cyan).bg(Color::Rgb(0, 40, 40)).add_modifier(Modifier::BOLD),
-                "output_title" | "commands_title" | "progress_title" | "input_title" => Style::default().add_modifier(Modifier::BOLD),
+                "commands_highlight" => Style::default()
+                    .fg(Color::Cyan)
+                    .bg(Color::Rgb(0, 40, 40))
+                    .add_modifier(Modifier::BOLD),
+                "output_title" | "commands_title" | "progress_title" | "input_title" => {
+                    Style::default().add_modifier(Modifier::BOLD)
+                }
                 "input_border" => Style::default().fg(Color::Yellow),
                 _ => Style::default(),
             }
@@ -94,7 +134,10 @@ fn parse_style(s: &str) -> Style {
     for part in parts {
         let p = part.to_lowercase();
         match p.as_str() {
-            "on" => { is_bg = true; continue; }
+            "on" => {
+                is_bg = true;
+                continue;
+            }
             "bold" => style = style.add_modifier(Modifier::BOLD),
             "dim" => style = style.add_modifier(Modifier::DIM),
             "italic" => style = style.add_modifier(Modifier::ITALIC),
@@ -122,7 +165,7 @@ fn parse_color(c: &str) -> Option<Color> {
     }
 
     if c.starts_with("rgb(") && c.ends_with(')') {
-        let inner = &c[4..c.len()-1];
+        let inner = &c[4..c.len() - 1];
         let parts: Vec<&str> = inner.split(',').map(|s| s.trim()).collect();
         if parts.len() == 3 {
             let r = parts[0].parse::<u8>().ok()?;
@@ -150,16 +193,22 @@ fn parse_color(c: &str) -> Option<Color> {
 /// Helper to convert a Ratatui Style into an ANSI escape sequence
 fn style_to_ansi(style: &Style) -> String {
     let mut parts = Vec::new();
-    
+
     if let Some(fg) = style.fg {
         match fg {
             Color::Rgb(r, g, b) => parts.push(format!("38;2;{};{};{}", r, g, b)),
             Color::Indexed(i) => parts.push(format!("38;5;{}", i)),
             _ => {
                 let code = match fg {
-                    Color::Black => 30, Color::Red => 31, Color::Green => 32,
-                    Color::Yellow => 33, Color::Blue => 34, Color::Magenta => 35,
-                    Color::Cyan => 36, Color::White => 37, _ => 39,
+                    Color::Black => 30,
+                    Color::Red => 31,
+                    Color::Green => 32,
+                    Color::Yellow => 33,
+                    Color::Blue => 34,
+                    Color::Magenta => 35,
+                    Color::Cyan => 36,
+                    Color::White => 37,
+                    _ => 39,
                 };
                 parts.push(code.to_string());
             }
@@ -171,19 +220,33 @@ fn style_to_ansi(style: &Style) -> String {
             Color::Rgb(r, g, b) => parts.push(format!("48;2;{};{};{}", r, g, b)),
             _ => {
                 let code = match bg {
-                    Color::Black => 40, Color::Red => 41, Color::Green => 42,
-                    Color::Yellow => 43, Color::Blue => 44, Color::Magenta => 45,
-                    Color::Cyan => 46, Color::White => 47, _ => 49,
+                    Color::Black => 40,
+                    Color::Red => 41,
+                    Color::Green => 42,
+                    Color::Yellow => 43,
+                    Color::Blue => 44,
+                    Color::Magenta => 45,
+                    Color::Cyan => 46,
+                    Color::White => 47,
+                    _ => 49,
                 };
                 parts.push(code.to_string());
             }
         }
     }
 
-    if style.add_modifier.contains(Modifier::BOLD) { parts.push("1".to_string()); }
-    if style.add_modifier.contains(Modifier::DIM) { parts.push("2".to_string()); }
-    if style.add_modifier.contains(Modifier::ITALIC) { parts.push("3".to_string()); }
-    if style.add_modifier.contains(Modifier::UNDERLINED) { parts.push("4".to_string()); }
+    if style.add_modifier.contains(Modifier::BOLD) {
+        parts.push("1".to_string());
+    }
+    if style.add_modifier.contains(Modifier::DIM) {
+        parts.push("2".to_string());
+    }
+    if style.add_modifier.contains(Modifier::ITALIC) {
+        parts.push("3".to_string());
+    }
+    if style.add_modifier.contains(Modifier::UNDERLINED) {
+        parts.push("4".to_string());
+    }
 
     if parts.is_empty() {
         "".to_string()

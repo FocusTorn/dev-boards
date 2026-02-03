@@ -4,8 +4,8 @@ use ratatui::{
     style::{Color, Modifier, Style},
     widgets::{Clear, Paragraph, Widget},
 };
-use std::time::{Duration, Instant};
 use serde::Deserialize;
+use std::time::{Duration, Instant};
 
 /// Severity level for a toast notification.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -54,9 +54,15 @@ pub enum ToastPosition {
     Center,
 }
 
-fn default_duration_seconds() -> f32 { 1.5 }
-fn default_fade_out_seconds() -> f32 { 0.5 }
-fn bottom_center() -> ToastPosition { ToastPosition::BottomCenter }
+fn default_duration_seconds() -> f32 {
+    1.5
+}
+fn default_fade_out_seconds() -> f32 {
+    0.5
+}
+fn bottom_center() -> ToastPosition {
+    ToastPosition::BottomCenter
+}
 
 /// Deserializable configuration for toast behavior.
 #[derive(Debug, Clone, Deserialize)]
@@ -120,7 +126,8 @@ impl ToastManager {
 
     /// Appends a new message to the notification queue.
     pub fn add(&mut self, message: String, level: ToastLevel) {
-        let total_duration = Duration::from_secs_f32(self.config.duration_seconds + self.config.fade_out_seconds);
+        let total_duration =
+            Duration::from_secs_f32(self.config.duration_seconds + self.config.fade_out_seconds);
         self.toasts.push(Toast::new(message, level, total_duration));
     }
 
@@ -209,7 +216,10 @@ impl<'a> Widget for ToastWidget<'a> {
 
         for (content, fg_color, opacity) in toast_data.iter().rev() {
             let content_len = content.len();
-            let left_padding = max_width.saturating_sub(content_len).saturating_sub(1).max(2);
+            let left_padding = max_width
+                .saturating_sub(content_len)
+                .saturating_sub(1)
+                .max(2);
 
             let mut padded_text = format!("{}{} ", " ".repeat(left_padding), content);
             while padded_text.len() < max_width {
@@ -221,19 +231,39 @@ impl<'a> Widget for ToastWidget<'a> {
 
             let (toast_x, toast_y) = match position {
                 ToastPosition::TopLeft => (area.x + 1, area.y + 1 + y_offset),
-                ToastPosition::TopRight => (area.x + area.width.saturating_sub(max_width_u16).saturating_sub(1), area.y + 1 + y_offset),
-                ToastPosition::TopCenter => (area.x + (area.width.saturating_sub(max_width_u16)) / 2, area.y + 1 + y_offset),
-                ToastPosition::BottomLeft => (area.x + 1, area.y + area.height.saturating_sub(1 + toast_height + y_offset)),
-                ToastPosition::BottomRight => (area.x + area.width.saturating_sub(max_width_u16).saturating_sub(1), area.y + area.height.saturating_sub(1 + toast_height + y_offset)),
-                ToastPosition::BottomCenter => (area.x + (area.width.saturating_sub(max_width_u16)) / 2, area.y + area.height.saturating_sub(1 + toast_height + y_offset)),
+                ToastPosition::TopRight => (
+                    area.x + area.width.saturating_sub(max_width_u16).saturating_sub(1),
+                    area.y + 1 + y_offset,
+                ),
+                ToastPosition::TopCenter => (
+                    area.x + (area.width.saturating_sub(max_width_u16)) / 2,
+                    area.y + 1 + y_offset,
+                ),
+                ToastPosition::BottomLeft => (
+                    area.x + 1,
+                    area.y + area.height.saturating_sub(1 + toast_height + y_offset),
+                ),
+                ToastPosition::BottomRight => (
+                    area.x + area.width.saturating_sub(max_width_u16).saturating_sub(1),
+                    area.y + area.height.saturating_sub(1 + toast_height + y_offset),
+                ),
+                ToastPosition::BottomCenter => (
+                    area.x + (area.width.saturating_sub(max_width_u16)) / 2,
+                    area.y + area.height.saturating_sub(1 + toast_height + y_offset),
+                ),
                 ToastPosition::Center => (
                     area.x + (area.width.saturating_sub(max_width_u16)) / 2,
-                    area.y + (area.height.saturating_sub(toast_height * toasts.len() as u16)) / 2 + y_offset
+                    area.y
+                        + (area
+                            .height
+                            .saturating_sub(toast_height * toasts.len() as u16))
+                            / 2
+                        + y_offset,
                 ),
             };
 
             if toast_y >= area.y + area.height || toast_x >= area.x + area.width {
-                continue; 
+                continue;
             }
 
             let toast_area = Rect {
@@ -251,11 +281,12 @@ impl<'a> Widget for ToastWidget<'a> {
                 *fg_color
             };
 
-            let toast_widget = Paragraph::new(padded_text)
-                .style(Style::default()
+            let toast_widget = Paragraph::new(padded_text).style(
+                Style::default()
                     .fg(current_fg)
                     .bg(Color::Rgb(10, 10, 10))
-                    .add_modifier(Modifier::BOLD));
+                    .add_modifier(Modifier::BOLD),
+            );
 
             toast_widget.render(toast_area, buf);
 
@@ -267,8 +298,8 @@ impl<'a> Widget for ToastWidget<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ratatui::Terminal;
     use ratatui::backend::TestBackend;
+    use ratatui::Terminal;
 
     fn buffer_content(buffer: &Buffer) -> String {
         let mut result = String::new();
@@ -288,10 +319,10 @@ mod tests {
             fade_out_seconds: 0.1,
             ..Default::default()
         });
-        
+
         manager.success("test");
         assert_eq!(manager.toasts.len(), 1);
-        
+
         std::thread::sleep(Duration::from_millis(250));
         manager.update();
         assert_eq!(manager.toasts.len(), 0);
@@ -304,20 +335,22 @@ mod tests {
             ..Default::default()
         });
         manager.success("Task Complete");
-        
+
         let backend = TestBackend::new(50, 10);
         let mut terminal = Terminal::new(backend).unwrap();
-        
-        terminal.draw(|f| {
-            let widget = ToastWidget::new(&mut manager);
-            f.render_widget(widget, f.area());
-        }).unwrap();
+
+        terminal
+            .draw(|f| {
+                let widget = ToastWidget::new(&mut manager);
+                f.render_widget(widget, f.area());
+            })
+            .unwrap();
 
         let buffer = terminal.backend().buffer();
         let s = buffer_content(buffer);
-        
+
         assert!(s.contains("✓ Task Complete"));
-        
+
         // Success should be Green
         // We find the '✓' character
         let mut found = false;
@@ -337,19 +370,19 @@ mod tests {
         let mut manager = ToastManager::new(ToastConfig::default());
         manager.error("Failure");
         manager.info("Note");
-        
+
         let backend = TestBackend::new(50, 10);
         let mut terminal = Terminal::new(backend).unwrap();
-        
-        terminal.draw(|f| {
-            let widget = ToastWidget::new(&mut manager);
-            f.render_widget(widget, f.area());
-        }).unwrap();
+
+        terminal
+            .draw(|f| {
+                let widget = ToastWidget::new(&mut manager);
+                f.render_widget(widget, f.area());
+            })
+            .unwrap();
 
         let s = buffer_content(terminal.backend().buffer());
         assert!(s.contains("✗ Failure"));
         assert!(s.contains("ℹ Note"));
     }
 }
-
-    

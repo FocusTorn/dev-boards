@@ -1,0 +1,26 @@
+- id: "MainContentTabBar"
+  style: "Tab"
+  color: "cyan"
+  min_tab_width: 11
+  tab_tooltips: true
+
+  alignment:
+      vertical: "Top"
+      horizontal: "Center"
+      offset_x: 0
+      offset_y: 0
+
+  navigation:
+      left: [ "PgUp" ]
+      right: [ "PgDown" ]
+
+  tabs:
+      - id: "dashboard"
+        name: "Dashboard"
+      
+      - id: "profiles"
+        name: "Profiles"
+        default: "active"
+      
+      - id: "settings"
+        name: "Settings"

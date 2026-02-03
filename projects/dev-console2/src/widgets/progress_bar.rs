@@ -1,4 +1,4 @@
-﻿use ratatui::{
+use ratatui::{
     prelude::*,
     widgets::{Block, Borders, Paragraph, Widget},
 };
@@ -92,14 +92,17 @@ impl<'a> Widget for ProgressBarWidget<'a> {
         );
 
         let bar_width = (content_area.width as usize).saturating_sub(2);
-        let filled_width = ((bar_width as f64 * self.progress_percentage / 100.0).round() as usize).min(bar_width);
+        let filled_width =
+            ((bar_width as f64 * self.progress_percentage / 100.0).round() as usize).min(bar_width);
         let empty_width = bar_width.saturating_sub(filled_width);
         let bar_text = format!("[{}{}]", "█".repeat(filled_width), " ".repeat(empty_width));
 
         let mut lines = vec![
             Line::from(Span::styled(
                 line1,
-                Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
             )),
             Line::from(Span::styled(bar_text, Style::default().fg(Color::Green))),
         ];
@@ -138,9 +141,10 @@ mod tests {
         let mut terminal = Terminal::new(backend).unwrap();
         terminal
             .draw(|f| {
-                let widget = ProgressBarWidget::new("Build".to_string(), 50.0, "Compiling".to_string())
-                    .elapsed("00:10".to_string())
-                    .eta("00:10".to_string());
+                let widget =
+                    ProgressBarWidget::new("Build".to_string(), 50.0, "Compiling".to_string())
+                        .elapsed("00:10".to_string())
+                        .eta("00:10".to_string());
                 f.render_widget(widget, f.area());
             })
             .unwrap();

@@ -7,7 +7,7 @@ use crate::commands::traits::FileSystem;
 
 /// Find workspace root using WORKSPACE_ROOT environment variable.
 ///>
-/// This is the primary method for resolving relative paths within the 
+/// This is the primary method for resolving relative paths within the
 /// heterogeneous development environment.
 ///<
 pub fn find_workspace_root() -> Result<PathBuf, String> {
@@ -18,21 +18,24 @@ pub fn find_workspace_root() -> Result<PathBuf, String> {
 
 /// Resolves the absolute path to the `arduino-cli` executable.
 ///>
-/// Checks the workspace's managed `Arduino/` directory first, falling back 
+/// Checks the workspace's managed `Arduino/` directory first, falling back
 /// to the system PATH if necessary.
 ///<
 pub fn find_arduino_cli(fs: &dyn FileSystem, env: &str, project_root: &Path) -> PathBuf {
-    if env == "arduino" { //>
+    if env == "arduino" {
+        //>
         let workspace_path = project_root.join("Arduino").join("arduino-cli.exe");
-        if fs.exists(&workspace_path) { //>
+        if fs.exists(&workspace_path) {
+            //>
             return workspace_path;
         } //<
-        
+
         // Check if arduino-cli is in PATH
-        if which::which("arduino-cli").is_ok() { //>
+        if which::which("arduino-cli").is_ok() {
+            //>
             return PathBuf::from("arduino-cli");
         } //<
-        
+
         workspace_path
     } else {
         PathBuf::from("arduino-cli")

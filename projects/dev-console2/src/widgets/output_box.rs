@@ -1,12 +1,12 @@
+use crate::app::theme::Theme;
+use crate::widgets::smooth_scrollbar::{ScrollBar, ScrollLengths};
 use ratatui::{
     buffer::Buffer,
-    layout::{Constraint, Layout, Margin, Rect, Position},
+    layout::{Constraint, Layout, Margin, Position, Rect},
     style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, Paragraph, Widget},
 };
-use crate::app::theme::Theme;
-use crate::widgets::smooth_scrollbar::{ScrollBar, ScrollLengths};
 
 /// A widget for displaying the application's output log with scrolling and input support.
 pub struct OutputBoxWidget<'a> {
@@ -57,40 +57,54 @@ impl<'a> Widget for OutputBoxWidget<'a> {
 
         // Render Input Box if active
         if self.input_active {
-            let [text_part, input_part] = Layout::vertical([
-                Constraint::Min(0),
-                Constraint::Length(3),
-            ]).areas(inner_output_area);
-            
+            let [text_part, input_part] =
+                Layout::vertical([Constraint::Min(0), Constraint::Length(3)])
+                    .areas(inner_output_area);
+
             actual_text_area = text_part;
-            
+
             let input_block = Block::bordered()
-                .title(Span::styled(" Send Command ", self.theme.style("input_title")))
+                .title(Span::styled(
+                    " Send Command ",
+                    self.theme.style("input_title"),
+                ))
                 .border_style(self.theme.style("input_border"));
             let input_inner = input_block.inner(input_part);
             input_block.render(input_part, buf);
-            
+
             buf.set_string(
                 input_inner.x,
                 input_inner.y,
                 self.input_value,
                 self.theme.style("input_text"),
             );
-            
-            // Note: The cursor position is handled by the Frame in view.rs, 
+
+            // Note: The cursor position is handled by the Frame in view.rs,
             // but we can store it or let the caller handle it.
         }
 
         // Handle Scrollbar calculations
         let total_lines = self.lines.len();
-        let total_count = if self.autoscroll { total_lines + 1 } else { total_lines };
+        let total_count = if self.autoscroll {
+            total_lines + 1
+        } else {
+            total_lines
+        };
         let show_scrollbar = total_count > actual_text_area.height as usize;
 
-        let mut text_area = actual_text_area.inner(Margin { vertical: 0, horizontal: 1 });
-        if show_scrollbar { text_area.width = text_area.width.saturating_sub(1); }
+        let mut text_area = actual_text_area.inner(Margin {
+            vertical: 0,
+            horizontal: 1,
+        });
+        if show_scrollbar {
+            text_area.width = text_area.width.saturating_sub(1);
+        }
 
         let display_lines = if self.lines.is_empty() {
-            vec![Line::from(Span::styled("No output yet.", Style::default().fg(Color::DarkGray)))]
+            vec![Line::from(Span::styled(
+                "No output yet.",
+                Style::default().fg(Color::DarkGray),
+            ))]
         } else {
             self.lines.to_vec()
         };
@@ -110,8 +124,9 @@ impl<'a> Widget for OutputBoxWidget<'a> {
             let scrollbar = ScrollBar::vertical(ScrollLengths {
                 content_len: total_count,
                 viewport_len: text_area.height as usize,
-            }).offset(self.scroll as usize);
-            
+            })
+            .offset(self.scroll as usize);
+
             scrollbar.render(scrollbar_area, buf);
         }
     }
@@ -139,11 +154,13 @@ mod tests {
         let theme = Theme::default();
         let backend = TestBackend::new(30, 10);
         let mut terminal = Terminal::new(backend).unwrap();
-        
-        terminal.draw(|f| {
-            let widget = OutputBoxWidget::new(&[], 0, &theme);
-            f.render_widget(widget, f.area());
-        }).unwrap();
+
+        terminal
+            .draw(|f| {
+                let widget = OutputBoxWidget::new(&[], 0, &theme);
+                f.render_widget(widget, f.area());
+            })
+            .unwrap();
 
         let s = buffer_to_string(terminal.backend().buffer());
         assert!(s.contains(" Output "));
@@ -156,11 +173,13 @@ mod tests {
         let backend = TestBackend::new(30, 10);
         let mut terminal = Terminal::new(backend).unwrap();
         let lines = vec![Line::from("Line 1"), Line::from("Line 2")];
-        
-        terminal.draw(|f| {
-            let widget = OutputBoxWidget::new(&lines, 0, &theme);
-            f.render_widget(widget, f.area());
-        }).unwrap();
+
+        terminal
+            .draw(|f| {
+                let widget = OutputBoxWidget::new(&lines, 0, &theme);
+                f.render_widget(widget, f.area());
+            })
+            .unwrap();
 
         let s = buffer_to_string(terminal.backend().buffer());
         assert!(s.contains("Line 1"));
@@ -172,12 +191,13 @@ mod tests {
         let theme = Theme::default();
         let backend = TestBackend::new(30, 10);
         let mut terminal = Terminal::new(backend).unwrap();
-        
-        terminal.draw(|f| {
-            let widget = OutputBoxWidget::new(&[], 0, &theme)
-                .input(true, "cmd", 3);
-            f.render_widget(widget, f.area());
-        }).unwrap();
+
+        terminal
+            .draw(|f| {
+                let widget = OutputBoxWidget::new(&[], 0, &theme).input(true, "cmd", 3);
+                f.render_widget(widget, f.area());
+            })
+            .unwrap();
 
         let s = buffer_to_string(terminal.backend().buffer());
         assert!(s.contains("Send Command"));

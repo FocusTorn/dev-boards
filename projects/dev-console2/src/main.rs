@@ -4,17 +4,17 @@ use color_eyre::Result;
 use crossterm::event::{self, Event, KeyEventKind};
 
 mod app;
+mod commands;
 mod config;
 mod terminal;
 mod widgets;
-mod commands;
 
 use app::{App, Message};
 
 /// Entry point for the dev-console-v2 application.
 ///>
 /// Initializes error handling, terminal state, and the main event loop.
-/// The application follows the Elm Architecture (Model-Update-View), with 
+/// The application follows the Elm Architecture (Model-Update-View), with
 /// background tasks translated into internal messages.
 ///<
 fn main() -> Result<()> {
@@ -46,7 +46,11 @@ fn main() -> Result<()> {
         app.tick();
 
         // Render if state changed OR if we are animating (to keep movement smooth)
-        if app.should_redraw || app.is_task_running() || app.is_animating() || app.is_toast_animating() {
+        if app.should_redraw
+            || app.is_task_running()
+            || app.is_animating()
+            || app.is_toast_animating()
+        {
             terminal.draw(|f| app.view(f))?;
             app.should_redraw = false;
         }
@@ -59,7 +63,7 @@ fn main() -> Result<()> {
 
 /// Translates raw terminal events into internal application Messages.
 ///>
-/// Polls for keyboard, mouse, and resize events with a short timeout to 
+/// Polls for keyboard, mouse, and resize events with a short timeout to
 /// maintain UI responsiveness and allow background processing.
 ///<
 fn handle_event() -> Result<Option<Message>> {

@@ -3,16 +3,16 @@ use crate::commands::ProgressUpdate;
 
 /// Event translation and ingestion for background processes.
 ///>
-/// The `system` module acts as the bridge between long-running background tasks 
-/// (compilation, monitoring) and the main application loop. It translates 
-/// external `ProgressUpdate` events into internal state transitions, ensuring 
+/// The `system` module acts as the bridge between long-running background tasks
+/// (compilation, monitoring) and the main application loop. It translates
+/// external `ProgressUpdate` events into internal state transitions, ensuring
 /// thread-safe data ingestion and UI synchronization.
 ///<
 impl App {
     /// Ingests pending events from background command channels.
     ///>
     /// This is called once per frame in the main loop to ensure background updates
-    /// are translated into internal Messages. This keeps state mutation 
+    /// are translated into internal Messages. This keeps state mutation
     /// single-threaded and predictable.
     ///<
     pub fn poll_system_events(&mut self) {
@@ -47,7 +47,7 @@ impl App {
                             } else {
                                 self.log("board", &line);
                             }
-                        },
+                        }
                     }
                 } else {
                     self.log("board", &line);
@@ -55,8 +55,14 @@ impl App {
             }
             ProgressUpdate::Percentage(p) => {
                 let remaining = self.predictor.predict_remaining(p);
-                
-                if let TaskState::Running { percentage, smoothed_eta, last_updated, .. } = &mut self.task_state {
+
+                if let TaskState::Running {
+                    percentage,
+                    smoothed_eta,
+                    last_updated,
+                    ..
+                } = &mut self.task_state
+                {
                     *percentage = p;
                     *last_updated = std::time::Instant::now();
                     if let Some(rem) = remaining {
@@ -67,7 +73,9 @@ impl App {
             ProgressUpdate::Stage(s) => {
                 let predictor_stage = match s.as_str() {
                     "Initializing" => Some(crate::commands::predictor::CompileStage::Initializing),
-                    "DetectingLibraries" => Some(crate::commands::predictor::CompileStage::DetectingLibraries),
+                    "DetectingLibraries" => {
+                        Some(crate::commands::predictor::CompileStage::DetectingLibraries)
+                    }
                     "Compiling" => Some(crate::commands::predictor::CompileStage::Compiling),
                     "Linking" => Some(crate::commands::predictor::CompileStage::Linking),
                     "Generating" => Some(crate::commands::predictor::CompileStage::Generating),
@@ -82,9 +90,11 @@ impl App {
                 }
             }
             ProgressUpdate::CompletedWithMetrics { stage_times } => {
-                let sketch_id = self.get_current_sketch_id().unwrap_or_else(|| "default".to_string());
+                let sketch_id = self
+                    .get_current_sketch_id()
+                    .unwrap_or_else(|| "default".to_string());
                 let history_path = std::path::Path::new(".dev-console/progress_history.json");
-                
+
                 let mut manager = crate::commands::HistoryManager::load(history_path);
                 manager.record_run(&sketch_id, stage_times);
                 let _ = manager.save(history_path);
@@ -102,7 +112,7 @@ impl App {
 
     /// Advances animations based on elapsed time.
     ///>
-    /// This is called on every loop iteration to ensure that visual elements 
+    /// This is called on every loop iteration to ensure that visual elements
     /// (like the progress bar) transition smoothly between real data updates.
     ///<
     pub fn tick(&mut self) {
@@ -110,16 +120,21 @@ impl App {
         let dt = now.duration_since(self.last_frame_time).as_secs_f64();
         self.last_frame_time = now;
 
-        if let TaskState::Running { percentage, visual_percentage, .. } = &mut self.task_state {
+        if let TaskState::Running {
+            percentage,
+            visual_percentage,
+            ..
+        } = &mut self.task_state
+        {
             let target = *percentage;
             let current = *visual_percentage;
-            
+
             if (target - current).abs() > 0.01 {
                 // Exponential decay: visual = visual + (target - visual) * (1 - exp(-speed * dt))
                 let speed = 5.0;
                 let factor = 1.0 - (-speed * dt).exp();
                 *visual_percentage = current + (target - current) * factor;
-                
+
                 // Snap if very close
                 if (target - *visual_percentage).abs() < 0.05 {
                     *visual_percentage = target;
@@ -130,7 +145,12 @@ impl App {
 
     /// Returns true if any visual elements are still transitioning.
     pub fn is_animating(&self) -> bool {
-        if let TaskState::Running { percentage, visual_percentage, .. } = &self.task_state {
+        if let TaskState::Running {
+            percentage,
+            visual_percentage,
+            ..
+        } = &self.task_state
+        {
             return (percentage - visual_percentage).abs() > 0.01;
         }
         false

@@ -1,34 +1,27 @@
-arduino-cli_path: "D:/_dev/_Projects/dev-boards/Arduino/arduino-cli.exe"
-
-    
 connections:
-  - id: &arduino-c9-115200 "arduino-c9-115200"
-    compiler: "arduino-cli"
-    port: "COM9"
+  - id: arduino-c9-115200
+    compiler: arduino-cli
+    port: COM9
     baudrate: 115200
-
 devices:
-  - id: &esp32-s3 "esp32-s3"
-    board_model: "esp32-s3"
-    fbqn: "esp32:esp32:esp32s3"    
-    
+  - id: esp32-s3
+    board_model: esp32-s3
+    fbqn: esp32:esp32:esp32s3
 mqtt:
-  - id: &univ-win "univ-win"
-    host: "Acer-Lappy"
+  - id: univ-win
+    host: Acer-Lappy
     port: 1883
-    username: "mqtt"
-    password: "mqtt"
-    
+    username: mqtt
+    password: mqtt
 sketches:
   - id: sht21-Win
-    path: "D:/_dev/_Projects/dev-boards/projects/esp32-s3__LB-Gold/sht21-solo/sht21-Win.ino"
-    connection: *arduino-c9-115200
-    device: *esp32-s3
-    mqtt: *univ-win
-    
-  - id: "sht21.2-sk6822"
-    path: "D:/_dev/_Projects/dev-boards/projects/esp32-s3__LB-Gold/sht21.2-sk6822/sht21.2-sk6822.ino"
-    connection: *arduino-c9-115200
-    device: *esp32-s3
-    mqtt: *univ-win
-
+    path: D:/_dev/_Projects/dev-boards/projects/esp32-s3__LB-Gold/sht21-solo/sht21-Win.ino
+    connection: arduino-c9-115200
+    device: esp32-s3
+    mqtt: univ-win
+  - id: sht21.2-sk6822
+    path: >-
+      D:/_dev/_Projects/dev-boards/projects/esp32-s3__LB-Gold/sht21.2-sk6822/sht21.2-sk6822.ino
+    connection: arduino-c9-115200
+    device: esp32-s3
+    mqtt: univ-win

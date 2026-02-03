@@ -20,22 +20,29 @@ Reorganize `src/widgets/` to distinguish between pure UI elements and stateful c
 ## 3. Phase 2: Breaking Down "God Objects"
 Decompose the three primary monolithic files that currently handle too many responsibilities.
 
+
+
+
+
+
+
+
 ### 3.1 `src/app/mod.rs` (State & Routing)
 - **Problem**: 1200+ lines handling input, state, and widget routing.
-- **Solution**: 
+- **Solution**:
     - Move `Action` definitions to a dedicated `src/app/actions.rs`.
     - Split `update()` logic into functional modules (e.g., `src/app/router.rs` for focus/input delegation).
     - Move `App` state initialization to `src/app/state.rs`.
 
 ### 3.2 `src/app/executors.rs` (Side Effects)
 - **Problem**: 600+ lines of command execution logic tightly coupled to `App`.
-- **Solution**: 
+- **Solution**:
     - Break into domain-specific executors: `arduino.rs`, `serial.rs`, `system.rs`.
     - Use a `CommandExecutor` trait to standardize how background tasks report back to the UI.
 
 ### 3.3 `src/config.rs` (Configuration)
 - **Problem**: Single file managing serialization for profiles, boards, and UI settings.
-- **Solution**: 
+- **Solution**:
     - Split into `config/profiles.rs`, `config/hardware.rs`, and `config/ui.rs`.
     - Centralize YAML loading/saving in a small `config/mod.rs` wrapper.
 

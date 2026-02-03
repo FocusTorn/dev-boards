@@ -1,0 +1,30 @@
+- id: "OutputPanelStaticOptions"
+  style: "BoxStatic"
+  colors:
+      active: "green"
+      negate: "red"
+  alignment:
+      vertical: "bottom"
+      horizontal: "left"
+      offset_x: 0
+      offset_y: 0
+  tabs:
+      - id: "autoscroll"
+        name: "Auto"
+        default: "active"
+
+- id: "ProfileIDButtonBar"
+  style: "BoxStatic"
+  colors:
+      active: "green"
+      negate: "white"
+  alignment:
+      vertical: "bottom"
+      horizontal: "right"
+      offset_x: -1
+      offset_y: 0
+  tabs:
+      - id: "save"
+        name: "Save"
+      - id: "delete"
+        name: "Delete"

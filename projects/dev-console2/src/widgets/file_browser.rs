@@ -1,12 +1,12 @@
-use std::path::PathBuf;
+use crate::widgets::{InteractiveWidget, WidgetOutcome};
+use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::{Color, Modifier, Style},
     widgets::{List, ListItem, ListState, Widget},
 };
-use crossterm::event::{KeyCode, KeyEvent};
-use crate::widgets::{InteractiveWidget, WidgetOutcome};
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FileEntry {
@@ -66,8 +66,12 @@ impl FileBrowser {
 
         self.entries.sort_by(|a, b| {
             // '..' always comes first
-            if a.name == ".." { return std::cmp::Ordering::Less; }
-            if b.name == ".." { return std::cmp::Ordering::Greater; }
+            if a.name == ".." {
+                return std::cmp::Ordering::Less;
+            }
+            if b.name == ".." {
+                return std::cmp::Ordering::Greater;
+            }
 
             if a.is_dir != b.is_dir {
                 // Directories come before files
@@ -82,7 +86,9 @@ impl FileBrowser {
     pub fn navigate_parent(&mut self) {
         if let Some(parent) = self.current_dir.parent() {
             let target_path = parent.to_path_buf();
-            let old_dir_name = self.current_dir.file_name()
+            let old_dir_name = self
+                .current_dir
+                .file_name()
                 .map(|n| n.to_string_lossy().to_string());
 
             self.current_dir = target_path;
@@ -101,7 +107,9 @@ impl FileBrowser {
 
     pub fn navigate_back(&mut self) {
         if let Some(prior_dir) = self.history.pop() {
-            let old_dir_name = self.current_dir.file_name()
+            let old_dir_name = self
+                .current_dir
+                .file_name()
                 .map(|n| n.to_string_lossy().to_string());
 
             self.current_dir = prior_dir;
@@ -122,7 +130,9 @@ impl FileBrowser {
         if let Some(entry) = self.entries.get(self.selected_index).cloned() {
             if entry.is_dir {
                 let target_path = entry.path.clone();
-                let old_dir_name = self.current_dir.file_name()
+                let old_dir_name = self
+                    .current_dir
+                    .file_name()
                     .map(|n| n.to_string_lossy().to_string());
 
                 // Push current to history before changing
@@ -168,20 +178,26 @@ impl Widget for &FileBrowser {
             height: area.height,
         };
 
-        let items: Vec<ListItem> = self.entries.iter().map(|entry| {
-            let icon = if entry.is_dir { "📁 " } else { "📄 " };
-            let style = if entry.is_dir {
-                Style::default().fg(Color::Cyan)
-            } else {
-                Style::default().fg(Color::White)
-            };
-            ListItem::new(format!("{}{}", icon, entry.name)).style(style)
-        }).collect();
+        let items: Vec<ListItem> = self
+            .entries
+            .iter()
+            .map(|entry| {
+                let icon = if entry.is_dir { "📁 " } else { "📄 " };
+                let style = if entry.is_dir {
+                    Style::default().fg(Color::Cyan)
+                } else {
+                    Style::default().fg(Color::White)
+                };
+                ListItem::new(format!("{}{}", icon, entry.name)).style(style)
+            })
+            .collect();
 
         let list = List::new(items)
-            .highlight_style(Style::default()
-                .bg(Color::Indexed(238))
-                .add_modifier(Modifier::BOLD))
+            .highlight_style(
+                Style::default()
+                    .bg(Color::Indexed(238))
+                    .add_modifier(Modifier::BOLD),
+            )
             .highlight_symbol(""); // Removed ">> "
 
         let mut state = ListState::default();
@@ -213,7 +229,8 @@ impl InteractiveWidget for FileBrowser {
             }
             KeyCode::PageUp => {
                 if self.selected_index > 0 {
-                    self.selected_index = self.selected_index.saturating_sub(self.last_visible_height);
+                    self.selected_index =
+                        self.selected_index.saturating_sub(self.last_visible_height);
                     WidgetOutcome::Consumed
                 } else {
                     WidgetOutcome::None
@@ -221,7 +238,8 @@ impl InteractiveWidget for FileBrowser {
             }
             KeyCode::PageDown => {
                 if !self.entries.is_empty() && self.selected_index < self.entries.len() - 1 {
-                    self.selected_index = (self.selected_index + self.last_visible_height).min(self.entries.len() - 1);
+                    self.selected_index = (self.selected_index + self.last_visible_height)
+                        .min(self.entries.len() - 1);
                     WidgetOutcome::Consumed
                 } else {
                     WidgetOutcome::None
@@ -264,7 +282,11 @@ impl InteractiveWidget for FileBrowser {
         }
     }
 
-    fn handle_mouse(&mut self, mouse: crossterm::event::MouseEvent, area: Rect) -> WidgetOutcome<PathBuf> {
+    fn handle_mouse(
+        &mut self,
+        mouse: crossterm::event::MouseEvent,
+        area: Rect,
+    ) -> WidgetOutcome<PathBuf> {
         // Account for the same padding as in render (Left only)
         let list_area = Rect {
             x: area.x.saturating_add(1),
@@ -327,18 +349,38 @@ mod tests {
     #[test]
     fn test_file_browser_sorting() {
         let mut browser = FileBrowser::new(PathBuf::from("."));
-        
+
         // Manually inject unsorted entries to test the sorting logic
         browser.entries = vec![
-            FileEntry { name: "z_file.txt".into(), path: "z_file.txt".into(), is_dir: false },
-            FileEntry { name: "..".into(), path: "..".into(), is_dir: true },
-            FileEntry { name: "a_dir".into(), path: "a_dir".into(), is_dir: true },
-            FileEntry { name: "b_file.txt".into(), path: "b_file.txt".into(), is_dir: false },
-            FileEntry { name: "m_dir".into(), path: "m_dir".into(), is_dir: true },
+            FileEntry {
+                name: "z_file.txt".into(),
+                path: "z_file.txt".into(),
+                is_dir: false,
+            },
+            FileEntry {
+                name: "..".into(),
+                path: "..".into(),
+                is_dir: true,
+            },
+            FileEntry {
+                name: "a_dir".into(),
+                path: "a_dir".into(),
+                is_dir: true,
+            },
+            FileEntry {
+                name: "b_file.txt".into(),
+                path: "b_file.txt".into(),
+                is_dir: false,
+            },
+            FileEntry {
+                name: "m_dir".into(),
+                path: "m_dir".into(),
+                is_dir: true,
+            },
         ];
-        
+
         browser.load_directory(); // This should trigger sorting
-        
+
         assert_eq!(browser.entries[0].name, "..");
         assert_eq!(browser.entries[1].name, "a_dir");
         assert_eq!(browser.entries[2].name, "m_dir");
@@ -350,8 +392,16 @@ mod tests {
     fn test_file_browser_navigation() {
         let mut browser = FileBrowser::new(PathBuf::from("."));
         browser.entries = vec![
-            FileEntry { name: "1".into(), path: "1".into(), is_dir: false },
-            FileEntry { name: "2".into(), path: "2".into(), is_dir: false },
+            FileEntry {
+                name: "1".into(),
+                path: "1".into(),
+                is_dir: false,
+            },
+            FileEntry {
+                name: "2".into(),
+                path: "2".into(),
+                is_dir: false,
+            },
         ];
 
         // Down
@@ -375,9 +425,11 @@ mod tests {
     fn test_file_browser_selection_and_cancel() {
         let mut browser = FileBrowser::new(PathBuf::from("."));
         let file_path = PathBuf::from("test.txt");
-        browser.entries = vec![
-            FileEntry { name: "test.txt".into(), path: file_path.clone(), is_dir: false },
-        ];
+        browser.entries = vec![FileEntry {
+            name: "test.txt".into(),
+            path: file_path.clone(),
+            is_dir: false,
+        }];
 
         // Confirm
         let outcome = browser.handle_key(make_key(KeyCode::Enter));
@@ -391,9 +443,11 @@ mod tests {
     #[test]
     fn test_file_browser_arrow_navigation() {
         let mut browser = FileBrowser::new(PathBuf::from("."));
-        browser.entries = vec![
-            FileEntry { name: "dir1".into(), path: "dir1".into(), is_dir: true },
-        ];
+        browser.entries = vec![FileEntry {
+            name: "dir1".into(),
+            path: "dir1".into(),
+            is_dir: true,
+        }];
         browser.selected_index = 0;
 
         // ArrowRight should navigate into
@@ -410,9 +464,11 @@ mod tests {
     #[test]
     fn test_file_browser_history_navigation() {
         let mut browser = FileBrowser::new(PathBuf::from("dir_a"));
-        browser.entries = vec![
-            FileEntry { name: "dir_b".into(), path: PathBuf::from("dir_a/dir_b"), is_dir: true },
-        ];
+        browser.entries = vec![FileEntry {
+            name: "dir_b".into(),
+            path: PathBuf::from("dir_a/dir_b"),
+            is_dir: true,
+        }];
         browser.selected_index = 0;
 
         // 1. Navigate Into
@@ -430,11 +486,13 @@ mod tests {
     #[test]
     fn test_file_browser_page_navigation() {
         let mut browser = FileBrowser::new(PathBuf::from("."));
-        browser.entries = (0..20).map(|i| FileEntry {
-            name: i.to_string(),
-            path: i.to_string().into(),
-            is_dir: false,
-        }).collect();
+        browser.entries = (0..20)
+            .map(|i| FileEntry {
+                name: i.to_string(),
+                path: i.to_string().into(),
+                is_dir: false,
+            })
+            .collect();
         browser.last_visible_height = 5;
         browser.selected_index = 0;
 
@@ -462,8 +520,16 @@ mod tests {
     fn test_file_browser_comprehensive_navigation() {
         let mut browser = FileBrowser::new(PathBuf::from("root"));
         browser.entries = vec![
-            FileEntry { name: "dir1".into(), path: "root/dir1".into(), is_dir: true },
-            FileEntry { name: "file1".into(), path: "root/file1".into(), is_dir: false },
+            FileEntry {
+                name: "dir1".into(),
+                path: "root/dir1".into(),
+                is_dir: true,
+            },
+            FileEntry {
+                name: "file1".into(),
+                path: "root/file1".into(),
+                is_dir: false,
+            },
         ];
         browser.selected_index = 0;
 
@@ -476,11 +542,19 @@ mod tests {
         browser.handle_key(make_key(KeyCode::Backspace));
         assert_eq!(browser.current_dir, PathBuf::from("root"));
         assert!(browser.history.is_empty());
-        
+
         // Re-inject mock entries as navigate_back cleared them (disk mock)
         browser.entries = vec![
-            FileEntry { name: "dir1".into(), path: "root/dir1".into(), is_dir: true },
-            FileEntry { name: "file1".into(), path: "root/file1".into(), is_dir: false },
+            FileEntry {
+                name: "dir1".into(),
+                path: "root/dir1".into(),
+                is_dir: true,
+            },
+            FileEntry {
+                name: "file1".into(),
+                path: "root/file1".into(),
+                is_dir: false,
+            },
         ];
 
         // 3. Move down via Down arrow
@@ -490,7 +564,10 @@ mod tests {
         // 4. ArrowLeft from root should try to go to parent of root
         // (Assuming root has a parent or is just a relative name)
         browser.handle_key(make_key(KeyCode::Left));
-        let expected_parent = PathBuf::from("root").parent().map(|p| p.to_path_buf()).unwrap_or(PathBuf::from(""));
+        let expected_parent = PathBuf::from("root")
+            .parent()
+            .map(|p| p.to_path_buf())
+            .unwrap_or(PathBuf::from(""));
         assert_eq!(browser.current_dir, expected_parent);
     }
 
@@ -498,8 +575,16 @@ mod tests {
     fn test_file_browser_rendering() {
         let mut browser = FileBrowser::new(PathBuf::from("."));
         browser.entries = vec![
-            FileEntry { name: "a_dir".into(), path: "a_dir".into(), is_dir: true },
-            FileEntry { name: "b_file.txt".into(), path: "b_file.txt".into(), is_dir: false },
+            FileEntry {
+                name: "a_dir".into(),
+                path: "a_dir".into(),
+                is_dir: true,
+            },
+            FileEntry {
+                name: "b_file.txt".into(),
+                path: "b_file.txt".into(),
+                is_dir: false,
+            },
         ];
 
         let area = Rect::new(0, 0, 30, 5);

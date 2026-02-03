@@ -1,10 +1,10 @@
+use crate::widgets::{InteractiveWidget, WidgetOutcome};
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Rect},
     style::{Color, Style},
     widgets::{Block, Borders, Clear, Widget},
 };
-use crate::widgets::{InteractiveWidget, WidgetOutcome};
 
 /// A generic modal container that centers its content and applies dimming.
 #[derive(Debug)]
@@ -51,7 +51,11 @@ impl<T> Popup<T> {
         self.content.handle_key(key)
     }
 
-    pub fn handle_mouse<O>(&mut self, mouse: crossterm::event::MouseEvent, parent_area: Rect) -> WidgetOutcome<O>
+    pub fn handle_mouse<O>(
+        &mut self,
+        mouse: crossterm::event::MouseEvent,
+        parent_area: Rect,
+    ) -> WidgetOutcome<O>
     where
         T: InteractiveWidget<Outcome = O>,
     {
@@ -68,7 +72,9 @@ impl<T> Popup<T> {
             self.content.handle_mouse(mouse, content_area)
         } else {
             // Clicked outside modal
-            if let crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left) = mouse.kind {
+            if let crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left) =
+                mouse.kind
+            {
                 WidgetOutcome::Canceled
             } else {
                 WidgetOutcome::None
@@ -77,18 +83,18 @@ impl<T> Popup<T> {
     }
 }
 
-impl<T> Widget for Popup<T> 
-where 
-    for<'a> &'a T: Widget
+impl<T> Widget for Popup<T>
+where
+    for<'a> &'a T: Widget,
 {
     fn render(self, area: Rect, buf: &mut Buffer) {
         (&self).render(area, buf);
     }
 }
 
-impl<T> Widget for &Popup<T> 
-where 
-    for<'a> &'a T: Widget
+impl<T> Widget for &Popup<T>
+where
+    for<'a> &'a T: Widget,
 {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let popup_area = self.calculate_area(area);
@@ -126,9 +132,8 @@ mod tests {
     #[test]
     fn test_popup_area_calculation() {
         let parent = Rect::new(0, 0, 100, 100);
-        let popup = Popup::new(Paragraph::new("test"), "Title".to_string())
-            .with_size(50, 50);
-        
+        let popup = Popup::new(Paragraph::new("test"), "Title".to_string()).with_size(50, 50);
+
         let area = popup.calculate_area(parent);
         assert_eq!(area.width, 50);
         assert_eq!(area.height, 50);
@@ -157,7 +162,10 @@ mod tests {
     #[test]
     fn test_popup_handle_key_delegation() {
         let mut popup = Popup::new(MockContent, "Title".to_string());
-        let key = crossterm::event::KeyEvent::new(crossterm::event::KeyCode::Enter, crossterm::event::KeyModifiers::empty());
+        let key = crossterm::event::KeyEvent::new(
+            crossterm::event::KeyCode::Enter,
+            crossterm::event::KeyModifiers::empty(),
+        );
         let outcome = popup.handle_key(key);
         assert_eq!(outcome, WidgetOutcome::Confirmed(()));
     }

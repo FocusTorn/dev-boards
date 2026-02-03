@@ -1,14 +1,14 @@
 use ratatui::{
+    buffer::Buffer,
     layout::Rect,
     style::{Color, Style},
     widgets::{Block, Paragraph, Widget, Wrap},
-    buffer::Buffer,
 };
 
 /// A simple bordered box for displaying the application's global status.
 ///>
-/// Dynamically adjusts its border and text color to red if an "[Error]" 
-/// prefix is detected in the status message, providing immediate visual 
+/// Dynamically adjusts its border and text color to red if an "[Error]"
+/// prefix is detected in the status message, providing immediate visual
 /// feedback for failure states.
 ///<
 pub struct StatusBoxWidget<'a> {
@@ -25,17 +25,18 @@ impl<'a> StatusBoxWidget<'a> {
 impl<'a> Widget for StatusBoxWidget<'a> {
     /// Renders the status box with contextual color coding.
     ///>
-    /// Detects error states by string prefix and applies high-visibility 
+    /// Detects error states by string prefix and applies high-visibility
     /// styles to the borders and text content.
     ///<
     fn render(self, area: Rect, buf: &mut Buffer) {
         let is_error = self.status_text.starts_with("[Error]");
 
-        let border_color = if is_error { //>
+        let border_color = if is_error {
+            //>
             Color::Red
         } else {
             Color::White
-        }; //< 
+        }; //<
 
         let block = Block::bordered()
             .title(" Status ")
@@ -50,11 +51,12 @@ impl<'a> Widget for StatusBoxWidget<'a> {
             horizontal: 1,
         });
 
-        let style = if is_error { //> 
+        let style = if is_error {
+            //>
             Style::default().fg(Color::Red)
         } else {
             Style::default()
-        }; //< 
+        }; //<
         let paragraph = Paragraph::new(self.status_text)
             .style(style)
             .wrap(Wrap { trim: true });
@@ -84,17 +86,19 @@ mod tests {
     fn test_status_box_render_normal() {
         let backend = TestBackend::new(20, 3);
         let mut terminal = Terminal::new(backend).unwrap();
-        
-        terminal.draw(|f| {
-            let widget = StatusBoxWidget::new("Ready");
-            f.render_widget(widget, f.area());
-        }).unwrap();
+
+        terminal
+            .draw(|f| {
+                let widget = StatusBoxWidget::new("Ready");
+                f.render_widget(widget, f.area());
+            })
+            .unwrap();
 
         let buffer = terminal.backend().buffer();
         let s = buffer_to_string(buffer);
         assert!(s.contains("Status"));
         assert!(s.contains("Ready"));
-        
+
         // Verify border characters (approximate)
         assert!(s.contains("┌"));
         assert!(s.contains("┐"));
@@ -104,17 +108,19 @@ mod tests {
     fn test_status_box_render_error() {
         let backend = TestBackend::new(25, 3);
         let mut terminal = Terminal::new(backend).unwrap();
-        
-        terminal.draw(|f| {
-            let widget = StatusBoxWidget::new("[Error] Failed");
-            f.render_widget(widget, f.area());
-        }).unwrap();
+
+        terminal
+            .draw(|f| {
+                let widget = StatusBoxWidget::new("[Error] Failed");
+                f.render_widget(widget, f.area());
+            })
+            .unwrap();
 
         let buffer = terminal.backend().buffer();
         let s = buffer_to_string(buffer);
         assert!(s.contains("Status"));
         assert!(s.contains("[Error] Failed"));
-        
+
         // Verify color (this is harder to check in string, but we can check buffer directly)
         let cell = &buffer[(1, 0)]; // Title " Status " part
         assert_eq!(cell.fg, Color::Red);

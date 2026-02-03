@@ -1,10 +1,10 @@
+use crossterm::event::{KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     buffer::Buffer,
-    layout::{Rect, Position},
+    layout::{Position, Rect},
     style::{Color, Style},
-    widgets::{Widget},
+    widgets::Widget,
 };
-use crossterm::event::{MouseEvent, MouseButton, MouseEventKind, KeyModifiers};
 
 /// Semantic result of a mouse interaction with the selection list.
 pub enum SelectionListInteraction {
@@ -13,7 +13,7 @@ pub enum SelectionListInteraction {
 }
 
 /// A general-purpose list widget for selecting items.
-/// 
+///
 /// Unlike CommandListWidget, this does not render its own borders or title.
 pub struct SelectionListWidget<'a> {
     items: &'a [String],
@@ -44,19 +44,27 @@ impl<'a> SelectionListWidget<'a> {
         self
     }
 
-    pub fn handle_mouse_event(&self, area: Rect, mouse_event: MouseEvent) -> Option<SelectionListInteraction> {
+    pub fn handle_mouse_event(
+        &self,
+        area: Rect,
+        mouse_event: MouseEvent,
+    ) -> Option<SelectionListInteraction> {
         let mouse_pos = Position::new(mouse_event.column, mouse_event.row);
-        
+
         if !area.contains(mouse_pos) {
             return None;
         }
 
         let rel_y = mouse_event.row.saturating_sub(area.y) as usize;
-        
+
         if rel_y < self.items.len() {
             match mouse_event.kind {
-                MouseEventKind::Down(MouseButton::Left) => Some(SelectionListInteraction::Click(rel_y)),
-                MouseEventKind::Moved | MouseEventKind::Drag(MouseButton::Left) => Some(SelectionListInteraction::Hover(rel_y)),
+                MouseEventKind::Down(MouseButton::Left) => {
+                    Some(SelectionListInteraction::Click(rel_y))
+                }
+                MouseEventKind::Moved | MouseEventKind::Drag(MouseButton::Left) => {
+                    Some(SelectionListInteraction::Hover(rel_y))
+                }
                 _ => None,
             }
         } else {
@@ -68,12 +76,14 @@ impl<'a> SelectionListWidget<'a> {
 impl<'a> Widget for SelectionListWidget<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         for (idx, item) in self.items.iter().enumerate() {
-            if idx >= area.height as usize { break; }
-            
+            if idx >= area.height as usize {
+                break;
+            }
+
             let item_y = area.y + idx as u16;
             let is_selected = idx == self.selected_index;
             let is_hovered = self.hovered_index == Some(idx);
-            
+
             let is_highlighted = if self.hovered_index.is_some() {
                 is_hovered
             } else {
@@ -108,11 +118,13 @@ mod tests {
         let backend = TestBackend::new(20, 5);
         let mut terminal = Terminal::new(backend).unwrap();
         let items = vec!["Item 1".to_string(), "Item 2".to_string()];
-        
-        terminal.draw(|f| {
-            let widget = SelectionListWidget::new(&items, 0, None);
-            f.render_widget(widget, f.area());
-        }).unwrap();
+
+        terminal
+            .draw(|f| {
+                let widget = SelectionListWidget::new(&items, 0, None);
+                f.render_widget(widget, f.area());
+            })
+            .unwrap();
 
         let buffer = terminal.backend().buffer();
         // Verify no "┌" or "Commands" title
@@ -123,7 +135,7 @@ mod tests {
                 assert_ne!(symbol, "┐");
             }
         }
-        
+
         let s = format!("{:?}", buffer); // Simplified check
         assert!(s.contains("Item 1"));
         assert!(s.contains("Item 2"));
@@ -134,7 +146,7 @@ mod tests {
         let items = vec!["Item 1".to_string()];
         let widget = SelectionListWidget::new(&items, 0, None);
         let area = Rect::new(0, 0, 20, 5);
-        
+
         // Click at row 0
         let event = MouseEvent {
             kind: MouseEventKind::Down(MouseButton::Left),
@@ -145,6 +157,8 @@ mod tests {
         let interaction = widget.handle_mouse_event(area, event).unwrap();
         if let SelectionListInteraction::Click(idx) = interaction {
             assert_eq!(idx, 0);
-        } else { panic!("Expected Click"); }
+        } else {
+            panic!("Expected Click");
+        }
     }
 }
