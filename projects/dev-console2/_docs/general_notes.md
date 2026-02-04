@@ -8,6 +8,9 @@ foreach($d in $i) { "$d Text  |  $([char]27)[1m$d$([char]27)[22m Text" }
 New-Item -ItemType SymbolicLink -Path "D:/_dev/_Projects/dev-boards/.gemini/_core/system_settings.json" -Target "C:/ProgramData/gemini-cli/settings.json"
 
 
+New-Item -ItemType SymbolicLink -Path "D:/_dev/_Projects/dev-boards/.gemini/_core/user_gemini" -Target "C:\Users\slett\.gemini"
+
+
 ```
 
 

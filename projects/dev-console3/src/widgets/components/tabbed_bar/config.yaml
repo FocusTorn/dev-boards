@@ -1,0 +1,31 @@
+- id: "MainContentTabBar"
+  color: "cyan"
+  min_tab_width: 11
+  alignment:
+      vertical: "top"
+      horizontal: "center"
+      offset_x: 0
+      offset_y: 0
+  tabs:
+      - id: "dashboard"
+        name: "Dashboard"
+        default: "active"
+      - id: "profiles"
+        name: "Profiles"
+      - id: "settings"
+        name: "Settings"
+  tab_bindings:
+      dashboard:
+          separator: " "
+          items:
+              - key: "[🡙]"
+                description: "Navigate Commands"
+              - key: "[Enter]"
+                description: "Execute"
+      profiles:
+          separator: " "
+          items:
+              - key: "[🡙]"
+                description: "Navigate"
+              - key: "[Tab]"
+                description: "Focus"

@@ -1,0 +1,14 @@
+- id: "OutputPanelStaticOptions"
+  style: "box_static"
+  colors:
+      active: "green"
+      negate: "red"
+  alignment:
+      vertical: "bottom"
+      horizontal: "left"
+      offset_x: 0
+      offset_y: 0
+  tabs:
+      - id: "autoscroll"
+        name: "Auto"
+        default: "active"

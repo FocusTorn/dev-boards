@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Overlay Dropdown Visual Spec</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Fira Code', monospace; background-color: #0c0c0c; color: #cccccc; }
+        .tui-border-default { border: 1px solid #444; }
+        .tui-border-cyan { border: 1px solid #00afff; }
+        .tui-bg-active { background-color: #333; color: #ffffff; }
+        .tui-bg-highlight { background-color: #005f87; color: #ffffff; }
+        .tui-text-dim { color: #555; }
+        .tui-text-highlight { color: #00afff; }
+        
+        /* THE MAGIC DIMMER TRICK */
+        /* This creates a dimming effect AROUND the element without affecting the element or its children */
+        .tui-dropdown-active {
+            box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.85);
+            z-index: 100;
+        }
+
+        .terminal-container {
+            width: 800px;
+            height: 500px;
+            background-color: #0c0c0c;
+            border: 1px solid #222;
+            position: relative;
+            padding: 40px;
+            overflow: hidden; /* Clips the massive shadow to the terminal */
+        }
+
+        /* Unified Scrollbar */
+        .tui-scrollbar { width: 12px; background: #1a1a1a; position: absolute; right: 0; top: 0; bottom: 0; border-left: 1px solid #00afff; }
+        .tui-scroll-thumb { height: 40%; background: #00afff; width: 100%; }
+    </style>
+</head>
+<body class="p-10 flex flex-col items-center gap-6">
+
+    <div class="text-center mb-4">
+        <h1 class="text-xl font-bold tui-text-highlight mb-2">Unified Overlay Dropdown</h1>
+        <p class="text-sm tui-text-dim text-gray-400">Visual Spec: "Unified Expansion" Pattern</p>
+        <p class="text-[10px] mt-2 text-gray-500">Press <kbd class="bg-[#333] px-1 rounded text-white">S</kbd> to cycle: Standard → Open Down → Open Up</p>
+    </div>
+
+    <div class="terminal-container shadow-2xl">
+        
+        <!-- Background Content -->
+        <div class="flex flex-col gap-6 w-full h-full">
+            <h2 class="text-lg font-bold">Profile Configuration</h2>
+            
+            <div class="grid grid-cols-2 gap-8">
+                <div class="flex flex-col gap-2">
+                    <span class="text-xs tui-text-dim">Profile Name</span>
+                    <div class="tui-border-default p-2 text-gray-600">ESP32-S3-DevKitC-1</div>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <span class="text-xs tui-text-dim">Baud Rate</span>
+                    <div class="tui-border-default p-2 text-gray-600">115200</div>
+                </div>
+            </div>
+            
+            <!-- THE ANCHOR AREA: Guaranteed Alignment -->
+            <div class="flex flex-col gap-1 relative w-full">
+                <span class="text-xs tui-text-dim">Port</span>
+                
+                <div class="relative w-full h-[42px]">
+                    <!-- 1. The Standard Field -->
+                    <div id="standard-field" class="absolute inset-0 tui-border-default p-2 bg-[#1a1a1a] flex justify-between items-center">
+                        <span>COM3</span>
+                        <span class="tui-text-dim">▼</span>
+                    </div>
+
+                    <!-- 2. The Open Down State (Aligned via 'absolute inset-0') -->
+                    <div id="dropdown-down" class="absolute inset-0 hidden">
+                        <div class="tui-border-cyan bg-[#151515] flex flex-col tui-dropdown-active" style="height: auto; min-height: 150px;">
+                            <!-- Header (The original field area) -->
+                            <div class="p-2 border-b border-[#00afff] bg-[#1a1a1a] flex justify-between items-center h-[40px]">
+                                <span class="text-white">COM3</span>
+                                <span class="tui-text-highlight">▼</span>
+                            </div>
+                            <!-- List -->
+                            <div class="flex-grow relative">
+                                <div class="p-0">
+                                    <div class="px-3 py-1 hover:bg-[#222]">COM1</div>
+                                    <div class="px-3 py-1 tui-bg-highlight">COM4 (ESP32-S3)</div>
+                                    <div class="px-3 py-1 hover:bg-[#222]">/dev/ttyUSB0</div>
+                                </div>
+                                <div class="tui-scrollbar"><div class="tui-scroll-thumb"></div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. The Open Up State (Aligned via 'absolute bottom-0') -->
+                    <div id="dropdown-up" class="absolute bottom-0 left-0 right-0 hidden">
+                        <div class="tui-border-cyan bg-[#151515] flex flex-col tui-dropdown-active" style="height: auto; min-height: 150px;">
+                            <!-- List (at top) -->
+                            <div class="flex-grow relative">
+                                <div class="p-0">
+                                    <div class="px-3 py-1 hover:bg-[#222]">COM1</div>
+                                    <div class="px-3 py-1 tui-bg-highlight">COM4 (ESP32-S3)</div>
+                                    <div class="px-3 py-1 hover:bg-[#222]">/dev/ttyUSB0</div>
+                                </div>
+                                <div class="tui-scrollbar"><div class="tui-scroll-thumb"></div></div>
+                            </div>
+                            <!-- Header (at bottom, exactly over original field) -->
+                            <div class="p-2 border-t border-[#00afff] bg-[#1a1a1a] flex justify-between items-center h-[40px]">
+                                <span class="text-white">COM3</span>
+                                <span class="tui-text-highlight">▲</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 p-4 border border-dashed border-gray-800 text-xs text-gray-700">
+                Other configuration fields...
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const states = ["Standard", "Open Down", "Open Up"];
+        let currentState = 0;
+
+        const standard = document.getElementById('standard-field');
+        const down = document.getElementById('dropdown-down');
+        const up = document.getElementById('dropdown-up');
+
+        function update() {
+            // Reset
+            standard.classList.remove('hidden');
+            down.classList.add('hidden');
+            up.classList.add('hidden');
+
+            if (currentState === 1) { // Open Down
+                standard.classList.add('hidden');
+                down.classList.remove('hidden');
+            } else if (currentState === 2) { // Open Up
+                standard.classList.add('hidden');
+                up.classList.remove('hidden');
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 's') {
+                currentState = (currentState + 1) % states.length;
+                update();
+            }
+        });
+    </script>
+</body>
+</html>

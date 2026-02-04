@@ -129,15 +129,15 @@ lib/esp32-s3
 
 
 
-# git rm --cached <file> 
+# git rm --cached <file>
 # git rm -r --cached <folder>
 
 
 .dev-console/compile_output.log
 
 
-projects/dev-console/target/
-projects/dev-console2/target/
+# Rust
+target/
 
 
 **/.cursor/
@@ -150,4 +150,6 @@ carrot-ai-pm
 
 
 
+
+.gemini/_core/
 

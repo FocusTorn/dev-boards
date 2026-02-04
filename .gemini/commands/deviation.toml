@@ -40,6 +40,11 @@ Perform a systematic Root Cause Analysis (RCA) following the mandatory protocol 
     - Use imperative language (ALWAYS, NEVER, MUST).
 
 5. **MANDATORY PAUSE**: You MUST NOT proceed with any fixes, commands, or file changes until the user explicitly approves the remediation plan.
+
+6. **Dual Output Protocol**: 
+    - Display the full analysis in the terminal as standard markdown.
+    - SIMULTANEOUSLY create a temporary `.md` file in the project's temp directory containing the exact same analysis.
+    - Use the VS Code Integration rule to open this temp file in the active VS Code window using `Code.exe --reuse-window`.
 </INSTRUCTIONS>
 
 <OUTPUT_FORMAT_REQUIREMENTS>

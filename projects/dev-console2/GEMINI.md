@@ -53,13 +53,16 @@ cargo test
 *   **Main Config:** `config.yaml` (Project root) - Defines profiles, boards, and connections.
 *   **Widget Config:** `src/widgets/widget-config.yaml` - Defines UI specific settings (e.g., Toast duration/position).
 *   **Loading:** Configuration loading uses `serde-saphyr`. Ensure enums in Rust match YAML strings (use `#[serde(rename_all = "snake_case")]` if YAML keys are snake_case).
+*   **Best Practice:** NEVER use large coordinate offsets in YAML configurations to 'fix' alignment issues; instead, verify that the correct `Rect` is being passed to the widget in the view logic. Offsets are brittle and break across different terminal dimensions.
 
-## TUI Layout
+## TUI Layout & Area Delegation
 The main layout is defined in `src/app.rs` and consists of:
 1.  **Title Bar** (Top)
 2.  **Main Content** (Middle, Tabbed interface)
 3.  **Bindings** (Bottom, Context-sensitive help)
 4.  **Status Bar** (Bottom, Global status)
+
+**Area Delegation:** When rendering interactive sub-widgets (like `ButtonBar`) within a composite layout, ALWAYS pass the specific sub-rect intended for that widget (e.g., `input_area`) rather than the parent container's area. This ensures alignment calculations and mouse-hit detection are accurate relative to the visual component.
 
 ## Error Handling
 *   **Initialization:** Errors during startup (e.g., config loading) should be propagated up to `main` and printed to `stderr` *before* initializing the TUI to ensure visibility.

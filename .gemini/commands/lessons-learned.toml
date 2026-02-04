@@ -21,6 +21,7 @@ Analyze the current conversation to extract key learning patterns, solutions, an
     - User corrections or redirections.
     - Implementation breakthroughs (e.g., performance optimizations, error resilience).
     - Tools or techniques that were particularly effective.
+    - **EXCLUSION RULE**: Do NOT include any deviations or lessons that have already been explicitly analyzed and addressed by a separate `/deviation` command in this session. Focus only on *new* insights or unaddressed deviations.
 
 3. **Extraction**: For every significant discovery, extract:
     - **Learning**: The core insight.
@@ -46,6 +47,11 @@ Analyze the current conversation to extract key learning patterns, solutions, an
     - **Requirement**: Format as: `Action`, `Rule File Path`, `Rule Text`, `Section`, `Rationale`.
 
 6. **Final Output**: Display the lessons using the exact Markdown format provided in the `<OUTPUT>` section.
+
+7. **Dual Output Protocol**: 
+    - Display the full summary in the terminal as standard markdown.
+    - SIMULTANEOUSLY create a temporary `.md` file in the project's temp directory containing the exact same summary.
+    - Use the VS Code Integration rule to open this temp file in the active VS Code window using `Code.exe --reuse-window`.
 </INSTRUCTIONS>
 
 <OUTPUT_FORMAT_REQUIREMENTS>

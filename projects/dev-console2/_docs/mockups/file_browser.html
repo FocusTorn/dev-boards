@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Browser Modal Mockup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Fira Code', monospace; background-color: #0c0c0c; color: #cccccc; }
+        .tui-border { border: 1px solid #444; }
+        .tui-bg-active { background-color: #333; color: #ffffff; }
+        .tui-bg-highlight { background-color: #005f87; color: #ffffff; }
+        .tui-text-dim { color: #666; }
+        .tui-text-highlight { color: #00afff; }
+        .dimmer { background-color: rgba(0,0,0,0.7); }
+    </style>
+</head>
+<body class="h-screen flex flex-col p-2 select-none overflow-hidden relative">
+
+    <!-- Background Content (Dimmed) -->
+    <div class="flex-grow flex flex-col gap-2 p-4 opacity-30">
+        <div class="h-8 flex items-center justify-between px-3 tui-border">
+            <span class="font-bold tui-text-highlight">DEV-CONSOLE V2</span>
+        </div>
+        <div class="flex-grow tui-border p-4 bg-[#050505]">
+            <p class="tui-text-dim">Background system logs...</p>
+            <p>INFO: Initializing hardware...</p>
+            <p>INFO: WiFi connected. IP: 192.168.1.45</p>
+        </div>
+    </div>
+
+    <!-- Modal Overlay (Dimmer) -->
+    <div class="absolute inset-0 dimmer flex items-center justify-center">
+        
+        <!-- File Browser Modal -->
+        <div class="w-[600px] h-[400px] bg-[#151515] tui-border shadow-2xl flex flex-col">
+            <!-- Modal Header -->
+            <div class="h-10 flex items-center justify-between px-4 tui-bg-highlight font-bold">
+                <span>SELECT SKETCH DIRECTORY</span>
+                <span>[ESC] Close</span>
+            </div>
+
+            <!-- Path Bar -->
+            <div class="p-3 bg-[#1a1a1a] border-b border-[#444] text-xs">
+                <span class="tui-text-dim">Path:</span> <span class="tui-text-highlight">D:/_dev/_Projects/dev-boards/Arduino/sketchbook/</span>
+            </div>
+
+            <!-- File List -->
+            <div class="flex-grow overflow-y-auto p-2 text-sm">
+                <div class="px-3 py-1 flex justify-between hover:bg-[#222] cursor-pointer">
+                    <span><span class="text-yellow-500">📁</span> ..</span>
+                </div>
+                <div class="px-3 py-1 flex justify-between hover:bg-[#222] cursor-pointer">
+                    <span><span class="text-yellow-500">📁</span> Blink_ESP32</span>
+                    <span class="text-[10px] tui-text-dim">DIR</span>
+                </div>
+                <div class="px-3 py-1 flex justify-between tui-bg-active cursor-pointer">
+                    <span><span class="text-yellow-500">📁</span> WiFi_Scanner_S3</span>
+                    <span class="text-[10px] text-white">SELECTED</span>
+                </div>
+                <div class="px-3 py-1 flex justify-between hover:bg-[#222] cursor-pointer">
+                    <span><span class="text-yellow-500">📁</span> Sensor_Node_V1</span>
+                    <span class="text-[10px] tui-text-dim">DIR</span>
+                </div>
+                <div class="px-3 py-1 flex justify-between hover:bg-[#222] cursor-pointer">
+                    <span><span class="text-blue-500">📄</span> README.md</span>
+                    <span class="text-[10px] tui-text-dim">1.2KB</span>
+                </div>
+                <div class="px-3 py-1 flex justify-between hover:bg-[#222] cursor-pointer">
+                    <span><span class="text-blue-500">📄</span> license.txt</span>
+                    <span class="text-[10px] tui-text-dim">0.5KB</span>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="h-10 flex items-center justify-end px-4 gap-4 bg-[#1a1a1a] border-t border-[#444] text-xs">
+                <button class="px-4 py-1 tui-border hover:bg-[#333]">Cancel</button>
+                <button class="px-4 py-1 tui-bg-highlight">Select Directory</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Bar (Pinned to bottom) -->
+    <div class="h-6 flex items-center justify-between px-3 tui-bg-status text-[10px] font-bold opacity-30">
+        <span>F1 HELP</span>
+        <span>CONNECTED</span>
+    </div>
+
+    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 bg-black/80 p-4 tui-border text-center">
+        <p class="text-xs mb-2">This screen demonstrates <span class="tui-text-highlight font-bold">Focus Delegation</span>.</p>
+        <p class="text-[10px] tui-text-dim">Note how background elements are dimmed and non-interactive.</p>
+        <a href="index.html" class="text-xs text-blue-400 hover:underline">Back to Hub</a>
+    </div>
+
+</body>
+</html>
